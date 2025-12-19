@@ -1,0 +1,28 @@
+{
+  "name": "@listing-platform/design-tokens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Design tokens for listing platform (colors, typography, spacing, shadows)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./tailwind.config.js": "./tailwind.config.js",
+    "./styles/tokens.css": "./styles/tokens.css"
+  },
+  "files": [
+    "dist",
+    "tailwind.config.js",
+    "styles"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "^20"
+  }
+}
+
