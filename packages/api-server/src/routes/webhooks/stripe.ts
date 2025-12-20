@@ -152,7 +152,7 @@ async function handleCustomerEvent(supabase: ReturnType<typeof getAdminClient>, 
 async function handleSubscriptionEvent(
   supabase: ReturnType<typeof getAdminClient>,
   subscription: Stripe.Subscription,
-  eventType: string
+  _eventType: string
 ) {
   const { error } = await supabase
     .from('stripe_subscriptions')
@@ -191,7 +191,7 @@ async function handleSubscriptionEvent(
 async function handleInvoiceEvent(
   supabase: ReturnType<typeof getAdminClient>,
   invoice: Stripe.Invoice,
-  eventType: string
+  _eventType: string
 ) {
   const { error } = await supabase
     .from('stripe_invoices')
@@ -220,7 +220,7 @@ async function handleInvoiceEvent(
 async function handlePaymentIntentEvent(
   supabase: ReturnType<typeof getAdminClient>,
   paymentIntent: Stripe.PaymentIntent,
-  eventType: string
+  _eventType: string
 ) {
   const { error } = await supabase
     .from('stripe_payment_intents')

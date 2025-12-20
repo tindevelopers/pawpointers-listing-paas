@@ -12,7 +12,10 @@
     "./types": "./dist/types/index.js",
     "./styles": "./dist/styles/analytics.css"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -20,6 +23,7 @@
   },
   "dependencies": {
     "@listing-platform/design-tokens": "workspace:*",
+    "@listing-platform/shared": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },

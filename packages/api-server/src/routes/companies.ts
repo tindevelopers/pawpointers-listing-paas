@@ -3,27 +3,9 @@ import { z } from 'zod';
 import { getAdminClient } from '../lib/supabase';
 import { success, created, noContent, errors, paginated } from '../lib/response';
 import { getTenantFilter } from '../middleware/tenant';
+import { escapeSearchQuery } from '@listing-platform/shared';
 
 export const companiesRoutes = new Hono();
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Escape special characters in search strings for Supabase .or() filter
- * Prevents query injection by escaping characters that have special meaning in the DSL
- */
-function escapeSearchQuery(search: string): string {
-  return search
-    .replace(/\\/g, '\\\\')
-    .replace(/%/g, '\\%')
-    .replace(/_/g, '\\_')
-    .replace(/,/g, '\\,')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-    .replace(/\./g, '\\.');
-}
 
 // ============================================================================
 // Validation Schemas

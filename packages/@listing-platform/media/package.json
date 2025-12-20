@@ -12,13 +12,28 @@
     "./types": "./dist/types/index.js",
     "./styles": "./dist/styles/media.css"
   },
-  "files": ["dist", "README.md"],
-  "scripts": { "build": "tsc", "dev": "tsc --watch", "type-check": "tsc --noEmit" },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
   "dependencies": {
     "@listing-platform/design-tokens": "workspace:*",
+    "@listing-platform/shared": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },
-  "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" },
-  "devDependencies": { "typescript": "5.9.3", "@types/react": "^18.0.0 || ^19.0.0", "@types/node": "^20" }
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/node": "^20"
+  }
 }

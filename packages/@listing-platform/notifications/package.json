@@ -12,10 +12,18 @@
     "./types": "./dist/types/index.js",
     "./styles": "./dist/styles/notifications.css"
   },
-  "files": ["dist", "README.md"],
-  "scripts": { "build": "tsc", "dev": "tsc --watch", "type-check": "tsc --noEmit" },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
   "dependencies": {
     "@listing-platform/design-tokens": "workspace:*",
+    "@listing-platform/shared": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },

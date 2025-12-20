@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@listing-platform/design-tokens": "workspace:*",
+    "@listing-platform/shared": "workspace:*",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.6.0"
   },
@@ -37,4 +38,3 @@
     "@types/node": "^20"
   }
 }
-

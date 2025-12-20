@@ -377,6 +377,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -405,6 +408,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -436,6 +442,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -470,6 +479,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -504,6 +516,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -532,6 +547,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -592,6 +610,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -635,6 +656,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -663,6 +687,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -694,6 +721,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -725,6 +755,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -759,6 +792,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -787,6 +823,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -818,6 +857,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -846,6 +888,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@stripe/react-stripe-js':
         specifier: ^2.0.0
         version: 2.9.0(@stripe/stripe-js@2.4.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -880,6 +925,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -908,6 +956,9 @@ importers:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.0.0
         version: 2.88.0
@@ -934,11 +985,33 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/@listing-platform/shared:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.3
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.0
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.27
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/@listing-platform/verification:
     dependencies:
       '@listing-platform/design-tokens':
         specifier: workspace:*
         version: link:../design-tokens
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -1060,6 +1133,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.7(hono@4.11.1)
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../@listing-platform/shared
       '@supabase/supabase-js':
         specifier: ^2.49.0
         version: 2.88.0
