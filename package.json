@@ -1,27 +1,28 @@
 {
-  "name": "@tindeveloper/tinadmin-saas-base",
+  "name": "@tindeveloper/listing-platform-base",
   "version": "1.0.0",
   "private": false,
-  "description": "Enterprise-ready SaaS admin dashboard with CRM, multi-tenancy, Stripe billing, and role-based access control",
+  "description": "Forkable base template for building listing platforms: real estate, tourism, directories, marketplaces",
   "keywords": [
-    "saas",
-    "admin-dashboard",
+    "listing-platform",
+    "marketplace",
+    "real-estate",
+    "tourism",
+    "directory",
     "nextjs",
-    "tailwind",
     "supabase",
-    "crm",
     "multi-tenant",
-    "stripe",
-    "rbac"
+    "saas",
+    "forkable"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tindevelopers/tinadmin-saas-base.git"
+    "url": "git+https://github.com/tindevelopers/listing-paas-base.git"
   },
   "bugs": {
-    "url": "https://github.com/tindevelopers/tinadmin-saas-base/issues"
+    "url": "https://github.com/tindevelopers/listing-paas-base/issues"
   },
-  "homepage": "https://github.com/tindevelopers/tinadmin-saas-base#readme",
+  "homepage": "https://github.com/tindevelopers/listing-paas-base#readme",
   "author": "Tin Developers",
   "license": "MIT",
   "main": "./src/app/page.tsx",

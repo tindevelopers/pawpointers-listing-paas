@@ -7,6 +7,8 @@ export { ReviewsList, type ReviewsListProps } from './ReviewsList';
 export { ReviewForm, type ReviewFormProps } from './ReviewForm';
 export { ReviewCard, type ReviewCardProps } from './ReviewCard';
 export { RatingDisplay, type RatingDisplayProps } from './RatingDisplay';
+export { ReviewStats, ReviewStatsDisplay, type ReviewStatsProps } from './ReviewStats';
+
 
 
 

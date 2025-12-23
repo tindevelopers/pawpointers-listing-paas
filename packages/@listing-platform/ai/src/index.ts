@@ -11,7 +11,8 @@
  */
 
 export { openaiClient, getOpenAIConfig, generateEmbedding, generateEmbeddings } from './embeddings';
-export { chat, streamChat, ChatMessage, ChatOptions, ChatResponse } from './chatbot';
+export { chat, streamChat, createSession, getSessionHistory } from './chatbot';
+export type { ChatMessage, ChatOptions, ChatResponse } from './chatbot';
 export {
   addDocument,
   updateDocument,

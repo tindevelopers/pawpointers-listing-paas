@@ -26,6 +26,9 @@
       "@/*": [
         "./*"
       ],
+      "@/../config/*": [
+        "../../config/*"
+      ],
       "@tinadmin/core": [
         "../../packages/@tinadmin/core/src"
       ],
@@ -34,6 +37,27 @@
       ],
       "@tinadmin/config": [
         "../../packages/@tinadmin/config/src"
+      ],
+      "@listing-platform/ai": [
+        "../../packages/@listing-platform/ai/src"
+      ],
+      "@listing-platform/search": [
+        "../../packages/@listing-platform/search/src"
+      ],
+      "@listing-platform/media": [
+        "../../packages/@listing-platform/media/src"
+      ],
+      "@listing-platform/config": [
+        "../../packages/@listing-platform/config/src"
+      ],
+      "@listing-platform/shared": [
+        "../../packages/@listing-platform/shared/src"
+      ],
+      "@listing-platform/reviews": [
+        "../../packages/@listing-platform/reviews/src"
+      ],
+      "@listing-platform/maps": [
+        "../../packages/@listing-platform/maps/src"
       ]
     }
   },

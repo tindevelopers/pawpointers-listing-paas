@@ -1,267 +1,296 @@
-# TinAdmin SaaS Base V1.0
+# Listing Platform as a Service - Base Template
 
-> **Enterprise-ready SaaS admin dashboard with CRM, multi-tenancy, Stripe billing, and role-based access control**
+> **A forkable base template for building listing platforms: real estate, tourism, directories, marketplaces, and more.**
 
-TinAdmin SaaS Base is a production-ready foundation for building B2B SaaS applications. Built with Next.js 15, Supabase, and Stripe, it provides everything you need to launch your SaaS product.
+This monorepo provides a production-ready foundation for creating vertical-specific listing platforms. Fork it, customize the configuration, and deploy your own listing business.
 
-## 🚀 V1.0 Features
+## Why This Template?
 
-### Multi-Tenancy & Access Control
-- **Multi-tenant architecture** with complete data isolation via Row Level Security (RLS)
-- **Role-based access control (RBAC)** with 5 default roles:
-  - Platform Admin (global access)
-  - Workspace Admin (tenant-level management)
-  - Billing Owner (subscription management)
-  - Developer (API and webhook access)
-  - Viewer (read-only access)
-- **Workspace management** for organizing teams within tenants
-- **Audit logging** for compliance and security
+- **Forkable Architecture** - Customize frontend, inherit backend
+- **Multi-tenant Ready** - Row Level Security (RLS) for data isolation
+- **SEO Optimized** - SSG/ISR with dynamic sitemaps
+- **Payment Ready** - Stripe subscriptions and invoicing
+- **AI Powered** - RAG chatbot with knowledge base (optional)
+- **Fast Search** - Typesense integration (optional)
 
-### Billing & Payments
-- **Stripe integration** with subscription management
-- Support for **monthly and annual billing cycles**
-- **Payment method management** (cards, bank accounts)
-- **Invoice history** and downloadable PDFs
-- **Webhook handling** for real-time subscription updates
+## Quick Start (For Forks)
 
-### CRM System
-- **Companies** - Track organizations with custom fields
-- **Contacts** - Manage individual contacts linked to companies
-- **Deals** - Sales pipeline with Kanban board stages
-- **Tasks** - Action items with due dates and reminders
-- **Notes** - Activity history (calls, emails, meetings)
-- **Activity Timeline** - Complete interaction history
+```bash
+# 1. Fork this repo on GitHub, then clone
+git clone https://github.com/YOUR_ORG/your-listing-platform.git
+cd your-listing-platform
 
-### White-Label Customization
-- **Custom branding** (logo, colors, favicon)
-- **Theme settings** (light/dark mode, fonts, animations)
-- **Custom CSS** injection for advanced styling
-- **Custom domains** support with SSL
+# 2. Install dependencies
+pnpm install
 
-### AI-Powered Features
-- **RAG Chatbot** with vector similarity search (pgvector)
-- **Knowledge base** for document embeddings
-- **OpenAI integration** for chat and recommendations
+# 3. Configure your platform
+cp .env.example .env.local
+code config/listing.config.ts  # Define your listing type
+code config/brand.config.ts    # Set your branding
+
+# 4. Start local development
+pnpm supabase start
+pnpm dev
+```
+
+See [FORKING.md](FORKING.md) for the complete customization guide.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        GitHub Monorepo                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │    Portal    │  │    Admin     │  │     API      │          │
+│  │  (Next.js)   │  │  (Next.js)   │  │   (Hono)     │          │
+│  │              │  │              │  │              │          │
+│  │ yoursite.com │  │ admin.your   │  │ api.your     │          │
+│  │              │  │ site.com     │  │ site.com     │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+│         │                 │                 │                   │
+│         └─────────────────┼─────────────────┘                   │
+│                           │                                     │
+│                           ▼                                     │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                     Supabase                             │   │
+│  │  PostgreSQL + Auth + RLS + pgvector                      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+│  Optional:  [Typesense]  [Wasabi CDN]  [OpenAI]  [Stripe]      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## V1 Features
+
+### Core Platform
+- **Multi-tenant architecture** with Row Level Security (RLS)
+- **Role-based access control** (Platform Admin, Tenant Admin, etc.)
+- **Workspace management** for team organization
+- **Audit logging** for compliance
+
+### Portal (Consumer-Facing)
+- **SSG/ISR pages** for SEO optimization
+- **Dynamic sitemap** generation
+- **Fast search** with Typesense (optional)
+- **AI chatbot** with RAG (optional)
+- **Responsive design** with Tailwind CSS
+
+### Admin Dashboard
+- **Listing management** (CRUD, publish, archive)
+- **CRM system** (contacts, companies, deals)
+- **White-label settings** (branding, themes)
+- **Analytics** and reporting
+
+### Payments (Stripe)
+- Subscription management
+- Multiple billing cycles
+- Invoice generation
+- Webhook handling
 
 ### Developer Experience
-- **Turborepo monorepo** for optimal build performance
-- **TypeScript** throughout with strict typing
+- **Turborepo** for fast builds
+- **TypeScript** throughout
 - **Modular packages** for code reuse
-- **API server** with Express for backend operations
-- **Comprehensive configuration** via environment variables
+- **Comprehensive docs** for forks
 
-## 📦 Tech Stack
+---
 
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | Next.js 15, React 19, Tailwind CSS 4 |
-| **Backend** | Supabase (Postgres + Auth), Express API |
-| **Payments** | Stripe (subscriptions, invoices, webhooks) |
-| **Search** | Typesense (optional) |
-| **AI** | OpenAI (embeddings, chat), pgvector |
-| **Storage** | Wasabi/S3-compatible cloud storage |
-| **Maps** | Mapbox / Google Maps |
-| **Monorepo** | Turborepo, pnpm |
-
-## 🏗️ Architecture
+## Project Structure
 
 ```
 listing-platform-as-a-service/
 ├── apps/
-│   ├── admin/          # Admin dashboard (Next.js)
-│   └── portal/         # Consumer portal (Next.js)
+│   ├── admin/              # Admin dashboard (Next.js 15)
+│   └── portal/             # Consumer portal (Next.js 15)
+│
 ├── packages/
-│   ├── @tinadmin/
-│   │   ├── core/       # Core utilities and types
-│   │   ├── config/     # Shared configuration
-│   │   └── ui-*/       # UI component libraries
-│   └── @listing-platform/
-│       ├── ai/         # AI/ML features
-│       ├── auth/       # Authentication utilities
-│       ├── crm/        # CRM components
-│       ├── media/      # Media upload/management
-│       ├── payments/   # Stripe integration
-│       ├── search/     # Search functionality
-│       └── shared/     # Shared utilities
+│   ├── @tinadmin/          # Core admin packages
+│   │   ├── core/           # Database, auth, multi-tenancy
+│   │   ├── ui-admin/       # Admin UI components
+│   │   └── ui-consumer/    # Portal UI components
+│   │
+│   ├── @listing-platform/  # Feature packages
+│   │   ├── ai/             # RAG chatbot, embeddings
+│   │   ├── search/         # Typesense integration
+│   │   ├── media/          # Wasabi image storage
+│   │   ├── payments/       # Stripe integration
+│   │   └── ...             # More feature packages
+│   │
+│   └── api-server/         # Hono API server
+│
+├── config/                 # Platform configuration
+│   ├── listing.config.ts   # Listing type definition
+│   ├── brand.config.ts     # Branding settings
+│   ├── routing.config.ts   # URL strategy
+│   └── features.config.ts  # Feature flags
+│
 ├── supabase/
-│   ├── migrations/     # Individual migrations
-│   └── migrations-v1/  # Consolidated V1 migrations
-└── config/             # Global configuration
+│   ├── migrations/         # Individual migrations (29)
+│   └── migrations-v1/      # Consolidated V1 migration
+│
+└── docs/                   # Documentation
 ```
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
+## Configuration Files
 
-- Node.js 20.x or later
-- pnpm 10.x
-- Docker (for local Supabase)
+| File | Purpose | Customize? |
+|------|---------|------------|
+| `config/listing.config.ts` | Listing fields, categories, statuses | ✅ Yes |
+| `config/brand.config.ts` | Logo, colors, company info | ✅ Yes |
+| `config/routing.config.ts` | URL structure (industry/geographic) | ✅ Yes |
+| `config/features.config.ts` | Enable/disable features | ✅ Yes |
 
-### Installation
+---
 
-1. **Clone and install dependencies:**
+## Deployment Options
 
-```bash
-git clone https://github.com/tindevelopers/tinadmin-saas-base.git
-cd tinadmin-saas-base
-pnpm install
-```
+### Option A: Simple (All Vercel)
 
-2. **Set up environment variables:**
+Best for small platforms, associations, directories.
 
-```bash
-cp .env.example .env.local
-# Edit .env.local with your configuration
-```
+| Project | Root Directory | URL |
+|---------|---------------|-----|
+| Portal | `apps/portal` | yoursite.com |
+| Admin | `apps/admin` | admin.yoursite.com |
+| API | `packages/api-server` | api.yoursite.com |
 
-3. **Start local Supabase:**
+### Option B: Enterprise (Cloud Run API)
 
-```bash
-pnpm supabase:start
-```
+Best for tourism, real estate, high-traffic platforms.
 
-4. **Run development servers:**
+| Project | Platform | URL |
+|---------|----------|-----|
+| Portal | Vercel | yoursite.com |
+| Admin | Vercel | admin.yoursite.com |
+| API | Cloud Run | api.yoursite.com |
 
-```bash
-# Run all apps
-pnpm dev
+See [FORKING.md](FORKING.md) for detailed deployment instructions.
 
-# Or run specific apps
-pnpm dev:admin   # Admin dashboard on :3001
-pnpm dev:portal  # Portal on :3000
-pnpm dev:api     # API server on :4000
-```
+---
 
-## 📚 Documentation
+## Environment Variables
 
-| Guide | Description |
-|-------|-------------|
-| [📖 User Guide](docs/USER_GUIDE.md) | Installation and customization |
-| [👨‍💻 Developer Guide](docs/DEVELOPER_GUIDE.md) | Advanced development |
-| [⚙️ Configuration Guide](docs/CONFIGURATION_GUIDE.md) | Environment variables |
-| [💳 Stripe Setup](README_STRIPE.md) | Payment integration |
-| [🏠 Local Setup](README_LOCAL_SETUP.md) | Local development |
-
-## 🗄️ Database Schema
-
-The V1 schema includes the following modules:
-
-### Core Tables
-- `tenants` - Organizations with white-label settings
-- `users` - User accounts with role assignments
-- `roles` - RBAC roles with permissions
-- `audit_logs` - Compliance audit trail
-
-### Workspaces
-- `workspaces` - Team organization within tenants
-- `workspace_users` - User ↔ workspace assignments
-- `user_tenant_roles` - Cross-tenant role assignments
-
-### Billing (Stripe)
-- `stripe_customers`, `stripe_subscriptions`
-- `stripe_payment_methods`, `stripe_invoices`
-- `stripe_products`, `stripe_prices`
-
-### CRM
-- `companies`, `contacts`, `deals`
-- `deal_stages`, `tasks`, `notes`, `activities`
-
-### AI
-- `knowledge_documents` - Vector embeddings for RAG
-- `chat_sessions`, `chat_messages`
-
-See `supabase/migrations-v1/` for consolidated migrations.
-
-## 🔧 Scripts
+See `.env.example` for the complete list. Key variables:
 
 ```bash
-# Development
-pnpm dev              # Run all apps
-pnpm dev:admin        # Admin dashboard only
-pnpm dev:portal       # Portal only
-pnpm dev:api          # API server only
-
-# Building
-pnpm build            # Build all apps
-pnpm build:packages   # Build packages only
-
-# Database
-pnpm supabase:start   # Start local Supabase
-pnpm supabase:stop    # Stop local Supabase
-pnpm supabase:reset   # Reset database
-
-# Quality
-pnpm lint             # Run linting
-pnpm type-check       # TypeScript checks
-pnpm test             # Run tests
-```
-
-## 🔐 Environment Variables
-
-Key environment variables (see `.env.example` for full list):
-
-```bash
-# Supabase
+# Required
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Stripe
-NEXT_PUBLIC_STRIPE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+# URLs
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SITE_URL=
 
-# OpenAI (for AI features)
-OPENAI_API_KEY=
-
-# Multi-tenancy
-NEXT_PUBLIC_MULTI_TENANT_ENABLED=false
-NEXT_PUBLIC_TENANT_RESOLUTION=subdomain
+# Optional - Enable as needed
+STRIPE_SECRET_KEY=           # Payments
+TYPESENSE_API_KEY=           # Fast search
+OPENAI_API_KEY=              # AI chatbot
+WASABI_ACCESS_KEY=           # Image storage
 ```
-
-## 🚢 Deployment
-
-### Vercel (Recommended)
-
-```bash
-vercel --prod
-```
-
-### Docker
-
-```bash
-docker build -t tinadmin-saas .
-docker run -p 3000:3000 tinadmin-saas
-```
-
-### Railway / Render
-
-Follow standard Next.js deployment guides for your platform.
-
-## 📝 Changelog
-
-### Version 1.0.0 - December 2024
-
-**Initial V1 Release with:**
-- ✅ Multi-tenant architecture with RLS
-- ✅ 5-role RBAC system
-- ✅ Complete Stripe billing integration
-- ✅ Full CRM system (companies, contacts, deals, tasks)
-- ✅ AI knowledge base with pgvector
-- ✅ White-label customization
-- ✅ Audit logging
-- ✅ Workspace management
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.
 
 ---
 
-**Built with ❤️ by [Tin Developers](https://tindevelopers.com)**
+## Database Setup
 
-Last Updated: December 2024 | Version: 1.0.0
+For new forks, use the consolidated V1 migration:
+
+```bash
+# Link to your Supabase project
+pnpm supabase link --project-ref YOUR_PROJECT_REF
+
+# Push migrations
+pnpm supabase db push
+```
+
+Or use `supabase/migrations-v1/001_v1_complete_schema.sql` for manual setup.
+
+---
+
+## Scripts
+
+```bash
+# Development
+pnpm dev              # All apps
+pnpm dev:admin        # Admin only (port 3000)
+pnpm dev:portal       # Portal only (port 3001)
+pnpm dev:api          # API only (port 4000)
+
+# Database
+pnpm supabase start   # Start local Supabase
+pnpm supabase stop    # Stop local Supabase
+pnpm supabase db push # Push migrations
+
+# Build
+pnpm build            # Build all
+pnpm build:admin      # Build admin only
+pnpm build:portal     # Build portal only
+
+# Quality
+pnpm lint             # Lint all
+pnpm type-check       # TypeScript check
+```
+
+---
+
+## Documentation
+
+| Guide | Description |
+|-------|-------------|
+| [FORKING.md](FORKING.md) | How to fork and customize |
+| [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) | Detailed customization guide |
+| [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Development workflow |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment instructions |
+| [README_STRIPE.md](README_STRIPE.md) | Stripe integration |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 15, React 19, Tailwind CSS |
+| **Backend** | Hono (API), Supabase (Database + Auth) |
+| **Database** | PostgreSQL + pgvector |
+| **Payments** | Stripe |
+| **Search** | Typesense (optional) |
+| **AI** | OpenAI + pgvector RAG (optional) |
+| **Storage** | Wasabi S3-compatible (optional) |
+| **Monorepo** | Turborepo, pnpm |
+
+---
+
+## Changelog
+
+### Version 1.0.0 - December 2024
+
+Initial V1 release:
+- Multi-tenant architecture with RLS
+- SSG/ISR portal for SEO
+- Admin dashboard with CRM
+- Stripe billing integration
+- AI chatbot with RAG (optional)
+- Typesense fast search (optional)
+- Wasabi image storage (optional)
+- Comprehensive fork documentation
+
+---
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+**Built for listing businesses by [Tin Developers](https://tindevelopers.com)**
+
+Version 1.0.0 | December 2024

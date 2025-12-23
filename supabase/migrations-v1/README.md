@@ -1,95 +1,68 @@
-# TinAdmin SaaS Base - V1 Consolidated Migrations
+# V1 Consolidated Migrations
 
-This folder contains **5 consolidated SQL migrations** that set up the complete V1 database schema for TinAdmin SaaS Base.
+This folder contains consolidated migrations for new forks/deployments.
 
-## Migration Files
+## Options for Database Setup
 
-| File | Description |
-|------|-------------|
-| `001_core_schema.sql` | Core tables: tenants, users, roles, audit_logs + RLS helper functions |
-| `002_workspaces_and_roles.sql` | Workspaces, workspace_users, user_tenant_roles for organization hierarchy |
-| `003_stripe_billing.sql` | Complete Stripe integration: customers, subscriptions, invoices, payments |
-| `004_crm_system.sql` | Full CRM: companies, contacts, deals, tasks, notes, activities |
-| `005_ai_knowledge_base.sql` | AI features: pgvector, knowledge documents, chat sessions/messages |
+### Option 1: Use Consolidated Migration (Recommended for New Projects)
 
-## Usage
-
-### Fresh Installation
-
-For a new Supabase project, run these migrations in order:
+Use the single `001_v1_complete_schema.sql` file which contains the complete
+database schema for V1:
 
 ```bash
-# Using Supabase CLI
-supabase db reset
+# Copy to migrations folder
+cp supabase/migrations-v1/001_v1_complete_schema.sql supabase/migrations/
 
-# Or manually apply each migration
-psql $DATABASE_URL < 001_core_schema.sql
-psql $DATABASE_URL < 002_workspaces_and_roles.sql
-psql $DATABASE_URL < 003_stripe_billing.sql
-psql $DATABASE_URL < 004_crm_system.sql
-psql $DATABASE_URL < 005_ai_knowledge_base.sql
+# Then push to your Supabase project
+pnpm supabase db push
 ```
 
-### Existing Projects
+### Option 2: Use Incremental Migrations (For Existing Projects)
 
-If you have an existing database with the individual migrations from `supabase/migrations/`, these consolidated migrations are **for reference only**. Your existing migrations should continue to work.
+The original 29 incremental migrations are in `supabase/migrations/`.
+These are useful if you need to understand the evolution of the schema
+or if you're upgrading an existing deployment.
+
+```bash
+pnpm supabase db push
+```
+
+### Option 3: Use Combined SQL File (Manual Setup)
+
+The `supabase/combined_migrations.sql` file contains all migrations
+combined. You can run this directly in the Supabase SQL Editor.
 
 ## Schema Overview
 
-### Core Schema (001)
-- **tenants** - Organizations using the platform with white-label settings
-- **roles** - RBAC roles with permissions (Platform Admin, Workspace Admin, etc.)
-- **users** - User accounts linked to tenants and roles
-- **audit_logs** - System-wide audit logging for compliance
+The V1 schema includes:
 
-### Workspaces (002)
-- **workspaces** - Sub-divisions within tenants for team organization
-- **workspace_users** - Many-to-many user ↔ workspace with role assignments
-- **user_tenant_roles** - Allows Platform Admins to have tenant-specific roles
+1. **Core Tables**
+   - `tenants` - Multi-tenant organizations
+   - `users` - User accounts linked to auth.users
+   - `roles` - Role definitions (Platform Admin, Tenant Admin, etc.)
+   - `user_roles` - User-to-role assignments
 
-### Billing (003)
-- **stripe_products** / **stripe_prices** - Product catalog from Stripe
-- **stripe_customers** - Customer records synced with Stripe
-- **stripe_subscriptions** - Active and historical subscriptions
-- **stripe_payment_methods** - Saved cards and bank accounts
-- **stripe_invoices** - Billing history
-- **stripe_payment_intents** - One-time payment tracking
-- **stripe_webhook_events** - Webhook logging for debugging
+2. **Workspaces**
+   - `workspaces` - Multiple workspaces per tenant
+   - `workspace_members` - Workspace membership
 
-### CRM (004)
-- **companies** - Business organizations
-- **contacts** - Individual contacts linked to companies
-- **deal_stages** - Kanban board stages (Lead → Qualified → Proposal → Won/Lost)
-- **deals** - Sales opportunities with values and probabilities
-- **tasks** - Action items linked to contacts/companies/deals
-- **notes** - Notes, emails, calls, meetings
-- **activities** - Activity timeline for all entities
+3. **Audit & Security**
+   - `audit_logs` - Action logging
+   - Row Level Security (RLS) policies on all tables
 
-### AI Knowledge Base (005)
-- **knowledge_documents** - Documents with vector embeddings for RAG
-- **chat_sessions** - Chat conversation sessions
-- **chat_messages** - Individual messages in sessions
-- **search_knowledge_documents()** - Vector similarity search function
+4. **Features**
+   - `white_label_settings` - Branding customization
+   - `stripe_*` tables - Payment integration
+   - `crm_*` tables - Contacts, companies, deals
 
-## Row Level Security (RLS)
+5. **AI & Search**
+   - `knowledge_documents` - Vector embeddings for RAG chatbot
+   - `chat_sessions` / `chat_messages` - Conversation history
 
-All tables have Row Level Security enabled with policies for:
-- **Platform Admins** - Full access to all data
-- **Tenant Users** - Access to their tenant's data only
-- **Self-service** - Users can update their own profiles
+## Functions
 
-## Default Data
-
-The migrations create default roles:
-1. **Platform Admin** - Full system control
-2. **Workspace Admin** - Tenant-level management
-3. **Billing Owner** - Subscription and billing management
-4. **Developer** - API access and webhooks
-5. **Viewer** - Read-only access
-
-## Notes
-
-- These migrations assume Supabase Auth is configured
-- pgvector extension is required for AI features
-- Stripe webhook integration requires `STRIPE_WEBHOOK_SECRET`
-
+Key database functions included:
+- `is_platform_admin()` - Check if user is platform admin
+- `get_current_tenant_id()` - Get tenant from session
+- `increment_view_count()` - Atomic counter updates
+- `search_knowledge_documents()` - Vector similarity search
