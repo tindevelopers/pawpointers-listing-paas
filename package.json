@@ -49,7 +49,7 @@
     "dev:api": "turbo run dev --filter=@listing-platform/api-server",
     "dev:local": "supabase start && pnpm dev",
     "dev:localhost": "./scripts/start-localhost.sh",
-    "build": "next build",
+    "build": "turbo run build",
     "build:packages": "turbo run build --filter='./packages/*'",
     "build:admin": "turbo run build --filter=@tinadmin/admin",
     "build:portal": "turbo run build --filter=@tinadmin/portal",

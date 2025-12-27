@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar, SearchResults } from "@/components/search";
 import { searchListings, getCategories } from "@/lib/listings";
@@ -65,7 +66,7 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
         {/* Category Quick Filters */}
         {categories.length > 0 && (
           <div className="mb-8 flex flex-wrap gap-2">
-            <a
+            <Link
               href="/listings"
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 !category
@@ -74,9 +75,9 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
               }`}
             >
               All
-            </a>
+            </Link>
             {categories.map((cat) => (
-              <a
+              <Link
                 key={cat.slug}
                 href={`/listings?category=${cat.slug}`}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -86,7 +87,7 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
                 }`}
               >
                 {cat.name} ({cat.count})
-              </a>
+              </Link>
             ))}
           </div>
         )}

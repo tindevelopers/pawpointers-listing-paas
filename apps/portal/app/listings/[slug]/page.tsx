@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 import { ListingDetail } from "@/components/listings";
@@ -88,29 +89,29 @@ export default async function ListingPage({ params }: ListingPageProps) {
         <nav className="mb-6 text-sm">
           <ol className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <li>
-              <a href="/" className="hover:text-gray-700 dark:hover:text-gray-200">
+              <Link href="/" className="hover:text-gray-700 dark:hover:text-gray-200">
                 Home
-              </a>
+              </Link>
             </li>
             <li>/</li>
             <li>
-              <a
+              <Link
                 href="/listings"
                 className="hover:text-gray-700 dark:hover:text-gray-200"
               >
                 Listings
-              </a>
+              </Link>
             </li>
             {listing.category && (
               <>
                 <li>/</li>
                 <li>
-                  <a
+                  <Link
                     href={`/categories/${listing.category}`}
                     className="hover:text-gray-700 dark:hover:text-gray-200"
                   >
                     {listing.category}
-                  </a>
+                  </Link>
                 </li>
               </>
             )}

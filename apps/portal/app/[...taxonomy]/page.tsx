@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
-import { ListingDetail } from "@/components/listings";
 import { TaxonomyBreadcrumb } from "@/components/taxonomy/TaxonomyBreadcrumb";
 import { TaxonomyListing } from "@/components/taxonomy/TaxonomyListing";
 import { CategoryPage } from "@/components/taxonomy/CategoryPage";
@@ -48,7 +47,7 @@ export async function generateMetadata({
   
   if (listing) {
     // It's a listing - generate listing metadata
-    return generateSEOMetadata(listing, config, parsedPath);
+    return generateSEOMetadata(listing as unknown as Record<string, unknown>, config, parsedPath);
   }
   
   // It's a category/taxonomy term page

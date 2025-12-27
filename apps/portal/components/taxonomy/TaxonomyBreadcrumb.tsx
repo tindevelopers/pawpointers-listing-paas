@@ -14,10 +14,10 @@ interface TaxonomyBreadcrumbProps {
  */
 export function TaxonomyBreadcrumb({
   path,
-  config,
+  config: _config,
   currentTitle,
 }: TaxonomyBreadcrumbProps) {
-  const segments = (path._segments as string[]) || [];
+  const segments = (path._segments as unknown as string[]) || [];
   
   // Build breadcrumb items from segments
   const breadcrumbs: Array<{ label: string; href: string; active?: boolean }> = [

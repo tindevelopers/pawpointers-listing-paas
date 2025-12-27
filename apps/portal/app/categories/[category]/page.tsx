@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchResults } from "@/components/search";
 import { getListingsByCategory, getCategories } from "@/lib/listings";
@@ -63,18 +64,18 @@ export default async function CategoryPage({
         <nav className="mb-6 text-sm">
           <ol className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <li>
-              <a href="/" className="hover:text-gray-700 dark:hover:text-gray-200">
+              <Link href="/" className="hover:text-gray-700 dark:hover:text-gray-200">
                 Home
-              </a>
+              </Link>
             </li>
             <li>/</li>
             <li>
-              <a
+              <Link
                 href="/categories"
                 className="hover:text-gray-700 dark:hover:text-gray-200"
               >
                 Categories
-              </a>
+              </Link>
             </li>
             <li>/</li>
             <li className="text-gray-900 dark:text-white capitalize">
@@ -102,16 +103,16 @@ export default async function CategoryPage({
               </h2>
               <ul className="space-y-2">
                 <li>
-                  <a
+                  <Link
                     href="/listings"
                     className="block px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     All Listings
-                  </a>
+                  </Link>
                 </li>
                 {categories.map((cat) => (
                   <li key={cat.slug}>
-                    <a
+                    <Link
                       href={`/categories/${cat.slug}`}
                       className={`block px-3 py-2 rounded-lg transition-colors ${
                         cat.slug === category
@@ -123,7 +124,7 @@ export default async function CategoryPage({
                       <span className="text-gray-400 dark:text-gray-500 ml-2">
                         ({cat.count})
                       </span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
