@@ -15,6 +15,12 @@ pnpm add @listing-platform/booking
 - **Booking Management** - Create, view, and cancel bookings
 - **Payment Integration** - Works with Stripe for payment processing
 - **Headless Components** - Full customization with render props
+- **Event Types** - Multiple booking types per listing (Cal.com-style)
+- **Recurring Patterns** - Generate availability automatically
+- **Team Scheduling** - Multiple hosts per listing with round-robin
+- **Calendar Sync** - Google, Outlook, Apple Calendar integration
+- **Timezone Support** - Automatic timezone detection and conversion
+- **Custom Forms** - Dynamic form fields per event type
 
 ## Usage
 
@@ -61,6 +67,21 @@ await createBooking({
 
 // Get user's bookings
 const { bookings, isLoading } = useBookings({ status: 'confirmed' });
+
+// Manage event types
+const { eventTypes, createEventType } = useEventTypes(listingId);
+
+// Manage recurring patterns
+const { patterns, generateSlots } = useRecurringPatterns(eventTypeId);
+
+// Manage team members
+const { members, addTeamMember } = useTeamMembers(listingId);
+
+// Calendar sync
+const { integrations, syncCalendar } = useCalendarSync(listingId);
+
+// Timezone management
+const { userTimezone, convertTimezone } = useTimezone();
 ```
 
 ### Headless Components

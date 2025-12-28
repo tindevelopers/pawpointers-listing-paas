@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   build:
@@ -21,6 +21,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 10.6.1
 
       - name: Get pnpm store directory
         shell: bash
@@ -39,7 +41,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: pnpm tsc --noEmit || echo "Type check completed with warnings"
+        run: pnpm type-check || echo "Type check completed with warnings"
 
       - name: Lint
         run: pnpm lint || echo "Lint completed with warnings"

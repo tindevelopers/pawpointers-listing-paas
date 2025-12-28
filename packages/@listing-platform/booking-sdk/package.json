@@ -1,0 +1,67 @@
+{
+  "name": "@listing-platform/booking-sdk",
+  "version": "1.0.0",
+  "description": "Cal.com-style booking system SDK for React and Node.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./client": {
+      "import": "./dist/client/index.esm.js",
+      "require": "./dist/client/index.js",
+      "types": "./dist/client/index.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components/index.esm.js",
+      "require": "./dist/components/index.js",
+      "types": "./dist/components/index.d.ts"
+    },
+    "./hooks": {
+      "import": "./dist/hooks/index.esm.js",
+      "require": "./dist/hooks/index.js",
+      "types": "./dist/hooks/index.d.ts"
+    },
+    "./types": "./dist/types/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "booking",
+    "scheduling",
+    "calendar",
+    "appointments",
+    "sdk"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc && tsc --module esnext --outDir dist --declaration",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "zod": "^3.23.0",
+    "date-fns-tz": "^2.0.0",
+    "rrule": "^2.8.1"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/node": "^20"
+  }
+}
+

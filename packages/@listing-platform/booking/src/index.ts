@@ -17,3 +17,6 @@ export * from './headless';
 
 // Export utilities
 export { cn } from './utils/cn';
+
+// Export services (server-only)
+export * from './services';
