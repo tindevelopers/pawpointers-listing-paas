@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/core/database/server";
-import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import { getTenantForCrm } from "./tenant-helper";
 import { logEntityCreated, logEntityUpdated, logEntityDeleted } from "./activities";
 // Temporary types until database types are regenerated
@@ -237,10 +236,7 @@ export async function updateDeal(
   id: string,
   updates: Partial<Omit<Deal, "id" | "tenant_id" | "created_at" | "created_by" | "contact" | "company" | "stage">>
 ): Promise<Deal> {
-  const tenantId = await getCurrentTenant();
-  if (!tenantId) {
-    throw new Error("No tenant found");
-  }
+  const tenantId = await getTenantForCrm();
 
   const supabase = await createClient();
   const { data, error } = await (supabase.from("deals") as any)

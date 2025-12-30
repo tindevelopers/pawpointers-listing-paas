@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useTenant } from "@/core/multi-tenancy";
 import { useWhiteLabel } from "@/context/WhiteLabelContext";
+import { mainNavItems, supportNavItems, othersNavItems } from "../config/navigation-filtered";
 import {
   AiIcon,
   BoxCubeIcon,
@@ -38,20 +39,10 @@ type NavItem = {
   subItems?: (NavItem | { name: string; path: string; pro?: boolean; new?: boolean })[];
 };
 
+// Use filtered navigation items based on program configuration
+// This allows forked repos to enable/disable programs via config/programs.config.ts
 const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/saas/dashboard",
-  },
-  {
-    name: "Bookings",
-    icon: <CalenderIcon />,
-    subItems: [
-      { name: "All Bookings", path: "/bookings" },
-      { name: "Availability Calendar", path: "/bookings/availability" },
-    ],
-  },
+  ...mainNavItems,
   {
     name: "CRM",
     icon: <UserCircleIcon />,
@@ -339,83 +330,9 @@ const navItems: NavItem[] = [
   },
 ];
 
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-      { name: "Pie Chart", path: "/pie-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts" },
-      { name: "Avatar", path: "/avatars" },
-      { name: "Badge", path: "/badge" },
-      { name: "Breadcrumb", path: "/breadcrumb" },
-      { name: "Buttons", path: "/buttons" },
-      { name: "Buttons Group", path: "/buttons-group" },
-      { name: "Cards", path: "/cards" },
-      { name: "Carousel", path: "/carousel" },
-      { name: "Dropdowns", path: "/dropdowns" },
-      { name: "Images", path: "/images" },
-      { name: "Links", path: "/links" },
-      { name: "List", path: "/list" },
-      { name: "Modals", path: "/modals" },
-      { name: "Notification", path: "/notifications" },
-      { name: "Pagination", path: "/pagination" },
-      { name: "Popovers", path: "/popovers" },
-      { name: "Progressbar", path: "/progress-bar" },
-      { name: "Ribbons", path: "/ribbons" },
-      { name: "Spinners", path: "/spinners" },
-      { name: "Tabs", path: "/tabs" },
-      { name: "Tooltips", path: "/tooltips" },
-      { name: "Videos", path: "/videos" },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-      { name: "Reset Password", path: "/reset-password" },
-      {
-        name: "Two Step Verification",
-        path: "/two-step-verification",
-      },
-    ],
-  },
-];
-
-const supportItems: NavItem[] = [
-  {
-    icon: <ChatIcon />,
-    name: "Chat",
-    path: "/chat",
-  },
-  {
-    icon: <CallIcon />,
-    name: "Support",
-    new: true,
-    subItems: [
-      { name: "Support List", path: "/support-tickets" },
-      { name: "Support Reply", path: "/support-ticket-reply" },
-    ],
-  },
-  {
-    icon: <MailIcon />,
-    name: "Email",
-    subItems: [
-      { name: "Inbox", path: "/inbox" },
-      { name: "Details", path: "/inbox-details" },
-    ],
-  },
-];
+// Use filtered navigation items - these are automatically filtered based on programs.config.ts
+const othersItems: NavItem[] = othersNavItems;
+const supportItems: NavItem[] = supportNavItems;
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();

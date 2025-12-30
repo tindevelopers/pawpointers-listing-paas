@@ -90,6 +90,57 @@ export {
 } from './connect';
 
 // ============================================================================
+// REVENUE CALCULATION
+// ============================================================================
+export {
+  calculateRevenue,
+  calculateRevenueFromSettings,
+  formatAmount,
+  parseAmountToCents,
+  getDefaultRevenueSettings,
+  validateRevenueSettings,
+  type RevenueCalculation,
+  type RevenueSettings,
+} from './revenue';
+
+// ============================================================================
+// BOOKING PAYMENTS
+// ============================================================================
+export {
+  createBookingPayment,
+  processBookingPayment,
+  refundBookingPayment,
+  calculateBookingTotal,
+  type BookingPaymentParams,
+  type BookingPaymentResult,
+} from './booking-payments';
+
+// ============================================================================
+// SUBSCRIPTION UPGRADES
+// ============================================================================
+export {
+  getAvailableUpgrades,
+  previewUpgrade,
+  upgradeSubscription,
+  downgradeSubscription,
+  type UpgradePreview,
+  type AvailableUpgrade,
+} from './upgrades';
+
+// ============================================================================
+// PAYOUT MANAGEMENT
+// ============================================================================
+export {
+  getPendingPayouts,
+  createPayout,
+  getPayoutHistory,
+  getPayoutDetails,
+  getRevenueSummary,
+  type PendingPayout,
+  type PayoutDetails,
+} from './payouts';
+
+// ============================================================================
 // WEBHOOKS
 // ============================================================================
 // Note: Webhook handler is exported separately for Next.js API routes

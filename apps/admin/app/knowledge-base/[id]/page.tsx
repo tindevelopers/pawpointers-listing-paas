@@ -63,3 +63,4 @@ export default async function KnowledgeBaseDetail({ params }: Props) {
   );
 }
 
+

@@ -4,19 +4,23 @@
 
 export interface Booking {
   id: string;
-  listingId: string;
+  listingId?: string;
+  eventTypeId?: string;
   userId: string;
   tenantId: string;
+  teamMemberId?: string;
   
   // Booking details
   startDate: string;
   endDate: string;
   startTime?: string;
   endTime?: string;
+  timezone?: string;
   
   // Guests
   guestCount: number;
   guestDetails?: GuestDetails;
+  formResponses?: Record<string, any>;
   
   // Pricing
   basePrice: number;
@@ -35,6 +39,13 @@ export interface Booking {
   // Status
   status: BookingStatus;
   confirmationCode: string;
+  
+  // Video Meeting
+  videoMeetingId?: string;
+  videoMeetingProvider?: 'zoom' | 'microsoft_teams';
+  videoMeetingUrl?: string;
+  videoMeetingPassword?: string;
+  videoMeetingData?: Record<string, any>;
   
   // Cancellation
   cancelledAt?: string;
@@ -184,4 +195,79 @@ export interface BookingConfig {
   cancellationWindow: number;
   reminderEmails: boolean;
   reminderHoursBefore: number[];
+}
+
+export type BookingType = 'location' | 'meeting' | 'hybrid';
+
+export type VideoProvider = 'none' | 'zoom' | 'microsoft_teams';
+
+export interface EventType {
+  id: string;
+  listingId?: string;
+  userId?: string;
+  tenantId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  durationMinutes: number;
+  price?: number;
+  currency: string;
+  bufferBefore: number;
+  bufferAfter: number;
+  requiresConfirmation: boolean;
+  requiresPayment: boolean;
+  instantBooking: boolean;
+  customQuestions: any[];
+  recurringConfig?: any;
+  timezone: string;
+  metadata: Record<string, any>;
+  bookingType: BookingType;
+  videoProvider: VideoProvider;
+  videoSettings?: Record<string, any>;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VideoMeeting {
+  id: string;
+  provider: 'zoom' | 'microsoft_teams';
+  meetingUrl: string;
+  password?: string;
+  meetingId: string;
+  startTime: string;
+  duration: number;
+  topic?: string;
+  joinUrl: string;
+  hostUrl?: string;
+  metadata: Record<string, any>;
+}
+
+export interface VideoIntegration {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  provider: 'zoom' | 'microsoft_teams';
+  accountEmail?: string;
+  accountName?: string;
+  autoCreateMeetings: boolean;
+  defaultMeetingSettings: Record<string, any>;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMember {
+  id: string;
+  listingId: string;
+  userId: string;
+  tenantId: string;
+  role: 'owner' | 'member' | 'viewer';
+  eventTypeIds: string[];
+  availabilityOverride?: any;
+  roundRobinEnabled: boolean;
+  roundRobinWeight: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -13,3 +13,25 @@ export type { CalendarIntegration, CreateCalendarIntegrationInput } from "./Cale
 export { TimezoneService } from "./TimezoneService";
 export type { TimezoneInfo } from "./TimezoneService";
 
+export { AddonService } from "./AddonService";
+export type {
+  BookingAddon,
+  AddonSelection,
+  AddonWithSelection,
+} from "./AddonService";
+
+export { VideoMeetingService } from "./VideoMeetingService";
+export type {
+  VideoMeetingIntegration,
+  VideoMeeting,
+  CreateVideoMeetingInput,
+  UpdateVideoMeetingInput,
+} from "./VideoMeetingService";
+
+export { RoundRobinService } from "./RoundRobinService";
+export type {
+  RoundRobinAssignment,
+  AssignmentHistory,
+  AssignBookingInput,
+} from "./RoundRobinService";
+

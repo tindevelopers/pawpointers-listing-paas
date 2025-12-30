@@ -42,3 +42,4 @@ export type KBProvider = {
   ingest?: (item: KBIngestInput) => Promise<void>;
 };
 
+
