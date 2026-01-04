@@ -64,6 +64,39 @@ Flexible taxonomy that supports multiple hierarchies:
 - `neighborhoods` - Neighborhood information
 - `listing_neighborhoods` - Listing-neighborhood relationships
 
+#### Messaging System (20251228000000_messaging_system.sql)
+- `conversations` - Chat threads tied to bookings or inquiries
+- `messages` - Individual messages with real-time support
+- `message_attachments` - Photo/video sharing during service
+- `typing_indicators` - Real-time typing status
+- `message_read_receipts` - Read receipt tracking
+
+#### Review Enhancements (20251228000001_review_enhancements.sql)
+- Adds `booking_id` and `verified_booking` to reviews table
+- `review_moderation_queue` - Review moderation workflow
+- `review_response_templates` - Owner response templates
+- Auto-flagging triggers for suspicious reviews
+
+#### Verification System (20251228000002_verification_system.sql)
+- `verification_types` - Configurable verification types
+- `user_verifications` - User verification records and status
+- `verification_badges` - Verified badges for users/providers
+- `verification_documents` - Document storage and audit trail
+
+#### Safety System (20251228000003_safety_system.sql)
+- `safety_reports` - Safety escalation and incident reports
+- `safety_report_notes` - Internal notes on reports
+- `safety_actions` - Actions taken (warnings, suspensions, bans)
+- `user_safety_status` - Aggregate user safety standing
+- `safety_contacts` - 24/7 support contact configuration
+- `user_blocks` - User-to-user blocking
+
+#### Platform Protection (20251228000004_platform_protection.sql)
+- `protection_policies` - Configurable protection policies
+- `booking_protections` - Protection coverage on bookings
+- `protection_claims` - Claim submissions and processing
+- `claim_communications` - Claim-related messaging
+
 ## Installation
 
 ### For New Deployments
@@ -88,6 +121,16 @@ psql -f database/schema/field_definitions.sql
 psql -f database/schema/features/reviews.sql
 psql -f database/schema/features/booking.sql
 psql -f database/schema/features/maps.sql
+
+# Communication & Trust features (via Supabase migrations)
+# These are automatically applied when running: supabase db reset
+# Or manually via: supabase migration up
+# - 20251228000000_messaging_system.sql
+# - 20251228000001_review_enhancements.sql
+# - 20251228000002_verification_system.sql
+# - 20251228000003_safety_system.sql
+# - 20251228000004_platform_protection.sql
+# - 20251228000005_enable_realtime.sql
 ```
 
 ### For Cloned Projects
@@ -159,6 +202,17 @@ Each cloned project should configure:
 - All tables tenant-scoped
 - RLS enforces data isolation
 - Per-tenant configuration
+
+### 6. Communication & Trust
+- Real-time messaging via Supabase Realtime
+- Booking-linked conversations
+- Photo/video sharing in chat
+- Verified booking badges on reviews
+- Review moderation queue
+- Provider verification workflow
+- Safety escalation system
+- 24/7 support contact flow
+- Platform protection placeholders
 
 ## Extending the Schema
 

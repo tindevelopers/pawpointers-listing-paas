@@ -476,7 +476,58 @@ export async function searchListings(params) {
 
 ## Pulling Upstream Updates
 
-To get updates from the base platform:
+### Selective Updates (Recommended)
+
+The platform includes a **selective update system** that allows you to update only specific packages/features from upstream while protecting your customizations. This is the recommended approach for forks.
+
+#### Quick Example: Update Only CRM
+
+```bash
+# 1. Preview what would be updated
+tsx scripts/selective-update.ts --package crm --dry-run
+
+# 2. Check for conflicts
+tsx scripts/detect-conflicts.ts packages/@listing-platform/crm
+
+# 3. Apply the update
+tsx scripts/selective-update.ts --package crm
+
+# 4. Validate the update
+tsx scripts/validate-update.ts packages/@listing-platform/crm
+```
+
+#### Configure Which Packages to Update
+
+Edit `config/update.config.ts` to control which packages can be updated:
+
+```typescript
+export const updateConfig: Record<string, PackageUpdateConfig> = {
+  'packages/@listing-platform/crm': {
+    enabled: true,           // Enable updates for CRM
+    strategy: 'merge',
+    conflictResolution: 'manual',
+  },
+  'packages/@listing-platform/reviews': {
+    enabled: false,          // Disable updates for Reviews
+    strategy: 'skip',
+  },
+  // ... configure other packages
+};
+```
+
+#### Benefits of Selective Updates
+
+- **Protect customizations** - Only update what you want
+- **Automatic dependency handling** - Dependencies are updated automatically
+- **Conflict detection** - Know about conflicts before updating
+- **Easy rollback** - Automatic backup branches for safe rollback
+- **Validation** - Post-update checks ensure everything works
+
+For detailed information, see [SELECTIVE_UPDATES.md](docs/SELECTIVE_UPDATES.md).
+
+### Full Repository Merge (Alternative)
+
+If you want to merge all changes from upstream:
 
 ```bash
 # Fetch upstream changes
@@ -500,6 +551,8 @@ git commit
 2. **Review conflicts**: Focus on config files and components
 3. **Test thoroughly**: Run `pnpm build` and `pnpm test`
 4. **Document**: Note any breaking changes from upstream
+
+**Note**: For most forks, selective updates are recommended over full repository merges to better protect customizations.
 
 ---
 

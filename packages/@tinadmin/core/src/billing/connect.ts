@@ -1,6 +1,9 @@
 "use server";
 
-import { stripe } from "@/core/billing/config";
+import { getStripe } from "@/core/billing/config";
+import { calculateRevenue, getDefaultRevenueSettings } from "./revenue";
+
+const stripe = getStripe();
 import { createAdminClient } from "@/core/database/admin-client";
 import { requirePermission } from "@/core/permissions/middleware";
 import type Stripe from "stripe";
@@ -303,21 +306,45 @@ export async function createConnectedPayment(
       return { success: false, error: "Customer not found" };
     }
 
-    // Calculate platform fee (in cents)
-    const platformFee = Math.round((amount * platformFeePercent) / 100);
+    // Get revenue settings from Connect account
+    const accountSettingsResult: {
+      data: { revenue_settings: any } | null;
+      error: any;
+    } = await adminClient
+      .from("stripe_connect_accounts")
+      .select("revenue_settings")
+      .eq("tenant_id", tenantId)
+      .single();
 
-    // Create payment intent with destination charge
+    const revenueSettings = accountSettingsResult.data?.revenue_settings || {
+      fee_percent: platformFeePercent,
+      fee_fixed: 0,
+    };
+
+    // Calculate revenue split using hybrid model
+    const revenueCalculation = calculateRevenue(
+      amount,
+      revenueSettings.fee_percent || platformFeePercent,
+      revenueSettings.fee_fixed || 0,
+      currency
+    );
+
+    // Create payment intent with transfer_data (modern approach)
+    // Platform keeps: totalAmount - listingOwnerAmount automatically
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
       customer: customer.stripe_customer_id,
       transfer_data: {
         destination: connectAccount.stripe_account_id,
+        amount: revenueCalculation.listingOwnerAmount,
       },
-      application_fee_amount: platformFee,
       metadata: {
         tenant_id: tenantId,
-        platform_fee_percent: platformFeePercent.toString(),
+        platform_fee_percent: revenueCalculation.platformFeePercent.toString(),
+        platform_fee_fixed: revenueCalculation.platformFeeFixed.toString(),
+        platform_fee_total: revenueCalculation.platformFeeTotal.toString(),
+        listing_owner_amount: revenueCalculation.listingOwnerAmount.toString(),
       },
     });
 

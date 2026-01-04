@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getAdminClient } from '../lib/supabase';
 import { success, errors, paginated } from '../lib/response';
 import { escapeSearchQuery } from '@listing-platform/shared';
+import { searchDocuments } from '@listing-platform/ai';
 
 /**
  * Public API Routes
@@ -301,4 +302,191 @@ publicRoutes.get('/stats', async (c) => {
     totalListings: listingsCount.count || 0,
     totalCategories: categoriesCount.count || 0,
   });
+});
+
+// ============================================================================
+// Public Knowledge Base Endpoints
+// ============================================================================
+
+const knowledgeBaseQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
+  search: z.string().optional(),
+  category: z.string().optional(),
+  tag: z.string().optional(),
+  sortBy: z.enum(['created_at', 'updated_at', 'title', 'view_count', 'helpful_count']).default('created_at'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+/**
+ * GET /api/public/knowledge-base
+ * List active knowledge documents (for public portal)
+ */
+publicRoutes.get('/knowledge-base', async (c) => {
+  const query = knowledgeBaseQuerySchema.parse(c.req.query());
+  const supabase = getAdminClient();
+
+  let dbQuery = supabase
+    .from('knowledge_documents')
+    .select('*', { count: 'exact' })
+    .eq('is_active', true)
+    .order(query.sortBy, { ascending: query.sortOrder === 'asc' })
+    .range((query.page - 1) * query.limit, query.page * query.limit - 1);
+
+  if (query.search) {
+    const escapedSearch = escapeSearchQuery(query.search);
+    dbQuery = dbQuery.or(`title.ilike.%${escapedSearch}%,content.ilike.%${escapedSearch}%,excerpt.ilike.%${escapedSearch}%`);
+  }
+
+  if (query.category) {
+    dbQuery = dbQuery.eq('category', query.category);
+  }
+
+  if (query.tag) {
+    dbQuery = dbQuery.contains('tags', [query.tag]);
+  }
+
+  const { data, error, count } = await dbQuery;
+
+  if (error) {
+    console.error('Public knowledge base list error:', error);
+    return errors.internalError(c, 'Failed to fetch knowledge documents');
+  }
+
+  // Increment view counts (fire and forget)
+  if (data && data.length > 0) {
+    data.forEach((doc) => {
+      supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).catch(() => {});
+    });
+  }
+
+  return paginated(c, data || [], query.page, query.limit, count || 0);
+});
+
+/**
+ * GET /api/public/knowledge-base/:id
+ * Get a single active knowledge document
+ */
+publicRoutes.get('/knowledge-base/:id', async (c) => {
+  const { id } = c.req.param();
+  const supabase = getAdminClient();
+
+  const { data, error } = await supabase
+    .from('knowledge_documents')
+    .select('*')
+    .eq('id', id)
+    .eq('is_active', true)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return errors.notFound(c, 'Knowledge document');
+    }
+    return errors.internalError(c, 'Failed to fetch knowledge document');
+  }
+
+  // Increment view count (fire and forget)
+  supabase.rpc('increment_knowledge_document_views', { document_id: id }).catch(() => {});
+
+  return success(c, data);
+});
+
+/**
+ * GET /api/public/knowledge-base/search
+ * Semantic search using vector similarity
+ */
+publicRoutes.get('/knowledge-base/search', async (c) => {
+  const query = c.req.query('q');
+  const limit = Number(c.req.query('limit')) || 10;
+  const threshold = Number(c.req.query('threshold')) || 0.75;
+  const tenantId = c.req.query('tenant_id') || undefined;
+
+  if (!query) {
+    return errors.badRequest(c, 'Query parameter "q" is required');
+  }
+
+  const supabase = getAdminClient();
+
+  try {
+    const results = await searchDocuments(supabase, query, {
+      tenantId,
+      limit,
+      threshold,
+    });
+
+    // Increment view counts (fire and forget)
+    results.forEach((doc) => {
+      supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).catch(() => {});
+    });
+
+    return success(c, results);
+  } catch (err) {
+    console.error('Knowledge base search error:', err);
+    return errors.internalError(c, err instanceof Error ? err.message : 'Failed to search knowledge base');
+  }
+});
+
+/**
+ * POST /api/public/knowledge-base/:id/helpful
+ * Mark a document as helpful
+ */
+publicRoutes.post('/knowledge-base/:id/helpful', async (c) => {
+  const { id } = c.req.param();
+  const supabase = getAdminClient();
+
+  // Verify document exists and is active
+  const { data: doc, error: checkError } = await supabase
+    .from('knowledge_documents')
+    .select('id')
+    .eq('id', id)
+    .eq('is_active', true)
+    .single();
+
+  if (checkError || !doc) {
+    return errors.notFound(c, 'Knowledge document');
+  }
+
+  // Increment helpful count
+  const { error: updateError } = await supabase.rpc('increment_knowledge_document_helpful', {
+    document_id: id,
+  });
+
+  if (updateError) {
+    console.error('Failed to increment helpful count:', updateError);
+    return errors.internalError(c, 'Failed to mark document as helpful');
+  }
+
+  return success(c, { success: true });
+});
+
+/**
+ * GET /api/public/knowledge-base/categories
+ * Get all categories with document counts
+ */
+publicRoutes.get('/knowledge-base/categories', async (c) => {
+  const supabase = getAdminClient();
+
+  const { data, error } = await supabase
+    .from('knowledge_documents')
+    .select('category')
+    .eq('is_active', true)
+    .not('category', 'is', null);
+
+  if (error) {
+    return errors.internalError(c, 'Failed to fetch categories');
+  }
+
+  const categoryCounts: Record<string, number> = {};
+  data?.forEach((doc) => {
+    if (doc.category) {
+      categoryCounts[doc.category] = (categoryCounts[doc.category] || 0) + 1;
+    }
+  });
+
+  const categories = Object.entries(categoryCounts).map(([name, count]) => ({
+    name,
+    count,
+  }));
+
+  return success(c, categories);
 });

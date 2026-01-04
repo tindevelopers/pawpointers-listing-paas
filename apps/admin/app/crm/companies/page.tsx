@@ -126,14 +126,14 @@ export default function CompaniesPage() {
       <PageBreadcrumb pageTitle="Companies" />
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">Companies</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white">Companies</h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">
               Manage your company accounts and organizations
             </p>
           </div>
-          <Link href="/crm/companies/new">
+          <Link href="/crm/companies/new" className="self-start sm:self-auto">
             <Button>
               <PlusIcon className="h-5 w-5 mr-2" />
               Add Company

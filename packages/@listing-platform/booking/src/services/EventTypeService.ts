@@ -4,7 +4,8 @@ import type { Database } from "@tinadmin/core/database";
 
 export interface EventType {
   id: string;
-  listingId: string;
+  listingId?: string;
+  userId?: string;
   tenantId: string;
   name: string;
   slug: string;
@@ -21,13 +22,17 @@ export interface EventType {
   recurringConfig?: any;
   timezone: string;
   metadata: Record<string, any>;
+  bookingType?: 'location' | 'meeting' | 'hybrid';
+  videoProvider?: 'none' | 'zoom' | 'microsoft_teams';
+  videoSettings?: Record<string, any>;
   active: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateEventTypeInput {
-  listingId: string;
+  listingId?: string;
+  userId?: string;
   tenantId: string;
   name: string;
   slug: string;
@@ -44,6 +49,9 @@ export interface CreateEventTypeInput {
   recurringConfig?: any;
   timezone?: string;
   metadata?: Record<string, any>;
+  bookingType?: 'location' | 'meeting' | 'hybrid';
+  videoProvider?: 'none' | 'zoom' | 'microsoft_teams';
+  videoSettings?: Record<string, any>;
 }
 
 export interface UpdateEventTypeInput extends Partial<CreateEventTypeInput> {
@@ -54,14 +62,19 @@ export class EventTypeService {
   constructor(private supabase: SupabaseClient<Database>) {}
 
   /**
-   * List event types for a listing
+   * List event types for a listing or user
    */
-  async listEventTypes(listingId: string, options?: { activeOnly?: boolean }) {
+  async listEventTypes(listingIdOrUserId: string, options?: { activeOnly?: boolean; byUserId?: boolean }) {
     let query = this.supabase
       .from("event_types")
       .select("*")
-      .eq("listing_id", listingId)
       .order("created_at", { ascending: false });
+
+    if (options?.byUserId) {
+      query = query.eq("user_id", listingIdOrUserId);
+    } else {
+      query = query.eq("listing_id", listingIdOrUserId);
+    }
 
     if (options?.activeOnly) {
       query = query.eq("active", true);
@@ -105,6 +118,7 @@ export class EventTypeService {
       .from("event_types")
       .insert({
         listing_id: input.listingId,
+        user_id: input.userId,
         tenant_id: input.tenantId,
         name: input.name,
         slug: input.slug,
@@ -121,6 +135,9 @@ export class EventTypeService {
         recurring_config: input.recurringConfig,
         timezone: input.timezone || "UTC",
         metadata: input.metadata || {},
+        booking_type: input.bookingType || 'location',
+        video_provider: input.videoProvider || 'none',
+        video_settings: input.videoSettings || {},
         active: true,
       })
       .select()
@@ -154,6 +171,9 @@ export class EventTypeService {
     if (input.recurringConfig !== undefined) updateData.recurring_config = input.recurringConfig;
     if (input.timezone !== undefined) updateData.timezone = input.timezone;
     if (input.metadata !== undefined) updateData.metadata = input.metadata;
+    if (input.bookingType !== undefined) updateData.booking_type = input.bookingType;
+    if (input.videoProvider !== undefined) updateData.video_provider = input.videoProvider;
+    if (input.videoSettings !== undefined) updateData.video_settings = input.videoSettings;
     if (input.active !== undefined) updateData.active = input.active;
 
     const { data, error } = await this.supabase
@@ -191,6 +211,7 @@ export class EventTypeService {
     return {
       id: row.id,
       listingId: row.listing_id,
+      userId: row.user_id,
       tenantId: row.tenant_id,
       name: row.name,
       slug: row.slug,
@@ -207,6 +228,9 @@ export class EventTypeService {
       recurringConfig: row.recurring_config,
       timezone: row.timezone,
       metadata: row.metadata || {},
+      bookingType: row.booking_type || 'location',
+      videoProvider: row.video_provider || 'none',
+      videoSettings: row.video_settings || {},
       active: row.active,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

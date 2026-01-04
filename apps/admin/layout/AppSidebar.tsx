@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useTenant } from "@/core/multi-tenancy";
 import { useWhiteLabel } from "@/context/WhiteLabelContext";
+import { mainNavItems, supportNavItems, othersNavItems } from "../config/navigation-filtered";
 import {
   AiIcon,
   BoxCubeIcon,
@@ -38,12 +39,10 @@ type NavItem = {
   subItems?: (NavItem | { name: string; path: string; pro?: boolean; new?: boolean })[];
 };
 
+// Use filtered navigation items based on program configuration
+// This allows forked repos to enable/disable programs via config/programs.config.ts
 const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    path: "/saas/dashboard",
-  },
+  ...mainNavItems,
   {
     name: "CRM",
     icon: <UserCircleIcon />,
@@ -61,6 +60,10 @@ const navItems: NavItem[] = [
     new: true,
     subItems: [
       {
+        name: "Assistant",
+        path: "/ai-assistant",
+      },
+      {
         name: "Text Generator",
         path: "/text-generator",
       },
@@ -77,6 +80,11 @@ const navItems: NavItem[] = [
         path: "/video-generator",
       },
     ],
+  },
+  {
+    name: "Knowledge Base",
+    icon: <PageIcon />,
+    path: "/knowledge-base",
   },
   {
     name: "E-commerce",
@@ -322,89 +330,24 @@ const navItems: NavItem[] = [
   },
 ];
 
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-      { name: "Pie Chart", path: "/pie-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts" },
-      { name: "Avatar", path: "/avatars" },
-      { name: "Badge", path: "/badge" },
-      { name: "Breadcrumb", path: "/breadcrumb" },
-      { name: "Buttons", path: "/buttons" },
-      { name: "Buttons Group", path: "/buttons-group" },
-      { name: "Cards", path: "/cards" },
-      { name: "Carousel", path: "/carousel" },
-      { name: "Dropdowns", path: "/dropdowns" },
-      { name: "Images", path: "/images" },
-      { name: "Links", path: "/links" },
-      { name: "List", path: "/list" },
-      { name: "Modals", path: "/modals" },
-      { name: "Notification", path: "/notifications" },
-      { name: "Pagination", path: "/pagination" },
-      { name: "Popovers", path: "/popovers" },
-      { name: "Progressbar", path: "/progress-bar" },
-      { name: "Ribbons", path: "/ribbons" },
-      { name: "Spinners", path: "/spinners" },
-      { name: "Tabs", path: "/tabs" },
-      { name: "Tooltips", path: "/tooltips" },
-      { name: "Videos", path: "/videos" },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-      { name: "Reset Password", path: "/reset-password" },
-      {
-        name: "Two Step Verification",
-        path: "/two-step-verification",
-      },
-    ],
-  },
-];
-
-const supportItems: NavItem[] = [
-  {
-    icon: <ChatIcon />,
-    name: "Chat",
-    path: "/chat",
-  },
-  {
-    icon: <CallIcon />,
-    name: "Support",
-    new: true,
-    subItems: [
-      { name: "Support List", path: "/support-tickets" },
-      { name: "Support Reply", path: "/support-ticket-reply" },
-    ],
-  },
-  {
-    icon: <MailIcon />,
-    name: "Email",
-    subItems: [
-      { name: "Inbox", path: "/inbox" },
-      { name: "Details", path: "/inbox-details" },
-    ],
-  },
-];
+// Use filtered navigation items - these are automatically filtered based on programs.config.ts
+const othersItems: NavItem[] = othersNavItems;
+const supportItems: NavItem[] = supportNavItems;
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const { tenant, isLoading: isTenantLoading } = useTenant();
   const { branding } = useWhiteLabel();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Prevent hydration mismatch by only rendering dynamic content after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Use stable initial values during SSR to prevent hydration mismatch
+  const showExpanded = isMounted && (isExpanded || isHovered || isMobileOpen);
   
   const logoUrl = branding.logo || "/images/logo/logo.svg";
   const logoDarkUrl = branding.logo || "/images/logo/logo-dark.svg";
@@ -429,7 +372,7 @@ const AppSidebar: React.FC = () => {
                   ? "menu-item-active"
                   : "menu-item-inactive"
               } cursor-pointer ${
-                !isExpanded && !isHovered
+                !showExpanded
                   ? "lg:justify-center"
                   : "lg:justify-start"
               }`}
@@ -443,10 +386,10 @@ const AppSidebar: React.FC = () => {
               >
                 {nav.icon}
               </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
+              {showExpanded && (
                 <span className={`menu-item-text`}>{nav.name}</span>
               )}
-              {nav.new && (isExpanded || isHovered || isMobileOpen) && (
+              {nav.new && showExpanded && (
                 <span
                   className={`ml-auto absolute right-10 ${
                     openSubmenu?.type === menuType &&
@@ -458,7 +401,7 @@ const AppSidebar: React.FC = () => {
                   new
                 </span>
               )}
-              {(isExpanded || isHovered || isMobileOpen) && nav.subItems && (
+              {showExpanded && nav.subItems && (
                 <ChevronDownIcon
                   className={`ml-auto w-5 h-5 transition-transform duration-200  ${
                     openSubmenu?.type === menuType &&
@@ -486,13 +429,13 @@ const AppSidebar: React.FC = () => {
                 >
                   {nav.icon}
                 </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
+                {showExpanded && (
                   <span className={`menu-item-text`}>{nav.name}</span>
                 )}
               </Link>
             )
           )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
+          {nav.subItems && showExpanded && (
             <div
               id={`submenu-${menuType}-${index}`}
               ref={(el) => {
@@ -713,26 +656,28 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed  flex flex-col xl:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-full transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed flex flex-col xl:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-full transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${
-          isExpanded || isMobileOpen
-            ? "w-[290px]"
-            : isHovered
-            ? "w-[290px]"
+          isMounted
+            ? isExpanded || isMobileOpen
+              ? "w-[290px]"
+              : isHovered
+              ? "w-[290px]"
+              : "w-[90px]"
             : "w-[90px]"
         }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+        ${isMounted && isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         xl:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
         className={`py-8 flex flex-col gap-3 ${
-          !isExpanded && !isHovered ? "xl:items-center" : "items-start"
+          !showExpanded ? "xl:items-center" : "items-start"
         }`}
       >
         <Link href="/">
-          {isExpanded || isHovered || isMobileOpen ? (
+          {showExpanded ? (
             <>
               <Image
                 className="dark:hidden"
@@ -759,7 +704,7 @@ const AppSidebar: React.FC = () => {
           )}
         </Link>
         {/* Tenant Context Badge */}
-        {(isExpanded || isHovered || isMobileOpen) && (
+        {showExpanded && (
           <div className="w-full">
             {!isTenantLoading && tenant ? (
               <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
@@ -786,12 +731,12 @@ const AppSidebar: React.FC = () => {
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
-                  !isExpanded && !isHovered
+                  !showExpanded
                     ? "xl:justify-center"
                     : "justify-start"
                 }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (
+                {showExpanded ? (
                   "Menu"
                 ) : (
                   <HorizontaLDots />
@@ -802,12 +747,12 @@ const AppSidebar: React.FC = () => {
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
-                  !isExpanded && !isHovered
+                  !showExpanded
                     ? "xl:justify-center"
                     : "justify-start"
                 }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (
+                {showExpanded ? (
                   "Support"
                 ) : (
                   <HorizontaLDots />
@@ -818,12 +763,12 @@ const AppSidebar: React.FC = () => {
             <div>
               <h2
                 className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${
-                  !isExpanded && !isHovered
+                  !showExpanded
                     ? "xl:justify-center"
                     : "justify-start"
                 }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (
+                {showExpanded ? (
                   "Others"
                 ) : (
                   <HorizontaLDots />
@@ -833,7 +778,7 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+        {showExpanded ? <SidebarWidget /> : null}
       </div>
     </aside>
   );

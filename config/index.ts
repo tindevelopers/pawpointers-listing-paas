@@ -76,6 +76,7 @@ export { industryConfig, locationConfig, hybridConfig, featuresConfig };
 export { listingConfig } from './listing.config';
 export { brandConfig } from './brand.config';
 export { routingConfig } from './routing.config';
+export * from './programs.config';
 
 // Export types
 export type { TaxonomyConfig } from '@listing-platform/config';

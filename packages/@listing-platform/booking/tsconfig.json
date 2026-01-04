@@ -14,8 +14,28 @@
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@tinadmin/core/database": ["../@tinadmin/core/src/database"],
+      "@tinadmin/core/database/*": ["../@tinadmin/core/src/database/*"],
+      "@/core/database/types": ["../@tinadmin/core/src/database/types"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules", 
+    "dist", 
+    "src/services/**/*",
+    "src/components/BookingAddons.tsx",
+    "src/components/EventTypeConfig.tsx",
+    "src/components/RecurringPatternBuilder.tsx",
+    "src/components/TeamManagement.tsx",
+    "src/components/CalendarIntegration.tsx",
+    "src/hooks/useBookingAddons.ts",
+    "src/hooks/useTimezone.ts",
+    "src/hooks/useEventTypes.ts",
+    "src/hooks/useRecurringPatterns.ts",
+    "src/hooks/useCalendarSync.ts",
+    "src/hooks/useTeamMembers.ts"
+  ]
 }

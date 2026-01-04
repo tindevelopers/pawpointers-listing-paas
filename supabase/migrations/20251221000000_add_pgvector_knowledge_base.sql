@@ -209,10 +209,15 @@ BEGIN
     CREATE POLICY knowledge_documents_admin_policy ON knowledge_documents
       FOR ALL
       USING (
+        -- Platform admins can manage all
+        public.is_platform_admin()
+        OR
+        -- Tenant admins can manage their own tenant's documents
         auth.uid() IN (
-          SELECT user_id FROM user_roles 
-          WHERE role IN ('platform_admin', 'tenant_admin')
-            AND (tenant_id IS NULL OR tenant_id = knowledge_documents.tenant_id)
+          SELECT utr.user_id FROM user_tenant_roles utr
+          JOIN roles r ON r.id = utr.role_id
+          WHERE r.name IN ('Tenant Admin', 'Workspace Admin')
+            AND utr.tenant_id = knowledge_documents.tenant_id
         )
       );
   END IF;

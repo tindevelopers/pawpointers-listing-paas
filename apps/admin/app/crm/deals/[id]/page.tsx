@@ -9,6 +9,7 @@ import Button from "@/components/ui/button/Button";
 import ActivityHistory from "@/components/crm/ActivityHistory";
 import { ArrowLeftIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import DatePicker from "@/components/form/date-picker";
 
 type Deal = {
   id: string;
@@ -290,14 +291,20 @@ export default function DealDetailPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Expected Close Date
-                      </label>
-                      <input
-                        type="date"
-                        value={formData.expected_close_date}
-                        onChange={(e) => setFormData({ ...formData, expected_close_date: e.target.value })}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                      <DatePicker
+                        id="expected-close-date-edit"
+                        label="Expected Close Date"
+                        placeholder="Select a date"
+                        defaultDate={formData.expected_close_date || undefined}
+                        onChange={(selectedDates) => {
+                          if (selectedDates.length > 0) {
+                            const date = selectedDates[0];
+                            const formatted = date.toISOString().split('T')[0];
+                            setFormData({ ...formData, expected_close_date: formatted });
+                          } else {
+                            setFormData({ ...formData, expected_close_date: "" });
+                          }
+                        }}
                       />
                     </div>
                     <div className="md:col-span-2">

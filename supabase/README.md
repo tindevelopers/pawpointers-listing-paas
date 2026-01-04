@@ -36,6 +36,46 @@ Migrations are stored in `supabase/migrations/` and run automatically when you:
 - Run `supabase start` (first time)
 - Run `supabase db reset` (resets and applies all migrations)
 
+### Migration Order
+
+Migrations run in timestamp order. The current migration groups are:
+
+1. **Core Authentication & Tenancy** (`20251204211105` - `20251204220014`)
+   - Users, tenants, roles tables
+   - Tenant isolation RLS
+   - Audit logs
+
+2. **Listing Platform Foundation** (`20251204230000`)
+   - Creates `listings`, `bookings`, `reviews`, `categories` tables
+   - Core listing platform schema
+
+3. **Booking Enhancements** (`20251204230001` - `20251204230002`)
+   - Cal.com-style booking features
+   - Payment & revenue sharing
+
+4. **Workspaces & Roles** (`20251205000000` - `20251205120000`)
+   - Workspace schema
+   - User-tenant roles
+
+5. **White Label & Integrations** (`20251206000000` - `20251208000001`)
+   - White label settings
+   - Stripe integration tables
+   - CRM tables
+
+6. **Performance & Fixes** (`20251213000000` - `20251221000000`)
+   - RLS recursion fixes
+   - Dual mode support
+   - Performance indexes
+   - Vector search (pgvector)
+
+7. **Communication & Trust** (`20251228000000` - `20251228000005`)
+   - Messaging system with real-time support
+   - Review enhancements (verified booking badges)
+   - Provider verification workflow
+   - Safety escalation system
+   - Platform protection placeholders
+   - Supabase Realtime configuration
+
 ## When Ready to Deploy
 
 1. Create a Supabase cloud project at https://supabase.com

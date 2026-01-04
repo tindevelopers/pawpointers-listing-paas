@@ -10,7 +10,8 @@
 -- Different booking types per listing (e.g., "30-min consultation", "1-hour tour")
 CREATE TABLE IF NOT EXISTS event_types (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE, -- Optional: can be NULL for user-owned event types
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE, -- Optional: can be NULL for listing-owned event types
   tenant_id uuid REFERENCES tenants(id),
   
   -- Basic info
@@ -54,10 +55,12 @@ CREATE TABLE IF NOT EXISTS event_types (
   updated_at timestamptz DEFAULT now(),
   
   -- Constraints
-  UNIQUE(listing_id, slug),
+  -- Note: Unique constraint will be updated by booking_video_integrations.sql migration
+  -- to support both user_id and listing_id scenarios
   CHECK (duration_minutes > 0),
   CHECK (buffer_before >= 0),
-  CHECK (buffer_after >= 0)
+  CHECK (buffer_after >= 0),
+  CHECK (user_id IS NOT NULL OR listing_id IS NOT NULL) -- At least one must be set
 );
 
 -- ===================================

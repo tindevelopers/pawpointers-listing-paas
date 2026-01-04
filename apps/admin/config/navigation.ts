@@ -58,6 +58,10 @@ export const mainNavItems: NavItem[] = [
     new: true,
     subItems: [
       {
+        name: "Assistant",
+        path: "/ai-assistant",
+      },
+      {
         name: "Text Generator",
         path: "/text-generator",
       },
@@ -74,6 +78,11 @@ export const mainNavItems: NavItem[] = [
         path: "/video-generator",
       },
     ],
+  },
+  {
+    name: "Knowledge Base",
+    icon: createIcon(PageIcon),
+    path: "/knowledge-base",
   },
   {
     name: "E-commerce",

@@ -24,7 +24,11 @@ export type Permission =
   | "settings.write"
   | "analytics.read"
   | "api.access"
-  | "audit.read";
+  | "audit.read"
+  | "bookings.read"
+  | "bookings.write"
+  | "bookings.delete"
+  | "bookings.*";
 
 /**
  * User permissions result
@@ -84,6 +88,12 @@ export const PERMISSIONS = {
   // SUPPORT
   'support.read': 'View support tickets',
   'support.write': 'Manage support tickets',
+  
+  // BOOKINGS
+  'bookings.read': 'View bookings and reservations',
+  'bookings.write': 'Create and edit bookings',
+  'bookings.delete': 'Delete bookings',
+  'bookings.*': 'Full booking management access',
 } as const;
 
 /**
@@ -96,6 +106,7 @@ export const PERMISSION_CATEGORIES = {
   SETTINGS: ['settings.*', 'whitelabel.*'],
   INTEGRATIONS: ['integrations.*', 'webhooks.*'],
   SUPPORT: ['support.*'],
+  BOOKINGS: ['bookings.*'],
 } as const;
 
 /**
@@ -113,6 +124,7 @@ export const ROLE_PERMISSIONS = {
     'whitelabel.read', 'whitelabel.write',
     'integrations.read', 'integrations.write',
     'support.read', 'support.write',
+    'bookings.read', 'bookings.write', 'bookings.delete',
   ],
   'User': [
     'users.read',
@@ -120,6 +132,7 @@ export const ROLE_PERMISSIONS = {
     'analytics.read',
     'settings.read',
     'support.read', 'support.write',
+    'bookings.read',
   ],
   'Guest': [
     'settings.read',

@@ -3,7 +3,7 @@
  * Run with: npx tsx scripts/create-platform-admin.ts
  */
 
-import { createAdminClient } from "../src/core/database/admin-client";
+import { createAdminClient } from "../packages/@tinadmin/core/src/database/admin-client";
 
 async function createPlatformAdmin() {
   const email = "systemadmin@tin.info";

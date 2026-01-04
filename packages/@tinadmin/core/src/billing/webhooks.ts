@@ -86,6 +86,30 @@ export async function POST(req: NextRequest) {
         await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
         break;
 
+      case "payment_intent.succeeded":
+        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        break;
+
+      case "payment_intent.payment_failed":
+        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        break;
+
+      case "transfer.created":
+        await handleTransferCreated(event.data.object as Stripe.Transfer);
+        break;
+
+      case "transfer.paid":
+        await handleTransferPaid(event.data.object as Stripe.Transfer);
+        break;
+
+      case "payout.paid":
+        await handlePayoutPaid(event.data.object as Stripe.Payout);
+        break;
+
+      case "payout.failed":
+        await handlePayoutFailed(event.data.object as Stripe.Payout);
+        break;
+
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -306,4 +330,173 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   // Handle one-time payments if needed
   console.log("Checkout session completed:", session.id);
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  const adminClient = createAdminClient();
+  const bookingId = paymentIntent.metadata?.booking_id;
+
+  if (!bookingId) {
+    // Not a booking payment, skip
+    return;
+  }
+
+  try {
+    // Import booking payment processor
+    const { processBookingPayment } = await import("./booking-payments");
+    await processBookingPayment(paymentIntent.id);
+  } catch (error) {
+    console.error("Error processing booking payment:", error);
+  }
+}
+
+async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+  const adminClient = createAdminClient();
+  const bookingId = paymentIntent.metadata?.booking_id;
+
+  if (!bookingId) {
+    return;
+  }
+
+  try {
+    // Update booking payment status to failed
+    await adminClient
+      .from("bookings")
+      .update({
+        payment_status: "failed",
+      })
+      .eq("payment_intent_id", paymentIntent.id);
+
+    // Update revenue transaction status
+    await adminClient
+      .from("revenue_transactions")
+      .update({
+        status: "failed",
+      })
+      .eq("stripe_payment_intent_id", paymentIntent.id);
+  } catch (error) {
+    console.error("Error handling failed payment intent:", error);
+  }
+}
+
+async function handleTransferCreated(transfer: Stripe.Transfer) {
+  const adminClient = createAdminClient();
+
+  try {
+    // Update booking with transfer ID if it exists
+    const bookingId = transfer.metadata?.booking_id;
+    if (bookingId) {
+      await adminClient
+        .from("bookings")
+        .update({
+          transfer_id: transfer.id,
+          payout_status: "transferred",
+        })
+        .eq("id", bookingId);
+
+      // Update revenue transaction
+      await adminClient
+        .from("revenue_transactions")
+        .update({
+          stripe_transfer_id: transfer.id,
+        })
+        .eq("booking_id", bookingId);
+    }
+  } catch (error) {
+    console.error("Error handling transfer created:", error);
+  }
+}
+
+async function handleTransferPaid(transfer: Stripe.Transfer) {
+  const adminClient = createAdminClient();
+
+  try {
+    // Update booking payout status
+    const bookingId = transfer.metadata?.booking_id;
+    if (bookingId) {
+      await adminClient
+        .from("bookings")
+        .update({
+          payout_status: "transferred",
+        })
+        .eq("id", bookingId);
+    }
+  } catch (error) {
+    console.error("Error handling transfer paid:", error);
+  }
+}
+
+async function handlePayoutPaid(payout: Stripe.Payout) {
+  const adminClient = createAdminClient();
+
+  try {
+    // Find payout record by Stripe payout ID
+    const payoutResult: {
+      data: { id: string } | null;
+      error: any;
+    } = await adminClient
+      .from("payouts")
+      .select("id")
+      .eq("stripe_payout_id", payout.id)
+      .single();
+
+    if (payoutResult.data) {
+      // Update payout status to paid
+      await adminClient
+        .from("payouts")
+        .update({
+          status: "paid",
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", payoutResult.data.id);
+
+      // Update bookings payout status
+      const payoutDetails: {
+        data: { booking_ids: string[] } | null;
+      } = await adminClient
+        .from("payouts")
+        .select("booking_ids")
+        .eq("id", payoutResult.data.id)
+        .single();
+
+      if (payoutDetails.data?.booking_ids) {
+        await adminClient
+          .from("bookings")
+          .update({
+            payout_status: "paid_out",
+          })
+          .in("id", payoutDetails.data.booking_ids);
+      }
+    }
+  } catch (error) {
+    console.error("Error handling payout paid:", error);
+  }
+}
+
+async function handlePayoutFailed(payout: Stripe.Payout) {
+  const adminClient = createAdminClient();
+
+  try {
+    // Find payout record by Stripe payout ID
+    const payoutResult: {
+      data: { id: string } | null;
+      error: any;
+    } = await adminClient
+      .from("payouts")
+      .select("id")
+      .eq("stripe_payout_id", payout.id)
+      .single();
+
+    if (payoutResult.data) {
+      // Update payout status to failed
+      await adminClient
+        .from("payouts")
+        .update({
+          status: "failed",
+        })
+        .eq("id", payoutResult.data.id);
+    }
+  } catch (error) {
+    console.error("Error handling payout failed:", error);
+  }
 }

@@ -71,7 +71,13 @@
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
     "docker:ps": "docker ps | grep supabase",
-    "docker:logs": "supabase logs"
+    "docker:logs": "supabase logs",
+    "update:check": "tsx scripts/detect-conflicts.ts",
+    "update:preview": "tsx scripts/selective-update.ts --dry-run",
+    "update:package": "tsx scripts/selective-update.ts --package",
+    "update:validate": "tsx scripts/validate-update.ts",
+    "update:rollback": "tsx scripts/rollback-update.ts",
+    "update:history": "tsx scripts/rollback-update.ts list"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -118,6 +124,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.1.3",
     "postcss": "^8",
+    "tsx": "^4.19.0",
     "turbo": "^2.3.3",
     "typescript": "5.9.3",
     "vitest": "^2.1.2"
