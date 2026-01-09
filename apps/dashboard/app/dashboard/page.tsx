@@ -28,13 +28,13 @@ async function getDashboardContext() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data: listingRows = [] } = await supabase
+  const { data: listingRows } = await supabase
     .from("listings")
     .select("id")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
-  const listingIds = listingRows.map((row) => row.id);
+  const listingIds = (listingRows || []).map((row: any) => row.id);
 
   let reviewCount = 0;
   if (listingIds.length > 0) {
@@ -52,7 +52,7 @@ async function getDashboardContext() {
 
   return {
     user,
-    tenantId: userRow?.tenant_id ?? null,
+    tenantId: (userRow as any)?.tenant_id ?? null,
     stats: {
       listingCount: listingIds.length,
       reviewCount,

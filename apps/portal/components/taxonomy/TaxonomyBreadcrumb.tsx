@@ -17,7 +17,7 @@ export function TaxonomyBreadcrumb({
   config: _config,
   currentTitle,
 }: TaxonomyBreadcrumbProps) {
-  const segments = (path._segments as unknown as string[]) || [];
+  const segments = ((path as TaxonomyPath & { _segments?: string[] })._segments) || [];
   
   // Build breadcrumb items from segments
   const breadcrumbs: Array<{ label: string; href: string; active?: boolean }> = [

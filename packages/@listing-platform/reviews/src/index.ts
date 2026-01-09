@@ -11,13 +11,14 @@
  * - Moderation utilities
  */
 
-// Export types
-export * from './types';
+// Export types (exclude ReviewStats to avoid conflict with component)
+export type { Review, ReviewFilters, ReviewFormData } from './types';
+export type { ReviewStats as ReviewStatsType } from './types';
 
 // Export hooks
 export * from './hooks';
 
-// Export styled components (default)
+// Export styled components (default) - ReviewStatsDisplay is exported as ReviewStats component
 export * from './components';
 
 // Export headless components

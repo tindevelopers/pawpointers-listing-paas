@@ -17,9 +17,9 @@ export default async function TeamPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const tenantId = current?.tenant_id ?? null;
+  const tenantId = (current as any)?.tenant_id ?? null;
 
-  const { data: members = [] } =
+  const membersResult =
     tenantId === null
       ? { data: [] }
       : await supabase
@@ -27,6 +27,8 @@ export default async function TeamPage() {
           .select("id, email, full_name, role_id, roles:role_id(name)")
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: true });
+
+  const members = membersResult.data || [];
 
   return (
     <div className="space-y-8">
@@ -45,7 +47,7 @@ export default async function TeamPage() {
         <p className="text-sm text-gray-600">No team members found.</p>
       ) : (
         <div className="grid gap-3">
-          {members.map((member) => (
+          {(members as any[]).map((member: any) => (
             <div
               key={member.id}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
@@ -65,52 +67,6 @@ export default async function TeamPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-import { createClient } from "@/core/database/server";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  return user;
-}
-
-export default async function TeamPage() {
-  await requireUser();
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Team</h1>
-        <p className="text-sm text-gray-600">
-          Manage tenant users, roles, and access for your organization.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-700">
-          Team management will reuse the existing multi-tenant role patterns. A user/role table and invite flow will be
-          added next so you can onboard your staff.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Link href="/dashboard" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700">
-            Back to dashboard
-          </Link>
-          <Link href="/listings" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Go to listings
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

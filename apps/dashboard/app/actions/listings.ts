@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/core/database/server";
 
 export async function listListings() {
@@ -67,16 +68,16 @@ export async function upsertListing(formData: FormData) {
   };
 
   if (id) {
-    const { error } = await supabase.from("listings").update(payload).eq("id", id);
+    const { error } = await (supabase.from("listings") as any).update(payload).eq("id", id);
     if (error) {
       console.error("update listing error", error);
       throw error;
     }
   } else {
-    const { error } = await supabase.from("listings").insert({
+    const { error } = await (supabase.from("listings") as any).insert({
       ...payload,
       owner_id: user.id,
-      tenant_id: userRow?.tenant_id || null,
+      tenant_id: (userRow as any)?.tenant_id || null,
     });
     if (error) {
       console.error("create listing error", error);
@@ -112,7 +113,7 @@ export async function addListingImage(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { error } = await supabase.from("listing_images").insert({
+  const { error } = await (supabase.from("listing_images") as any).insert({
     listing_id: listingId,
     storage_key: imageUrl,
     cdn_url: imageUrl,
@@ -120,6 +121,189 @@ export async function addListingImage(formData: FormData) {
 
   if (error) {
     console.error("add listing image error", error);
+  }
+
+  revalidatePath("/listings");
+}
+
+export async function sendMessage(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const conversationId = String(formData.get("conversationId") || "");
+  const content = String(formData.get("content") || "").trim();
+
+  if (!conversationId || !content) {
+    throw new Error("Message content is required");
+  }
+
+  const { error } = await supabase
+    .from("messages")
+    // @ts-expect-error Supabase type inference
+    .insert({
+      conversation_id: conversationId,
+      sender_id: user!.id,
+      content,
+      status: "sent",
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/inbox");
+}
+
+export async function addImage(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const listingId = String(formData.get("listingId") || "");
+  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const altText = String(formData.get("altText") || "").trim();
+
+  if (!listingId || !imageUrl) {
+    throw new Error("Listing and image URL are required");
+  }
+
+  const { error } = await supabase
+    .from("listing_images")
+    // @ts-expect-error Supabase type inference
+    .insert({
+      listing_id: listingId,
+      storage_key: imageUrl,
+      cdn_url: imageUrl,
+      alt_text: altText || null,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/media");
+}
+
+export async function deleteImage(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const imageId = String(formData.get("imageId") || "");
+  if (!imageId) return;
+
+  await supabase.from("listing_images").delete().eq("id", imageId);
+  revalidatePath("/media");
+}
+
+export async function respondToReview(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const reviewId = String(formData.get("reviewId") || "");
+  const response = String(formData.get("response") || "").trim();
+
+  if (!reviewId || !response) {
+    throw new Error("Response cannot be empty");
+  }
+
+  const { error } = await (supabase.rpc as any)("respond_to_review", {
+    p_review_id: reviewId,
+    p_response: response,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/reviews");
+}
+
+function slugifyInput(input: string) {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+async function ensureUniqueSlug(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string | null, base: string) {
+  let candidate = base;
+  let attempt = 1;
+  while (true) {
+    const { data } = await supabase
+      .from("listings")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+    if (!data) return candidate;
+    attempt += 1;
+    candidate = `${base}-${attempt}`;
+  }
+}
+
+export async function createListing(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/signin");
+  }
+
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+
+  if (!title) {
+    throw new Error("Title is required");
+  }
+
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user!.id)
+    .single();
+
+  const tenantId = (userRow as any)?.tenant_id ?? null;
+  const baseSlug = slugifyInput(title);
+  const slug = await ensureUniqueSlug(supabase, tenantId, baseSlug || crypto.randomUUID());
+
+  const { error } = await (supabase
+    .from("listings") as any)
+    .insert({
+      title,
+      slug,
+      description,
+      status: "draft",
+      owner_id: user!.id,
+      tenant_id: tenantId,
+    });
+
+  if (error) {
+    throw new Error(error.message);
   }
 
   revalidatePath("/listings");

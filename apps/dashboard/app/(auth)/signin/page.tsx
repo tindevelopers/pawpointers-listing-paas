@@ -18,12 +18,13 @@ async function handleSignIn(formData: FormData) {
   redirect("/dashboard");
 }
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams?: { error?: string | string[] };
+  searchParams?: Promise<{ error?: string | string[] }>;
 }) {
-  const errorParam = searchParams?.error;
+  const params = await searchParams;
+  const errorParam = params?.error;
   const error =
     typeof errorParam === "string"
       ? errorParam

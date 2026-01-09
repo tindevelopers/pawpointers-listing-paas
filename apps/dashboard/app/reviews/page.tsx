@@ -1,6 +1,6 @@
 import { createClient } from "@/core/database/server";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { respondToReview } from "@/app/actions/listings";
 
 async function getContext() {
   const supabase = await createClient();
@@ -12,12 +12,12 @@ async function getContext() {
     return { user: null, listings: [] as any[], reviews: [] as any[] };
   }
 
-  const { data: listings = [] } = await supabase
+  const { data: listings } = await supabase
     .from("listings")
     .select("id, title")
     .eq("owner_id", user.id);
 
-  const listingIds = listings.map((l) => l.id);
+  const listingIds = (listings || []).map((l: any) => l.id);
 
   const { data: reviews = [] } =
     listingIds.length === 0
@@ -28,37 +28,7 @@ async function getContext() {
           .in("listing_id", listingIds)
           .order("created_at", { ascending: false });
 
-  return { user, listings, reviews };
-}
-
-export async function respondToReview(formData: FormData) {
-  "use server";
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  const reviewId = String(formData.get("reviewId") || "");
-  const response = String(formData.get("response") || "").trim();
-
-  if (!reviewId || !response) {
-    throw new Error("Response cannot be empty");
-  }
-
-  const { error } = await supabase.rpc("respond_to_review", {
-    p_review_id: reviewId,
-    p_response: response,
-  });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/reviews");
+  return { user, listings: listings || [], reviews: reviews || [] };
 }
 
 export default async function ReviewsPage() {
@@ -68,7 +38,7 @@ export default async function ReviewsPage() {
     redirect("/signin");
   }
 
-  const listingLookup = listings.reduce<Record<string, string>>((acc, l) => {
+  const listingLookup = (listings || []).reduce<Record<string, string>>((acc, l: any) => {
     acc[l.id] = l.title;
     return acc;
   }, {});
@@ -82,11 +52,11 @@ export default async function ReviewsPage() {
         </p>
       </header>
 
-      {reviews.length === 0 ? (
+      {(reviews || []).length === 0 ? (
         <p className="text-sm text-gray-600">No reviews yet.</p>
       ) : (
         <div className="space-y-4">
-          {reviews.map((review) => (
+          {(reviews || []).map((review: any) => (
             <div
               key={review.id}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
@@ -138,52 +108,6 @@ export default async function ReviewsPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-import { createClient } from "@/core/database/server";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  return user;
-}
-
-export default async function ReviewsPage() {
-  await requireUser();
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Reviews</h1>
-        <p className="text-sm text-gray-600">
-          View feedback left on your listings and respond as the owner.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-700">
-          Reviews and owner responses will live here. Upcoming work will add the review list for your listings and a safe
-          reply form backed by the new Supabase RPC.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Link href="/dashboard" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700">
-            Back to dashboard
-          </Link>
-          <Link href="/listings" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Go to listings
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

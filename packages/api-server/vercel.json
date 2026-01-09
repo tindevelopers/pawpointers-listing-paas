@@ -1,19 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "buildCommand": "pnpm build",
-  "installCommand": "cd ../.. && pnpm install",
-  "outputDirectory": "dist",
-  "functions": {
-    "dist/index.js": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
-    }
-  },
+  "installCommand": "npm install -g pnpm@latest && cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/dist/index.js"
+      "destination": "/api/index"
     }
   ],
   "headers": [

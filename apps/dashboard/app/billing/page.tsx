@@ -17,9 +17,9 @@ export default async function BillingPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const tenantId = tenantRow?.tenant_id ?? null;
+  const tenantId = (tenantRow as any)?.tenant_id ?? null;
 
-  const { data: subscriptions = [] } =
+  const subscriptionsResult =
     tenantId === null
       ? { data: [] }
       : await supabase
@@ -28,7 +28,7 @@ export default async function BillingPage() {
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: false });
 
-  const { data: invoices = [] } =
+  const invoicesResult =
     tenantId === null
       ? { data: [] }
       : await supabase
@@ -37,6 +37,9 @@ export default async function BillingPage() {
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: false })
           .limit(10);
+
+  const subscriptions = subscriptionsResult.data || [];
+  const invoices = invoicesResult.data || [];
 
   return (
     <div className="space-y-8">
@@ -53,7 +56,7 @@ export default async function BillingPage() {
           <p className="mt-2 text-sm text-gray-600">No subscriptions found.</p>
         ) : (
           <div className="mt-4 grid gap-3">
-            {subscriptions.map((sub) => (
+            {(subscriptions as any[]).map((sub: any) => (
               <div
                 key={sub.id}
                 className="rounded-xl border border-gray-200 bg-gray-50 p-4"
@@ -80,7 +83,7 @@ export default async function BillingPage() {
           <p className="mt-2 text-sm text-gray-600">No invoices found.</p>
         ) : (
           <div className="mt-4 grid gap-3">
-            {invoices.map((inv) => (
+            {(invoices as any[]).map((inv: any) => (
               <div
                 key={inv.id}
                 className="rounded-xl border border-gray-200 bg-gray-50 p-4"
@@ -106,52 +109,6 @@ export default async function BillingPage() {
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-import { createClient } from "@/core/database/server";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  return user;
-}
-
-export default async function BillingPage() {
-  await requireUser();
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Billing</h1>
-        <p className="text-sm text-gray-600">
-          Review your subscription and manage payment details.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-sm text-gray-700">
-          Billing will connect to the shared Stripe actions used in the platform admin. A subscription summary and
-          &quot;Manage billing&quot; portal link will appear here next.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Link href="/dashboard" className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700">
-            Back to dashboard
-          </Link>
-          <Link href="/listings" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-            Go to listings
-          </Link>
-        </div>
       </div>
     </div>
   );

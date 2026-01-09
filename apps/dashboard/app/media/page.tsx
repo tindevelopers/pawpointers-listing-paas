@@ -1,6 +1,6 @@
 import { createClient } from "@/core/database/server";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { addImage, deleteImage } from "@/app/actions/listings";
 
 async function getUserAndListings() {
   const supabase = await createClient();
@@ -12,67 +12,13 @@ async function getUserAndListings() {
     return { user: null, listings: [] as any[] };
   }
 
-  const { data: listings = [] } = await supabase
+  const { data: listings } = await supabase
     .from("listings")
     .select("id, title, slug")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
-  return { user, listings };
-}
-
-export async function addImage(formData: FormData) {
-  "use server";
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  const listingId = String(formData.get("listingId") || "");
-  const imageUrl = String(formData.get("imageUrl") || "").trim();
-  const altText = String(formData.get("altText") || "").trim();
-
-  if (!listingId || !imageUrl) {
-    throw new Error("Listing and image URL are required");
-  }
-
-  const { error } = await supabase
-    .from("listing_images")
-    // @ts-expect-error Supabase type inference
-    .insert({
-      listing_id: listingId,
-      storage_key: imageUrl,
-      cdn_url: imageUrl,
-      alt_text: altText || null,
-    });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  revalidatePath("/media");
-}
-
-export async function deleteImage(formData: FormData) {
-  "use server";
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/signin");
-  }
-
-  const imageId = String(formData.get("imageId") || "");
-  if (!imageId) return;
-
-  await supabase.from("listing_images").delete().eq("id", imageId);
-  revalidatePath("/media");
+  return { user, listings: listings || [] };
 }
 
 export default async function MediaPage() {
@@ -83,7 +29,7 @@ export default async function MediaPage() {
   }
 
   const supabase = await createClient();
-  const listingIds = listings.map((l) => l.id);
+  const listingIds = (listings || []).map((l: any) => l.id);
 
   const { data: images = [] } =
     listingIds.length === 0
@@ -95,7 +41,7 @@ export default async function MediaPage() {
           .order("created_at", { ascending: false });
 
   const imagesByListing = listingIds.reduce<Record<string, any[]>>((acc, id) => {
-    acc[id] = images.filter((img) => img.listing_id === id);
+    acc[id] = (images || []).filter((img: any) => img.listing_id === id);
     return acc;
   }, {});
 
@@ -117,7 +63,7 @@ export default async function MediaPage() {
             </label>
             <select id="listingId" name="listingId" required>
               <option value="">Select listing</option>
-              {listings.map((listing) => (
+              {(listings || []).map((listing: any) => (
                 <option key={listing.id} value={listing.id}>
                   {listing.title}
                 </option>
@@ -155,10 +101,10 @@ export default async function MediaPage() {
 
       <div className="space-y-6">
         <h2 className="text-lg font-semibold text-gray-900">Gallery</h2>
-        {listings.length === 0 ? (
+        {(listings || []).length === 0 ? (
           <p className="text-sm text-gray-600">Create a listing first to add media.</p>
         ) : (
-          listings.map((listing) => (
+          (listings || []).map((listing: any) => (
             <div key={listing.id} className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>

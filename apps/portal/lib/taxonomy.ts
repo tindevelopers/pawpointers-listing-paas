@@ -33,7 +33,7 @@ export async function getListingByTaxonomyPath(
   path: TaxonomyPath
 ): Promise<Listing | null> {
   try {
-    const segments = path._segments as string[] || [];
+    const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length === 0) return null;
     
     // The slug is the last segment
@@ -83,7 +83,7 @@ export async function getTaxonomyTerm(
   path: TaxonomyPath
 ): Promise<TaxonomyTerm | null> {
   try {
-    const segments = path._segments as string[] || [];
+    const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length === 0) return null;
     
     // Build the taxonomy path for the API
@@ -105,7 +105,7 @@ export async function getTaxonomyTerm(
     console.error("Error fetching taxonomy term:", error);
     
     // Fallback: try to create a term from the path for graceful degradation
-    const segments = path._segments as string[] || [];
+    const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length > 0) {
       return {
         id: segments.join("-"),
@@ -128,7 +128,7 @@ export async function getListingsByTaxonomyTerm(
   options: { page?: number; limit?: number; sortBy?: string } = {}
 ): Promise<TaxonomyListingResult> {
   try {
-    const segments = path._segments as string[] || [];
+    const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length === 0) {
       return { listings: [], total: 0, page: 1, limit: 12, totalPages: 0 };
     }
@@ -193,7 +193,7 @@ export async function getChildTerms(
   parentPath: TaxonomyPath
 ): Promise<TaxonomyTerm[]> {
   try {
-    const segments = parentPath._segments as string[] || [];
+    const segments = (parentPath as TaxonomyPath & { _segments?: string[] })._segments || [];
     const parentSlug = segments.join("/");
     
     const response = await fetch(
@@ -217,7 +217,7 @@ export async function getChildTerms(
 export async function getTaxonomyBreadcrumbs(
   path: TaxonomyPath
 ): Promise<Array<{ label: string; href: string }>> {
-  const segments = path._segments as string[] || [];
+  const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
   const breadcrumbs: Array<{ label: string; href: string }> = [
     { label: "Home", href: "/" },
   ];

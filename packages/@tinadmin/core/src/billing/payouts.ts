@@ -74,7 +74,7 @@ export async function getPendingPayouts(params?: {
     // Get revenue transactions for each account
     const payouts: PendingPayout[] = [];
 
-    for (const account of accounts || []) {
+    for (const account of (accounts || []) as any[]) {
       if (params?.minimumAmount && account.pending_payout < params.minimumAmount) {
         continue;
       }
@@ -100,8 +100,8 @@ export async function getPendingPayouts(params?: {
       // Get unique booking IDs
       const bookingIds = [
         ...new Set(
-          transactions
-            .map((t) => t.booking_id)
+          (transactions || [])
+            .map((t: any) => t.booking_id)
             .filter((id): id is string => !!id)
         ),
       ];
@@ -109,8 +109,8 @@ export async function getPendingPayouts(params?: {
       // Get unique listing IDs
       const listingIds = [
         ...new Set(
-          transactions
-            .map((t) => t.listing_id)
+          (transactions || [])
+            .map((t: any) => t.listing_id)
             .filter((id): id is string => !!id)
         ),
       ];
@@ -131,20 +131,20 @@ export async function getPendingPayouts(params?: {
       } else {
         // Multiple listings - create one payout per listing
         for (const listingId of listingIds) {
-          const listingTransactions = transactions.filter(
-            (t) => t.listing_id === listingId
+          const listingTransactions = (transactions || []).filter(
+            (t: any) => t.listing_id === listingId
           );
           const listingBookingIds = [
             ...new Set(
               listingTransactions
-                .map((t) => t.booking_id)
+                .map((t: any) => t.booking_id)
                 .filter((id): id is string => !!id)
             ),
           ];
 
           // Calculate amount for this listing
           const listingAmount = listingTransactions.reduce(
-            (sum, t) => sum + (t.listing_owner_amount || 0),
+            (sum: number, t: any) => sum + (t.listing_owner_amount || 0),
             0
           );
 
@@ -226,7 +226,7 @@ export async function createPayout(params: {
       .in("status", ["pending", "processing", "paid"]);
 
     const existingTransactionIds = new Set(
-      (existingPayoutsResult.data || []).flatMap((p) => p.revenue_transaction_ids || [])
+      ((existingPayoutsResult.data || []) as any[]).flatMap((p: any) => p.revenue_transaction_ids || [])
     );
 
     let revenueQuery = adminClient
@@ -246,19 +246,19 @@ export async function createPayout(params: {
     }
 
     // Filter out transactions already in payouts
-    const transactions = allTransactions.filter(
-      (t) => !existingTransactionIds.has(t.id)
+    const transactions = (allTransactions || []).filter(
+      (t: any) => !existingTransactionIds.has(t.id)
     );
 
     if (transactions.length === 0) {
       return { success: false, error: "All transactions already included in payouts" };
     }
 
-    const transactionIds = transactions.map((t) => t.id);
+    const transactionIds = transactions.map((t: any) => t.id);
     const bookingIds = [
       ...new Set(
         transactions
-          .map((t) => t.booking_id)
+          .map((t: any) => t.booking_id)
           .filter((id): id is string => !!id)
       ),
     ];
@@ -268,8 +268,8 @@ export async function createPayout(params: {
     const createdBy = user?.id || null;
 
     // Create payout record in database
-    const { data: payout, error: payoutError } = await adminClient
-      .from("payouts")
+    const { data: payout, error: payoutError } = await (adminClient
+      .from("payouts") as any)
       .insert({
         tenant_id: params.tenantId,
         listing_id: params.listingId || null,
@@ -306,8 +306,8 @@ export async function createPayout(params: {
       );
 
       // Update payout record with Stripe payout ID
-      await adminClient
-        .from("payouts")
+      await (adminClient
+        .from("payouts") as any)
         .update({
           stripe_payout_id: stripePayout.id,
           status: "processing",
@@ -318,16 +318,16 @@ export async function createPayout(params: {
       // Payout tracking is done via payouts.revenue_transaction_ids array
 
       // Update bookings payout status
-      await adminClient
-        .from("bookings")
+      await (adminClient
+        .from("bookings") as any)
         .update({ payout_status: "transferred", payout_id: payout.id })
         .in("id", bookingIds);
 
       return { success: true, payoutId: payout.id };
     } catch (stripeError) {
       // If Stripe payout fails, mark payout as failed
-      await adminClient
-        .from("payouts")
+      await (adminClient
+        .from("payouts") as any)
         .update({ status: "failed" })
         .eq("id", payout.id);
 
@@ -487,20 +487,20 @@ export async function getRevenueSummary(params?: {
       return { success: false, error: error.message };
     }
 
-    const completedTransactions = (transactions || []).filter(
-      (t) => t.status === "completed"
+    const completedTransactions = ((transactions || []) as any[]).filter(
+      (t: any) => t.status === "completed"
     );
 
     const totalRevenue = completedTransactions.reduce(
-      (sum, t) => sum + (t.amount || 0),
+      (sum: number, t: any) => sum + (t.amount || 0),
       0
     );
     const platformFees = completedTransactions.reduce(
-      (sum, t) => sum + (t.platform_fee || 0),
+      (sum: number, t: any) => sum + (t.platform_fee || 0),
       0
     );
     const listingOwnerAmount = completedTransactions.reduce(
-      (sum, t) => sum + (t.listing_owner_amount || 0),
+      (sum: number, t: any) => sum + (t.listing_owner_amount || 0),
       0
     );
 
@@ -514,19 +514,20 @@ export async function getRevenueSummary(params?: {
     const bookingIds = [
       ...new Set(
         completedTransactions
-          .map((t) => t.booking_id)
+          .map((t: any) => t.booking_id)
           .filter((id): id is string => !!id)
       ),
     ];
 
+    const accountData = account as any;
     return {
       success: true,
       summary: {
         totalRevenue,
         platformFees,
         listingOwnerAmount,
-        pendingPayout: account?.pending_payout || 0,
-        paidOut: account?.paid_out || 0,
+        pendingPayout: accountData?.pending_payout || 0,
+        paidOut: accountData?.paid_out || 0,
         transactionCount: completedTransactions.length,
         bookingCount: bookingIds.length,
       },

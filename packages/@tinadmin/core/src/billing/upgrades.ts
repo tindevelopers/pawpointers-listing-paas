@@ -212,14 +212,14 @@ export async function previewUpgrade(
     const newPrice = newPriceResult.data;
 
     // Get upcoming invoice from Stripe with proration
-    const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
-      customer: (
-        await adminClient
-          .from("stripe_customers")
-          .select("stripe_customer_id")
-          .eq("tenant_id", tenantId)
-          .single()
-      ).data?.stripe_customer_id,
+    const customerResult = await adminClient
+      .from("stripe_customers")
+      .select("stripe_customer_id")
+      .eq("tenant_id", tenantId)
+      .single();
+    
+    const upcomingInvoice = await (stripe.invoices as any).retrieveUpcoming({
+      customer: (customerResult.data as any)?.stripe_customer_id,
       subscription: currentSub.stripe_subscription_id,
       subscription_items: [
         {
@@ -233,7 +233,7 @@ export async function previewUpgrade(
     });
 
     const prorationLineItem = upcomingInvoice.lines.data.find(
-      (line) => line.proration === true
+      (line: any) => line.proration === true
     );
     const prorationAmount = prorationLineItem?.amount || 0;
 
@@ -353,20 +353,20 @@ export async function upgradeSubscription(
 
     // Update in database
     if (newPriceResult.data) {
-      await adminClient
-        .from("stripe_subscriptions")
+      await (adminClient
+        .from("stripe_subscriptions") as any)
         .update({
           stripe_price_id: newPriceId,
           stripe_product_id: updatedSubscription.items.data[0].price.product as string,
-          plan_name: newPriceResult.data.stripe_products.name,
-          plan_price: newPriceResult.data.unit_amount,
-          billing_cycle: newPriceResult.data.billing_cycle,
+          plan_name: (newPriceResult.data as any).stripe_products.name,
+          plan_price: (newPriceResult.data as any).unit_amount,
+          billing_cycle: (newPriceResult.data as any).billing_cycle,
           status: updatedSubscription.status,
           current_period_start: new Date(
-            updatedSubscription.current_period_start * 1000
+            (updatedSubscription as any).current_period_start * 1000
           ).toISOString(),
           current_period_end: new Date(
-            updatedSubscription.current_period_end * 1000
+            (updatedSubscription as any).current_period_end * 1000
           ).toISOString(),
         })
         .eq("id", dbSubscription.id);
@@ -468,14 +468,14 @@ export async function downgradeSubscription(
       .single();
 
     if (newPriceResult.data) {
-      await adminClient
-        .from("stripe_subscriptions")
+      await (adminClient
+        .from("stripe_subscriptions") as any)
         .update({
           stripe_price_id: newPriceId,
           stripe_product_id: updatedSubscription.items.data[0].price.product as string,
-          plan_name: newPriceResult.data.stripe_products.name,
-          plan_price: newPriceResult.data.unit_amount,
-          billing_cycle: newPriceResult.data.billing_cycle,
+          plan_name: (newPriceResult.data as any).stripe_products.name,
+          plan_price: (newPriceResult.data as any).unit_amount,
+          billing_cycle: (newPriceResult.data as any).billing_cycle,
           status: updatedSubscription.status,
         })
         .eq("id", dbSubscription.id);

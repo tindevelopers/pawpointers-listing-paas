@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar } from "@/components/search";
 import { ListingCard } from "@/components/listings";
-import { getFeaturedListings, getCategories } from "@/lib/listings";
+import { getFeaturedListings, getCategories, type Listing } from "@/lib/listings";
 
 /**
  * Home Page / Landing Page
@@ -23,8 +23,20 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   // Fetch featured listings for homepage
-  const featuredListings = await getFeaturedListings(6);
-  const categories = await getCategories();
+  let featuredListings: Listing[] = [];
+  let categories: Array<{ slug: string; name: string; count: number }> = [];
+  
+  try {
+    featuredListings = await getFeaturedListings(6);
+  } catch (error) {
+    console.error('Error fetching featured listings:', error);
+  }
+  
+  try {
+    categories = await getCategories();
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">

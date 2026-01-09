@@ -650,5 +650,102 @@ export interface Database {
         created_at?: string;
       };
     };
+    revenue_transactions: {
+      Row: {
+        id: string;
+        booking_id: string | null;
+        tenant_id: string | null;
+        listing_id: string | null;
+        transaction_type: "booking" | "subscription" | "addon";
+        amount: number;
+        platform_fee: number;
+        listing_owner_amount: number;
+        currency: string;
+        stripe_payment_intent_id: string | null;
+        stripe_transfer_id: string | null;
+        status: "pending" | "completed" | "failed" | "refunded";
+        created_at: string;
+        updated_at: string;
+      };
+      Insert: {
+        id?: string;
+        booking_id?: string | null;
+        tenant_id?: string | null;
+        listing_id?: string | null;
+        transaction_type: "booking" | "subscription" | "addon";
+        amount: number;
+        platform_fee: number;
+        listing_owner_amount: number;
+        currency?: string;
+        stripe_payment_intent_id?: string | null;
+        stripe_transfer_id?: string | null;
+        status?: "pending" | "completed" | "failed" | "refunded";
+        created_at?: string;
+        updated_at?: string;
+      };
+      Update: {
+        id?: string;
+        booking_id?: string | null;
+        tenant_id?: string | null;
+        listing_id?: string | null;
+        transaction_type?: "booking" | "subscription" | "addon";
+        amount?: number;
+        platform_fee?: number;
+        listing_owner_amount?: number;
+        currency?: string;
+        stripe_payment_intent_id?: string | null;
+        stripe_transfer_id?: string | null;
+        status?: "pending" | "completed" | "failed" | "refunded";
+        created_at?: string;
+        updated_at?: string;
+      };
+    };
+    payouts: {
+      Row: {
+        id: string;
+        tenant_id: string | null;
+        listing_id: string | null;
+        total_amount: number;
+        currency: string;
+        stripe_payout_id: string | null;
+        status: "pending" | "processing" | "paid" | "failed" | "canceled";
+        booking_ids: string[] | null;
+        revenue_transaction_ids: string[] | null;
+        processed_at: string | null;
+        created_by: string | null;
+        created_at: string;
+        updated_at: string;
+      };
+      Insert: {
+        id?: string;
+        tenant_id?: string | null;
+        listing_id?: string | null;
+        total_amount: number;
+        currency?: string;
+        stripe_payout_id?: string | null;
+        status?: "pending" | "processing" | "paid" | "failed" | "canceled";
+        booking_ids?: string[] | null;
+        revenue_transaction_ids?: string[] | null;
+        processed_at?: string | null;
+        created_by?: string | null;
+        created_at?: string;
+        updated_at?: string;
+      };
+      Update: {
+        id?: string;
+        tenant_id?: string | null;
+        listing_id?: string | null;
+        total_amount?: number;
+        currency?: string;
+        stripe_payout_id?: string | null;
+        status?: "pending" | "processing" | "paid" | "failed" | "canceled";
+        booking_ids?: string[] | null;
+        revenue_transaction_ids?: string[] | null;
+        processed_at?: string | null;
+        created_by?: string | null;
+        created_at?: string;
+        updated_at?: string;
+      };
+    };
   };
 }

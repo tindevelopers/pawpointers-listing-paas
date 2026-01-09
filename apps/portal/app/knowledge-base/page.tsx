@@ -4,7 +4,6 @@ import { Header, Footer } from "@/components/layout";
 import {
   getKnowledgeDocuments,
   getKnowledgeCategories,
-  type KnowledgeDocument,
 } from "@/lib/knowledge-base";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
@@ -14,24 +13,25 @@ export const metadata: Metadata = {
 };
 
 interface KnowledgeBasePageProps {
-  searchParams: {
+  searchParams: Promise<{
     search?: string;
     category?: string;
     tag?: string;
     page?: string;
-  };
+  }>;
 }
 
 export default async function KnowledgeBasePage({
   searchParams,
 }: KnowledgeBasePageProps) {
-  const page = parseInt(searchParams.page || "1", 10);
+  const params = await searchParams;
+  const page = parseInt(params.page || "1", 10);
   const { documents, total, totalPages } = await getKnowledgeDocuments({
     page,
     limit: 20,
-    search: searchParams.search,
-    category: searchParams.category,
-    tag: searchParams.tag,
+    search: params.search,
+    category: params.category,
+    tag: params.tag,
     sortBy: "updated_at",
     sortOrder: "desc",
   });
@@ -65,7 +65,7 @@ export default async function KnowledgeBasePage({
                   <input
                     type="text"
                     name="search"
-                    defaultValue={searchParams.search}
+                    defaultValue={params.search}
                     placeholder="Search articles..."
                     className="w-full h-12 pl-12 pr-4 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
@@ -91,7 +91,7 @@ export default async function KnowledgeBasePage({
                         <Link
                           href="/knowledge-base"
                           className={`block px-3 py-2 rounded-md text-sm transition-colors ${
-                            !searchParams.category
+                            !params.category
                               ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                               : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                           }`}
@@ -104,7 +104,7 @@ export default async function KnowledgeBasePage({
                           <Link
                             href={`/knowledge-base?category=${encodeURIComponent(cat.name)}`}
                             className={`block px-3 py-2 rounded-md text-sm transition-colors ${
-                              searchParams.category === cat.name
+                              params.category === cat.name
                                 ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
                                 : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
                             }`}
@@ -172,12 +172,12 @@ export default async function KnowledgeBasePage({
                       {page > 1 && (
                         <Link
                           href={`/knowledge-base?page=${page - 1}${
-                            searchParams.search
-                              ? `&search=${encodeURIComponent(searchParams.search)}`
+                            params.search
+                              ? `&search=${encodeURIComponent(params.search)}`
                               : ""
                           }${
-                            searchParams.category
-                              ? `&category=${encodeURIComponent(searchParams.category)}`
+                            params.category
+                              ? `&category=${encodeURIComponent(params.category)}`
                               : ""
                           }`}
                           className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -191,12 +191,12 @@ export default async function KnowledgeBasePage({
                       {page < totalPages && (
                         <Link
                           href={`/knowledge-base?page=${page + 1}${
-                            searchParams.search
-                              ? `&search=${encodeURIComponent(searchParams.search)}`
+                            params.search
+                              ? `&search=${encodeURIComponent(params.search)}`
                               : ""
                           }${
-                            searchParams.category
-                              ? `&category=${encodeURIComponent(searchParams.category)}`
+                            params.category
+                              ? `&category=${encodeURIComponent(params.category)}`
                               : ""
                           }`}
                           className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"

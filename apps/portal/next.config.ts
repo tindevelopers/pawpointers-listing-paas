@@ -42,6 +42,9 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
   
+  // Output configuration for static export (optional)
+  output: 'standalone',
+  
   // Bundle optimization for consumer portal
   experimental: {
     optimizePackageImports: [

@@ -6,10 +6,10 @@
 import React from 'react';
 import { cn } from '../utils/cn';
 import { RatingDisplay } from './RatingDisplay';
-import type { ReviewStats } from '../types';
+import type { ReviewStats as ReviewStatsType } from '../types';
 
 export interface ReviewStatsProps {
-  stats: ReviewStats;
+  stats: ReviewStatsType;
   variant?: 'default' | 'compact' | 'detailed';
   className?: string;
 }
@@ -84,5 +84,5 @@ export function ReviewStatsDisplay({
   );
 }
 
-export { ReviewStatsDisplay as ReviewStats };
+// ReviewStatsDisplay is exported from index.ts
 

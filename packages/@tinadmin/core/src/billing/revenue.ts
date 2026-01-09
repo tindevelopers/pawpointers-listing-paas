@@ -1,8 +1,7 @@
-"use server";
-
 /**
  * Revenue Calculation Service
  * Handles hybrid fee model calculations (percentage + fixed fee)
+ * Note: These are pure utility functions that can run on both client and server
  */
 
 export interface RevenueCalculation {

@@ -57,7 +57,7 @@ export function AddressSearch({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   
   const { geocode } = useGeocode({ provider, apiKey });
   
