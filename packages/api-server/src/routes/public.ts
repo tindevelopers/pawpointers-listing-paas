@@ -194,7 +194,7 @@ publicRoutes.get('/categories', async (c) => {
   if (taxonomyData && taxonomyData.length > 0) {
     // Get counts for each category
     const categoriesWithCounts = await Promise.all(
-      taxonomyData.map(async (cat) => {
+      taxonomyData.map(async (cat: { id: string; name: string; slug: string; parent_id: string | null }) => {
         const { count } = await supabase
           .from('listing_taxonomies')
           .select('*', { count: 'exact', head: true })
@@ -218,7 +218,7 @@ publicRoutes.get('/categories', async (c) => {
     .not('category', 'is', null);
 
   const categoryCounts: Record<string, number> = {};
-  listings?.forEach((l) => {
+  listings?.forEach((l: { category: string | null }) => {
     if (l.category) {
       categoryCounts[l.category] = (categoryCounts[l.category] || 0) + 1;
     }
@@ -276,7 +276,7 @@ publicRoutes.get('/popular', async (c) => {
   if (error) throw error;
 
   return success(c, {
-    slugs: data?.map((l) => l.slug) || [],
+    slugs: data?.map((l: { slug: string }) => l.slug) || [],
   });
 });
 
@@ -415,7 +415,7 @@ publicRoutes.get('/knowledge-base/search', async (c) => {
     });
 
     // Increment view counts (fire and forget)
-    results.forEach((doc) => {
+    results.forEach((doc: { id: string }) => {
       supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).catch(() => {});
     });
 
@@ -477,7 +477,7 @@ publicRoutes.get('/knowledge-base/categories', async (c) => {
   }
 
   const categoryCounts: Record<string, number> = {};
-  data?.forEach((doc) => {
+  data?.forEach((doc: { category: string | null }) => {
     if (doc.category) {
       categoryCounts[doc.category] = (categoryCounts[doc.category] || 0) + 1;
     }

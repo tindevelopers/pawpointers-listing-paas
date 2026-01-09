@@ -21,6 +21,10 @@ export const metadata: Metadata = {
     "Discover the best listings on our platform. Search, browse, and find exactly what you need.",
 };
 
+// Force dynamic rendering to avoid build-time API failures
+export const dynamic = 'force-dynamic';
+export const revalidate = 60; // ISR: revalidate every 60 seconds
+
 export default async function HomePage() {
   // Fetch featured listings for homepage
   let featuredListings: Listing[] = [];
@@ -30,12 +34,14 @@ export default async function HomePage() {
     featuredListings = await getFeaturedListings(6);
   } catch (error) {
     console.error('Error fetching featured listings:', error);
+    // Return empty array on error - page will still render
   }
   
   try {
     categories = await getCategories();
   } catch (error) {
     console.error('Error fetching categories:', error);
+    // Return empty array on error - page will still render
   }
 
   return (

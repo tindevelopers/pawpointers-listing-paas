@@ -33,7 +33,7 @@ export function createAdminClient(): SupabaseClient {
  * Create a Supabase client with anon key
  * Use this for public operations or when you want RLS to apply
  */
-export function createAnonClient(): SupabaseClient {
+export function createAnonClient() {
   if (!supabaseAnonKey) {
     throw new Error('SUPABASE_ANON_KEY is required for anon client');
   }

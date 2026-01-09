@@ -1256,6 +1256,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.7(hono@4.11.1)
+      '@listing-platform/ai':
+        specifier: workspace:*
+        version: link:../@listing-platform/ai
       '@listing-platform/shared':
         specifier: workspace:*
         version: link:../@listing-platform/shared

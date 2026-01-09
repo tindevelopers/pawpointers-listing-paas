@@ -22,6 +22,20 @@ app.use('*', cors({
   allowHeaders: ['Content-Type', 'Authorization', 'X-Tenant-ID'],
 }));
 
+// Root path - redirect to health or return API info
+app.get('/', (c) => {
+  return c.json({
+    service: 'pawpointers-api-server',
+    version: '1.0.0',
+    status: 'ok',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      public: '/api/public',
+    },
+  });
+});
+
 // Health check
 app.get('/health', (c) => {
   return c.json({

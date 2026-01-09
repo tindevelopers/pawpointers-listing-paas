@@ -1,0 +1,5 @@
+src/**
+*.md
+node_modules/**
+.git/**
+.env*
