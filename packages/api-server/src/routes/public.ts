@@ -360,7 +360,11 @@ publicRoutes.get('/knowledge-base', async (c) => {
   // Increment view counts (fire and forget)
   if (data && data.length > 0) {
     data.forEach((doc) => {
-      void supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).then(() => {}).catch(() => {});
+      void (async () => {
+        try {
+          await supabase.rpc('increment_knowledge_document_views', { document_id: doc.id });
+        } catch {}
+      })();
     });
   }
 
@@ -424,7 +428,11 @@ publicRoutes.get('/knowledge-base/search', async (c) => {
 
     // Increment view counts (fire and forget)
     results.forEach((doc: { id: string }) => {
-      void supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).then(() => {}).catch(() => {});
+      void (async () => {
+        try {
+          await supabase.rpc('increment_knowledge_document_views', { document_id: doc.id });
+        } catch {}
+      })();
     });
 
     return success(c, results);
