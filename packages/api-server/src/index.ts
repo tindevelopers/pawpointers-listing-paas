@@ -194,10 +194,14 @@ console.log(`📍 Health check: http://localhost:${port}/health`);
 console.log(`🔒 CORS origins: ${allowedOrigins.join(', ')}`);
 console.log(`🔍 Diagnostic endpoint: http://localhost:${port}/api/diagnostic`);
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+// Only start server if not in Vercel environment
+// Vercel will use the handler from api/index.ts
+if (process.env.VERCEL !== '1' && process.env.VERCEL_ENV === undefined) {
+  serve({
+    fetch: app.fetch,
+    port,
+  });
+}
 
 export default app;
 
