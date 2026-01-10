@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - pawpointers-portal
   pull_request:
     branches:
       - main
+      - pawpointers-portal
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
