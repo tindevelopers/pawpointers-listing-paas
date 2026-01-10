@@ -7,6 +7,7 @@ Set these in Vercel Dashboard → Settings → Environment Variables for the `pa
 ### API Configuration
 ```
 NEXT_PUBLIC_API_URL=https://pawpointers-api.tinconnect.com
+# API endpoint for featured accounts: /api/public/accounts/featured
 ```
 
 ### Supabase Configuration
