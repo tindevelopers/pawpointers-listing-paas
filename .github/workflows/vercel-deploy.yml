@@ -12,7 +12,7 @@ on:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  # Note: VERCEL_PROJECT_ID is project-specific and should be set per job if different projects exist
 
 jobs:
   detect-changes:
@@ -212,11 +212,13 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
+        # Note: vercel pull reads .vercel/project.json if project is linked, otherwise uses VERCEL_ORG_ID/VERCEL_PROJECT_ID
         run: vercel pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project
         run: pnpm build
 
       - name: Deploy Project to Vercel
+        # Deploys to production on push to main, preview on PRs
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} ${{ github.event_name == 'push' && '--prod' || '' }}
 
