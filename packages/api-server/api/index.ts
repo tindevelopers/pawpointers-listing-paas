@@ -7,25 +7,9 @@ import { logger } from 'hono/logger';
 
 // Import compiled routes from dist directory
 // Note: Vercel will compile this file, so we import from dist
-// Wrap imports in try-catch to handle missing modules gracefully
-let authRoutes: any;
-let publicRoutes: any;
-let errorHandler: any;
-
-try {
-  authRoutes = require('../dist/routes/auth').authRoutes;
-  publicRoutes = require('../dist/routes/public').publicRoutes;
-  errorHandler = require('../dist/middleware/error-handler').errorHandler;
-} catch (error) {
-  console.error('[ERROR] Failed to import routes:', error);
-  // Create fallback routes
-  authRoutes = new Hono();
-  publicRoutes = new Hono();
-  errorHandler = (err: Error, c: any) => {
-    console.error('[ERROR]', err);
-    return c.json({ error: 'Internal server error' }, 500);
-  };
-}
+import { authRoutes } from '../dist/routes/auth';
+import { publicRoutes } from '../dist/routes/public';
+import { errorHandler } from '../dist/middleware/error-handler';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
@@ -69,5 +53,27 @@ app.route('/api/auth', authRoutes);
 // Error handler
 app.onError(errorHandler);
 
+// Wrap app in error handler for Vercel
+const handler = async (req: Request) => {
+  try {
+    return await app.fetch(req);
+  } catch (error) {
+    console.error('[FATAL] Unhandled error in API handler:', error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'An unexpected error occurred',
+        },
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+};
+
 // Export for Vercel serverless function
-export default app;
+export default handler;
