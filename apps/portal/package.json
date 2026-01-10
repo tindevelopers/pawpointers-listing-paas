@@ -5,6 +5,7 @@
   "description": "Consumer-facing portal application with SSG/ISR for SEO optimization",
   "scripts": {
     "dev": "next dev --port 3030 --hostname 0.0.0.0",
+    "dev:ready": "next dev --port 3030 --hostname 0.0.0.0 & sleep 10 && curl -s http://localhost:3030 > /dev/null && wait",
     "build": "next build",
     "start": "next start --port 3030",
     "lint": "next lint",
@@ -22,7 +23,7 @@
     "@tinadmin/ui-consumer": "workspace:*",
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
-    "next": "^15.4.8",
+    "next": "15.4.8",
     "openai": "^4.102.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
