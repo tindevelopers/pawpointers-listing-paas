@@ -7,9 +7,25 @@ import { logger } from 'hono/logger';
 
 // Import compiled routes from dist directory
 // Note: Vercel will compile this file, so we import from dist
-import { authRoutes } from '../dist/routes/auth';
-import { publicRoutes } from '../dist/routes/public';
-import { errorHandler } from '../dist/middleware/error-handler';
+// Wrap imports in try-catch to handle missing modules gracefully
+let authRoutes: any;
+let publicRoutes: any;
+let errorHandler: any;
+
+try {
+  authRoutes = require('../dist/routes/auth').authRoutes;
+  publicRoutes = require('../dist/routes/public').publicRoutes;
+  errorHandler = require('../dist/middleware/error-handler').errorHandler;
+} catch (error) {
+  console.error('[ERROR] Failed to import routes:', error);
+  // Create fallback routes
+  authRoutes = new Hono();
+  publicRoutes = new Hono();
+  errorHandler = (err: Error, c: any) => {
+    console.error('[ERROR]', err);
+    return c.json({ error: 'Internal server error' }, 500);
+  };
+}
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
