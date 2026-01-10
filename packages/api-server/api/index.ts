@@ -5,11 +5,11 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 
-// Import routes directly - Vercel will compile TypeScript
-// Using relative paths from api/ to src/ with .js extensions for ESM
-import { publicRoutes } from '../src/routes/public.js';
-import { authRoutes } from '../src/routes/auth.js';
-import { errorHandler } from '../src/middleware/error-handler.js';
+// Import routes from compiled dist folder
+// Vercel includes dist/ in deployment, and we need .js extensions for ESM
+import { publicRoutes } from '../dist/routes/public.js';
+import { authRoutes } from '../dist/routes/auth.js';
+import { errorHandler } from '../dist/middleware/error-handler.js';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
