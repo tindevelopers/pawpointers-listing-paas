@@ -1,6 +1,0 @@
-# Don't exclude src - Vercel handler needs to import from src
-# src/**
-*.md
-node_modules/**
-.git/**
-.env*

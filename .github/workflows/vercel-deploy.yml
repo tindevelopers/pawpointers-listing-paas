@@ -22,7 +22,6 @@ jobs:
       portal: ${{ steps.filter.outputs.portal }}
       admin: ${{ steps.filter.outputs.admin }}
       dashboard: ${{ steps.filter.outputs.dashboard }}
-      api: ${{ steps.filter.outputs.api }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,15 +53,6 @@ jobs:
               - 'apps/dashboard/**'
               - 'packages/@tinadmin/core/**'
               - 'packages/@tinadmin/config/**'
-              - 'config/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-            api:
-              - 'packages/api-server/**'
-              - 'packages/@tinadmin/core/**'
-              - 'packages/@tinadmin/config/**'
-              - 'packages/@listing-platform/**'
               - 'config/**'
               - 'package.json'
               - 'pnpm-lock.yaml'
@@ -180,45 +170,5 @@ jobs:
         run: cd ../.. && pnpm turbo build --filter=@tinadmin/dashboard
 
       - name: Deploy Project to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} ${{ github.event_name == 'push' && '--prod' || '' }}
-
-  deploy-api:
-    name: Deploy API Server
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    if: needs.detect-changes.outputs.api == 'true'
-    defaults:
-      run:
-        working-directory: packages/api-server
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
-      - name: Install dependencies
-        run: cd ../.. && pnpm install --frozen-lockfile
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Pull Vercel Environment Information
-        # Note: vercel pull reads .vercel/project.json if project is linked, otherwise uses VERCEL_ORG_ID/VERCEL_PROJECT_ID
-        run: vercel pull --yes --environment=${{ github.event_name == 'pull_request' && 'preview' || 'production' }} --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build Project
-        run: pnpm build
-
-      - name: Deploy Project to Vercel
-        # Deploys to production on push to main, preview on PRs
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} ${{ github.event_name == 'push' && '--prod' || '' }}
 
