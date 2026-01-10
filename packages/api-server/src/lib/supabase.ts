@@ -44,15 +44,9 @@ console.log('[DEBUG] Env vars check (trimmed):', {
 fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:25',message:'Env vars check (trimmed)',data:{hasSupabaseUrl:!!supabaseUrl,hasServiceKey:!!supabaseServiceKey,hasAnonKey:!!supabaseAnonKey,urlLength:supabaseUrl?.length||0,serviceKeyLength:supabaseServiceKey?.length||0,anonKeyLength:supabaseAnonKey?.length||0,urlPrefix:supabaseUrl?.substring(0,30)||'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'A,B,C,D'})}).catch(()=>{});
 // #endregion
 
-if (!supabaseUrl) {
-  // #region agent log
-  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:15',message:'Missing SUPABASE_URL',data:{error:'SUPABASE_URL is required'},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-  throw new Error('SUPABASE_URL is required');
-}
-
-// Non-null assertion after validation
-const SUPABASE_URL = supabaseUrl;
+// Use trimmed URL (may be undefined if env var is missing)
+// Don't throw at module load - validate when client is actually created
+const SUPABASE_URL = supabaseUrl || '';
 
 /**
  * Create a Supabase client with service role (admin) privileges
@@ -60,13 +54,22 @@ const SUPABASE_URL = supabaseUrl;
  */
 export function createAdminClient(): SupabaseClient {
   // #region agent log
-  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:22',message:'createAdminClient called',data:{hasServiceKey:!!supabaseServiceKey,urlPrefix:SUPABASE_URL.substring(0,30)},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'B,D'})}).catch(()=>{});
+  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:22',message:'createAdminClient called',data:{hasServiceKey:!!supabaseServiceKey,hasUrl:!!supabaseUrl,urlPrefix:supabaseUrl?.substring(0,30)||'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'B,D'})}).catch(()=>{});
   // #endregion
-  
+
+  if (!supabaseUrl) {
+    const error = new Error('SUPABASE_URL is required');
+    console.error('[ERROR]', error.message);
+    // #region agent log
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:52',message:'Missing SUPABASE_URL in createAdminClient',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    throw error;
+  }
+
   if (!supabaseServiceKey) {
   // #region agent log
-  console.error('[DEBUG] Missing SUPABASE_SERVICE_KEY');
-  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:25',message:'Missing SUPABASE_SERVICE_KEY',data:{error:'SUPABASE_SERVICE_KEY is required for admin client'},timestamp:Date.now(),sessionId:'debug-session',runId:'init',hypothesisId:'B,D'})}).catch(()=>{});
+  console.error('[ERROR] Missing SUPABASE_SERVICE_KEY');
+  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'supabase.ts:60',message:'Missing SUPABASE_SERVICE_KEY',data:{error:'SUPABASE_SERVICE_KEY is required for admin client'},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'B,D'})}).catch(()=>{});
   // #endregion
     throw new Error('SUPABASE_SERVICE_KEY is required for admin client');
   }
