@@ -1,8 +1,8 @@
 # API Server Status
 
-## Current Status: DEPROVISIONED ✅
+## Current Status: DEPROVISIONED & REMOVED ✅
 
-The external API server (`https://pawpointers-api.tinconnect.com`) has been **deprovisioned**. All API calls have been migrated to use **Supabase directly** or gracefully stub out with fallbacks.
+The external API server (`https://pawpointers-api.tinconnect.com`) has been **deprovisioned** and the `packages/api-server/` directory has been **removed** from the codebase. All API calls have been migrated to use **Supabase directly** or gracefully stub out with fallbacks.
 
 ## Migration Summary
 
@@ -40,6 +40,8 @@ const USE_API = false; // Set to true if API server is provisioned later
 - `apps/portal/lib/knowledge-base.ts` - Uses Supabase instead of API
 - `apps/portal/app/sitemap.ts` - Uses Supabase instead of API
 - `apps/portal/vercel.json` - Removed API rewrite rule
+- `packages/api-server/` - **REMOVED** (incomplete, unused code)
+- `pnpm-workspace.yaml` - Removed api-server package reference
 
 ## Environment Variables
 
