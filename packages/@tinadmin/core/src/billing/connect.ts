@@ -1,12 +1,19 @@
 "use server";
 
-import { getStripe } from "@/core/billing/config";
+import { getStripeLazy } from "@/core/billing/config";
 import { calculateRevenue, getDefaultRevenueSettings } from "./revenue";
-
-const stripe = getStripe();
 import { createAdminClient } from "@/core/database/admin-client";
 import { requirePermission } from "@/core/permissions/middleware";
 import type Stripe from "stripe";
+
+// Lazy getter for Stripe instance to prevent build-time errors
+function getStripe(): Stripe {
+  const stripe = getStripeLazy();
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+  return stripe;
+}
 
 /**
  * Create a Stripe Connect account for a tenant
@@ -69,7 +76,7 @@ export async function createConnectAccount(
       },
     };
 
-    const account = await stripe.accounts.create(accountParams);
+    const account = await getStripe().accounts.create(accountParams);
 
     // Save to database
     await ((adminClient.from("stripe_connect_accounts") as any).insert({
@@ -127,7 +134,7 @@ export async function createConnectAccountLink(
     }
 
     // Create account link
-    const accountLink = await stripe.accountLinks.create({
+    const accountLink = await getStripe().accountLinks.create({
       account: connectAccount.stripe_account_id,
       refresh_url: refreshUrl,
       return_url: returnUrl,
@@ -170,7 +177,7 @@ export async function createConnectLoginLink(tenantId: string): Promise<{
     }
 
     // Create login link
-    const loginLink = await stripe.accounts.createLoginLink(connectAccount.stripe_account_id);
+    const loginLink = await getStripe().accounts.createLoginLink(connectAccount.stripe_account_id);
 
     return { success: true, url: loginLink.url };
   } catch (error) {
@@ -206,7 +213,7 @@ export async function getConnectAccount(tenantId: string): Promise<{
     }
 
     // Fetch full account details from Stripe
-    const stripeAccount = await stripe.accounts.retrieve(connectAccount.stripe_account_id);
+    const stripeAccount = await getStripe().accounts.retrieve(connectAccount.stripe_account_id);
 
     return {
       success: true,
@@ -331,7 +338,7 @@ export async function createConnectedPayment(
 
     // Create payment intent with transfer_data (modern approach)
     // Platform keeps: totalAmount - listingOwnerAmount automatically
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount,
       currency,
       customer: customer.stripe_customer_id,
@@ -384,7 +391,7 @@ export async function createPayout(
     }
 
     // Create payout
-    const payout = await stripe.payouts.create(
+    const payout = await getStripe().payouts.create(
       {
         amount,
         currency,
@@ -431,7 +438,7 @@ export async function getConnectAccountBalance(tenantId: string): Promise<{
     }
 
     // Get balance
-    const balance = await stripe.balance.retrieve({
+    const balance = await getStripe().balance.retrieve({
       stripeAccount: connectAccount.stripe_account_id,
     });
 

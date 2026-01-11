@@ -33,6 +33,21 @@ export function isStripeConfigured(): boolean {
 }
 
 /**
+ * Get Stripe instance lazily (for use in modules that need it at top level)
+ * Returns null if Stripe is not configured, preventing build-time errors
+ */
+export function getStripeLazy(): Stripe | null {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return null;
+  }
+  try {
+    return getStripe();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get Stripe instance (for backward compatibility)
  * @deprecated Use getStripe() instead
  */

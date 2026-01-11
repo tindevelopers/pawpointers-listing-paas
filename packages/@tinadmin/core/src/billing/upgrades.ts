@@ -1,12 +1,19 @@
 "use server";
 
-import { getStripe } from "./config";
+import { getStripeLazy } from "./config";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import { requirePermission } from "@/core/permissions/middleware";
 import type Stripe from "stripe";
 
-const stripe = getStripe();
+// Lazy getter for Stripe instance to prevent build-time errors
+function getStripe(): Stripe {
+  const stripe = getStripeLazy();
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+  return stripe;
+}
 
 export interface UpgradePreview {
   currentPlan: {
@@ -218,13 +225,13 @@ export async function previewUpgrade(
       .eq("tenant_id", tenantId)
       .single();
     
-    const upcomingInvoice = await (stripe.invoices as any).retrieveUpcoming({
+    const upcomingInvoice = await (getStripe().invoices as any).retrieveUpcoming({
       customer: (customerResult.data as any)?.stripe_customer_id,
       subscription: currentSub.stripe_subscription_id,
       subscription_items: [
         {
           id: (
-            await stripe.subscriptions.retrieve(currentSub.stripe_subscription_id)
+            await getStripe().subscriptions.retrieve(currentSub.stripe_subscription_id)
           ).items.data[0].id,
           price: newPriceId,
         },
@@ -314,7 +321,7 @@ export async function upgradeSubscription(
     const dbSubscription = subscriptionResult.data;
 
     // Get current subscription from Stripe
-    const currentSubscription = await stripe.subscriptions.retrieve(
+    const currentSubscription = await getStripe().subscriptions.retrieve(
       dbSubscription.stripe_subscription_id,
       {
         expand: ["items.data.price.product"],
@@ -322,7 +329,7 @@ export async function upgradeSubscription(
     );
 
     // Update subscription in Stripe
-    const updatedSubscription = await stripe.subscriptions.update(
+    const updatedSubscription = await getStripe().subscriptions.update(
       dbSubscription.stripe_subscription_id,
       {
         items: [
@@ -377,7 +384,7 @@ export async function upgradeSubscription(
     if (updatedSubscription.latest_invoice) {
       invoice =
         typeof updatedSubscription.latest_invoice === "string"
-          ? await stripe.invoices.retrieve(updatedSubscription.latest_invoice)
+          ? await getStripe().invoices.retrieve(updatedSubscription.latest_invoice)
           : updatedSubscription.latest_invoice;
     }
 
@@ -436,13 +443,13 @@ export async function downgradeSubscription(
     const dbSubscription = subscriptionResult.data;
 
     // Update subscription - schedule change at period end for downgrades
-    const updatedSubscription = await stripe.subscriptions.update(
+    const updatedSubscription = await getStripe().subscriptions.update(
       dbSubscription.stripe_subscription_id,
       {
         items: [
           {
             id: (
-              await stripe.subscriptions.retrieve(dbSubscription.stripe_subscription_id)
+              await getStripe().subscriptions.retrieve(dbSubscription.stripe_subscription_id)
             ).items.data[0].id,
             price: newPriceId,
           },

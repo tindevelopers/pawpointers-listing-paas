@@ -1,12 +1,19 @@
 "use server";
 
-import { getStripe } from "./config";
+import { getStripeLazy } from "./config";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import { requirePermission } from "@/core/permissions/middleware";
 import type Stripe from "stripe";
 
-const stripe = getStripe();
+// Lazy getter for Stripe instance to prevent build-time errors
+function getStripe(): Stripe {
+  const stripe = getStripeLazy();
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+  return stripe;
+}
 
 export interface PendingPayout {
   id: string;
@@ -289,7 +296,7 @@ export async function createPayout(params: {
 
     // Create payout in Stripe
     try {
-      const stripePayout = await stripe.payouts.create(
+      const stripePayout = await getStripe().payouts.create(
         {
           amount: Math.round(payoutAmount), // Convert to cents
           currency: currency,

@@ -1,6 +1,6 @@
 "use server";
 
-import { getStripe } from "./config";
+import { getStripeLazy } from "./config";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import {
@@ -11,7 +11,14 @@ import {
 } from "./revenue";
 import type Stripe from "stripe";
 
-const stripe = getStripe();
+// Lazy getter for Stripe instance to prevent build-time errors
+function getStripe(): Stripe {
+  const stripe = getStripeLazy();
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+  return stripe;
+}
 
 export interface BookingPaymentParams {
   bookingId: string;
@@ -103,7 +110,7 @@ export async function createBookingPayment(
     customerId = customerResult.data.stripe_customer_id;
 
     // Create payment intent with transfer_data (modern approach)
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: params.amount,
       currency: currency,
       customer: customerId,
@@ -186,7 +193,7 @@ export async function processBookingPayment(
     const adminClient = createAdminClient();
 
     // Get payment intent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== "succeeded") {
       return {
@@ -300,7 +307,7 @@ export async function refundBookingPayment(
     const refundAmount = amount || booking.total_amount;
 
     // Create refund in Stripe
-    const refund = await stripe.refunds.create({
+    const refund = await getStripe().refunds.create({
       payment_intent: booking.payment_intent_id,
       amount: refundAmount,
       reason: reason ? (reason as Stripe.RefundCreateParams.Reason) : undefined,
