@@ -8,21 +8,21 @@
   --foreground-rgb: 31, 41, 55;
   --background-start-rgb: 255, 255, 255;
   --background-end-rgb: 249, 250, 251;
-
+  
   /* Brand colors - Warm and friendly */
   --warm-primary: 249, 115, 22;        /* Warm orange */
   --warm-primary-light: 255, 237, 213; /* Light warm orange */
   --warm-primary-dark: 194, 65, 12;    /* Dark warm orange */
-
+  
   /* Secondary accent - Cyan for actions */
   --accent-secondary: 6, 182, 212;     /* Cyan */
   --accent-secondary-light: 207, 250, 254; /* Light cyan */
-
+  
   /* Status colors */
   --status-success: 34, 197, 94;       /* Green */
   --status-warning: 217, 119, 6;       /* Amber */
   --status-error: 239, 68, 68;         /* Red */
-
+  
   /* Neutral palette - Soft grays */
   --neutral-50: 250, 250, 250;
   --neutral-100: 245, 245, 245;
@@ -44,6 +44,10 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -54,60 +58,6 @@ body {
     rgb(var(--background-start-rgb));
   font-family: system-ui, -apple-system, sans-serif;
   transition: background-color 0.3s ease;
-}
-
-/* Friendly card styling */
-@layer components {
-  .card-friendly {
-    @apply bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden;
-  }
-
-  .card-service {
-    @apply card-friendly border border-orange-100 dark:border-orange-900/20;
-  }
-
-  .button-primary {
-    @apply bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors duration-200;
-  }
-
-  .button-secondary {
-    @apply bg-cyan-500 hover:bg-cyan-600 text-white font-semibold px-4 py-2.5 rounded-lg transition-colors duration-200;
-  }
-
-  .button-outline {
-    @apply border-2 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-semibold px-4 py-2.5 rounded-lg transition-colors duration-200;
-  }
-
-  .rating-stars {
-    @apply flex items-center gap-1 text-sm;
-  }
-
-  .filter-chip {
-    @apply inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors;
-  }
-
-  .service-badge {
-    @apply inline-block bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 px-3 py-1 rounded-full text-xs font-semibold;
-  }
-
-  .availability-available {
-    @apply text-green-600 dark:text-green-400 font-medium;
-  }
-
-  .availability-limited {
-    @apply text-amber-600 dark:text-amber-400 font-medium;
-  }
-
-  .availability-unavailable {
-    @apply text-red-600 dark:text-red-400 font-medium;
-  }
-}
-
-/* Smooth transitions */
-@layer base {
-  * {
-    @apply transition-colors duration-200;
-  }
 }
 
 /* Custom animations */
@@ -142,16 +92,71 @@ body {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
 @layer utilities {
   .animate-slideInUp {
     animation: slideInUp 0.3s ease-out;
   }
-
+  
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-out;
   }
-
+  
   .animate-scaleIn {
     animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 1000px 100%;
+  }
+
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-shadow-lg {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .text-warm-primary {
+    color: rgb(var(--warm-primary));
+  }
+
+  .bg-warm-primary {
+    background-color: rgb(var(--warm-primary));
+  }
+
+  .border-warm-primary {
+    border-color: rgb(var(--warm-primary));
+  }
+
+  .text-accent-secondary {
+    color: rgb(var(--accent-secondary));
+  }
+
+  .bg-accent-secondary {
+    background-color: rgb(var(--accent-secondary));
+  }
+
+  .availability-available {
+    @apply text-green-600 dark:text-green-400 font-medium;
+  }
+
+  .availability-limited {
+    @apply text-amber-600 dark:text-amber-400 font-medium;
+  }
+
+  .availability-unavailable {
+    @apply text-red-600 dark:text-red-400 font-medium;
   }
 }
