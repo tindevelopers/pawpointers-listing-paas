@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { createAdminClient } from '@tinadmin/core/database/admin-client';
+import { createAdminClient } from '@/core/database/admin-client';
 import { syncListing, deleteListing, initializeCollection } from '@listing-platform/search';
 
 /**

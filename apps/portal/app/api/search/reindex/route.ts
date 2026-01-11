@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@tinadmin/core/database/admin-client';
+import { createAdminClient } from '@/core/database/admin-client';
 import { syncListings, initializeCollection, clearCollection } from '@listing-platform/search';
 
 /**
