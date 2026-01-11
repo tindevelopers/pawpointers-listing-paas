@@ -1,9 +1,24 @@
 /**
  * Knowledge Base API Functions
- * Fetch knowledge base documents from the public API
+ * Fetch knowledge base documents from Supabase (API server is deprovisioned)
+ * 
+ * NOTE: API server is deprovisioned. This module now uses Supabase directly
+ * or gracefully handles API failures with fallbacks.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const USE_API = false; // Set to true if API server is provisioned later
+
+// Import Supabase client
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+let supabase: ReturnType<typeof createClient> | null = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 export interface KnowledgeDocument {
   id: string;
@@ -43,74 +58,116 @@ export interface KnowledgeSearchResult {
 export async function getKnowledgeDocuments(
   params: KnowledgeSearchParams = {}
 ): Promise<KnowledgeSearchResult> {
-  const searchParams = new URLSearchParams();
+  const page = params.page || 1;
+  const limit = params.limit || 20;
 
-  if (params.page) searchParams.set('page', params.page.toString());
-  if (params.limit) searchParams.set('limit', params.limit.toString());
-  if (params.search) searchParams.set('search', params.search);
-  if (params.category) searchParams.set('category', params.category);
-  if (params.tag) searchParams.set('tag', params.tag);
-  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
-  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+  // Use Supabase directly (API server is deprovisioned)
+  if (supabase && !USE_API) {
+    try {
+      let query = supabase
+        .from('knowledge_documents')
+        .select('*', { count: 'exact' })
+        .eq('is_active', true);
 
-  try {
-    const response = await fetch(
-      `${API_URL}/api/public/knowledge-base?${searchParams.toString()}`,
-      {
-        next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
+      // Apply filters
+      if (params.search) {
+        query = query.or(`title.ilike.%${params.search}%,content.ilike.%${params.search}%,excerpt.ilike.%${params.search}%`);
       }
-    );
+      if (params.category) {
+        query = query.eq('metadata->>category', params.category);
+      }
+      if (params.tag) {
+        query = query.contains('metadata->tags', [params.tag]);
+      }
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch knowledge documents: ${response.statusText}`);
+      // Apply sorting
+      const sortBy = params.sortBy || 'created_at';
+      const sortOrder = params.sortOrder || 'desc';
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+      // Apply pagination
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      const documents: KnowledgeDocument[] = (data || []).map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        excerpt: doc.excerpt,
+        category: doc.metadata?.category,
+        tags: doc.metadata?.tags || [],
+        source_type: doc.source_type,
+        view_count: doc.metadata?.view_count || 0,
+        helpful_count: doc.metadata?.helpful_count || 0,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+      }));
+
+      return {
+        documents,
+        total: count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((count || 0) / limit),
+      };
+    } catch (error) {
+      console.error('Error fetching knowledge documents from Supabase:', error);
+      // Fall through to stub
     }
-
-    const result = await response.json();
-    const documents = result.data || [];
-    const total = result.meta?.total || 0;
-    const page = result.meta?.page || 1;
-    const limit = result.meta?.limit || 20;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      documents,
-      total,
-      page,
-      limit,
-      totalPages,
-    };
-  } catch (error) {
-    console.error('Error fetching knowledge documents:', error);
-    return {
-      documents: [],
-      total: 0,
-      page: 1,
-      limit: 20,
-      totalPages: 0,
-    };
   }
+
+  // Stub: Return empty result if Supabase not available or API disabled
+  return {
+    documents: [],
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 0,
+  };
 }
 
 /**
  * Fetch a single knowledge document by ID
  */
 export async function getKnowledgeDocument(id: string): Promise<KnowledgeDocument | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/public/knowledge-base/${id}`, {
-      next: { revalidate: 300 }, // Cache for 5 minutes
-    });
+  // Use Supabase directly (API server is deprovisioned)
+  if (supabase && !USE_API) {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('id', id)
+        .eq('is_active', true)
+        .single();
 
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch knowledge document: ${response.statusText}`);
+      if (error || !data) return null;
+
+      return {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        excerpt: data.excerpt,
+        category: data.metadata?.category,
+        tags: data.metadata?.tags || [],
+        source_type: data.source_type,
+        view_count: data.metadata?.view_count || 0,
+        helpful_count: data.metadata?.helpful_count || 0,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+      };
+    } catch (error) {
+      console.error('Error fetching knowledge document from Supabase:', error);
+      return null;
     }
-
-    const result = await response.json();
-    return result.data || null;
-  } catch (error) {
-    console.error('Error fetching knowledge document:', error);
-    return null;
   }
+
+  // Stub: Return null if not available
+  return null;
 }
 
 /**
@@ -120,30 +177,47 @@ export async function searchKnowledgeBase(
   query: string,
   options: { limit?: number; threshold?: number; tenantId?: string } = {}
 ): Promise<KnowledgeDocument[]> {
-  const searchParams = new URLSearchParams();
-  searchParams.set('q', query);
-  if (options.limit) searchParams.set('limit', options.limit.toString());
-  if (options.threshold) searchParams.set('threshold', options.threshold.toString());
-  if (options.tenantId) searchParams.set('tenant_id', options.tenantId);
+  const limit = options.limit || 10;
 
-  try {
-    const response = await fetch(
-      `${API_URL}/api/public/knowledge-base/search?${searchParams.toString()}`,
-      {
-        next: { revalidate: 30 }, // Shorter cache for search results
+  // Use Supabase directly (API server is deprovisioned)
+  if (supabase && !USE_API) {
+    try {
+      let supabaseQuery = supabase
+        .from('knowledge_documents')
+        .select('*')
+        .eq('is_active', true)
+        .or(`title.ilike.%${query}%,content.ilike.%${query}%,excerpt.ilike.%${query}%`)
+        .limit(limit);
+
+      if (options.tenantId) {
+        supabaseQuery = supabaseQuery.eq('tenant_id', options.tenantId);
       }
-    );
 
-    if (!response.ok) {
-      throw new Error(`Failed to search knowledge base: ${response.statusText}`);
+      const { data, error } = await supabaseQuery;
+
+      if (error) throw error;
+
+      return (data || []).map((doc: any) => ({
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        excerpt: doc.excerpt,
+        category: doc.metadata?.category,
+        tags: doc.metadata?.tags || [],
+        source_type: doc.source_type,
+        view_count: doc.metadata?.view_count || 0,
+        helpful_count: doc.metadata?.helpful_count || 0,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+      }));
+    } catch (error) {
+      console.error('Error searching knowledge base in Supabase:', error);
+      return [];
     }
-
-    const result = await response.json();
-    return result.data || [];
-  } catch (error) {
-    console.error('Error searching knowledge base:', error);
-    return [];
   }
+
+  // Stub: Return empty array if not available
+  return [];
 }
 
 /**
@@ -152,41 +226,74 @@ export async function searchKnowledgeBase(
 export async function getKnowledgeCategories(): Promise<
   Array<{ name: string; count: number }>
 > {
-  try {
-    const response = await fetch(`${API_URL}/api/public/knowledge-base/categories`, {
-      next: { revalidate: 600 }, // Cache categories for 10 minutes
-    });
+  // Use Supabase directly (API server is deprovisioned)
+  if (supabase && !USE_API) {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_documents')
+        .select('metadata->category')
+        .eq('is_active', true);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.statusText}`);
+      if (error) throw error;
+
+      // Count documents by category
+      const categoryCounts = new Map<string, number>();
+      (data || []).forEach((doc: any) => {
+        const category = doc.metadata?.category;
+        if (category) {
+          categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+        }
+      });
+
+      return Array.from(categoryCounts.entries()).map(([name, count]) => ({
+        name,
+        count,
+      }));
+    } catch (error) {
+      console.error('Error fetching knowledge categories from Supabase:', error);
+      return [];
     }
-
-    const result = await response.json();
-    return result.data || [];
-  } catch (error) {
-    console.error('Error fetching knowledge categories:', error);
-    return [];
   }
+
+  // Stub: Return empty array if not available
+  return [];
 }
 
 /**
  * Mark a document as helpful
  */
 export async function markDocumentHelpful(id: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_URL}/api/public/knowledge-base/${id}/helpful`, {
-      method: 'POST',
-      cache: 'no-store',
-    });
+  // Use Supabase directly (API server is deprovisioned)
+  if (supabase && !USE_API) {
+    try {
+      const { data: currentDoc } = await supabase
+        .from('knowledge_documents')
+        .select('metadata')
+        .eq('id', id)
+        .single();
 
-    if (!response.ok) {
-      throw new Error(`Failed to mark document as helpful: ${response.statusText}`);
+      if (!currentDoc) return false;
+
+      const currentCount = currentDoc.metadata?.helpful_count || 0;
+      const { error } = await supabase
+        .from('knowledge_documents')
+        .update({
+          metadata: {
+            ...currentDoc.metadata,
+            helpful_count: currentCount + 1,
+          },
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error marking document as helpful in Supabase:', error);
+      return false;
     }
-
-    return true;
-  } catch (error) {
-    console.error('Error marking document as helpful:', error);
-    return false;
   }
+
+  // Stub: Return false if not available
+  return false;
 }
 

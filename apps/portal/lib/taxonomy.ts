@@ -2,12 +2,18 @@
  * Taxonomy Data Fetching Utilities
  * 
  * Fetches listings and taxonomy terms based on dynamic URL patterns
+ * 
+ * NOTE: API server is deprovisioned. This module now uses Supabase directly
+ * or gracefully handles API failures with fallbacks.
  */
 
 import type { TaxonomyPath } from "@listing-platform/config";
 import type { Listing, ListingSearchResult } from "./listings";
+import { getListingBySlug, searchListings } from "./listings";
 
+// API server is deprovisioned - using Supabase directly instead
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const USE_API = false; // Set to true if API server is provisioned later
 
 export interface TaxonomyTerm {
   id: string;
@@ -39,19 +45,9 @@ export async function getListingByTaxonomyPath(
     // The slug is the last segment
     const slug = segments[segments.length - 1];
     
-    // Try to fetch as a listing first
-    const response = await fetch(
-      `${API_URL}/api/public/listings/slug/${slug}`,
-      { next: { revalidate: 60 } }
-    );
-    
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch listing: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    const listing = result.data;
+    // Use Supabase directly (API server is deprovisioned)
+    const { getListingBySlug } = await import('./listings');
+    const listing = await getListingBySlug(slug);
     
     if (!listing) return null;
     
@@ -60,12 +56,9 @@ export async function getListingByTaxonomyPath(
     if (segments.length > 1) {
       const taxonomySlug = segments[0];
       
-      // Check if listing has matching primary taxonomy
-      if (listing.primary_taxonomy_slug && listing.primary_taxonomy_slug !== taxonomySlug) {
-        // Check category as fallback
-        if (listing.category?.toLowerCase() !== taxonomySlug.toLowerCase()) {
-          return null;
-        }
+      // Check if listing category matches taxonomy path
+      if (listing.category?.toLowerCase() !== taxonomySlug.toLowerCase()) {
+        return null;
       }
     }
     
@@ -86,25 +79,45 @@ export async function getTaxonomyTerm(
     const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length === 0) return null;
     
-    // Build the taxonomy path for the API
-    const termSlug = segments.join("/");
+    // API server is deprovisioned - create term from path for graceful degradation
+    // TODO: Implement Supabase-based taxonomy terms if needed
+    const termSlug = segments[segments.length - 1];
     
-    const response = await fetch(
-      `${API_URL}/api/public/taxonomy/${termSlug}`,
-      { next: { revalidate: 300 } }
-    );
-    
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch taxonomy term: ${response.statusText}`);
+    // Try API if enabled (for future use)
+    if (USE_API) {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/public/taxonomy/${segments.join("/")}`,
+          { next: { revalidate: 300 } }
+        );
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data) return result.data;
+        }
+      } catch (apiError) {
+        // Fall through to stub implementation
+        console.warn('API server not available, using stub taxonomy term');
+      }
     }
     
-    const result = await response.json();
-    return result.data || null;
+    // Stub: Create a term from the path
+    // Count listings with matching category to get listingCount
+    const { searchListings } = await import('./listings');
+    const category = segments[0];
+    const { total } = await searchListings({ category, limit: 1 });
+    
+    return {
+      id: segments.join("-"),
+      slug: termSlug,
+      name: formatTermName(termSlug),
+      level: segments.length - 1,
+      listingCount: total,
+    };
   } catch (error) {
     console.error("Error fetching taxonomy term:", error);
     
-    // Fallback: try to create a term from the path for graceful degradation
+    // Fallback: return basic term structure
     const segments = (path as TaxonomyPath & { _segments?: string[] })._segments || [];
     if (segments.length > 0) {
       return {
@@ -133,29 +146,23 @@ export async function getListingsByTaxonomyTerm(
       return { listings: [], total: 0, page: 1, limit: 12, totalPages: 0 };
     }
     
-    const params = new URLSearchParams();
-    params.set("taxonomy", segments.join("/"));
-    params.set("page", String(options.page || 1));
-    params.set("limit", String(options.limit || 12));
-    if (options.sortBy) params.set("sortBy", options.sortBy);
+    // Use Supabase directly (API server is deprovisioned)
+    const { searchListings } = await import('./listings');
+    const category = segments[0]; // Use first segment as category
     
-    const response = await fetch(
-      `${API_URL}/api/public/listings?${params.toString()}`,
-      { next: { revalidate: 60 } }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch listings: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
+    const result = await searchListings({
+      category,
+      page: options.page || 1,
+      limit: options.limit || 12,
+      sortBy: options.sortBy as 'price' | 'date' | 'relevance' | undefined,
+    });
     
     return {
-      listings: result.data || [],
-      total: result.meta?.total || 0,
-      page: result.meta?.page || 1,
-      limit: result.meta?.limit || 12,
-      totalPages: result.meta?.totalPages || 0,
+      listings: result.listings,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
     };
   } catch (error) {
     console.error("Error fetching listings by taxonomy:", error);
@@ -168,18 +175,37 @@ export async function getListingsByTaxonomyTerm(
  */
 export async function getPopularTaxonomyPaths(limit = 1000): Promise<string[][]> {
   try {
-    const response = await fetch(
-      `${API_URL}/api/public/sitemap/taxonomy?limit=${limit}`
-    );
+    // API server is deprovisioned - generate paths from Supabase listings
+    const { searchListings } = await import('./listings');
     
-    if (!response.ok) return [];
+    // Get unique categories from listings
+    const { listings } = await searchListings({ limit: 1000 });
+    const categories = new Set<string>();
     
-    const result = await response.json();
+    listings.forEach(listing => {
+      if (listing.category) {
+        categories.add(listing.category);
+      }
+    });
     
-    // Return array of path segments
-    return (result.data?.paths || []).map((path: string) => 
-      path.split("/").filter(Boolean)
-    );
+    // Return paths as [category, slug] arrays
+    const paths: string[][] = [];
+    for (const category of Array.from(categories).slice(0, limit)) {
+      // Add category-only paths
+      paths.push([category]);
+      
+      // Add listing paths (category + slug)
+      listings
+        .filter(l => l.category === category)
+        .slice(0, 10) // Limit listings per category
+        .forEach(listing => {
+          if (listing.slug) {
+            paths.push([category, listing.slug]);
+          }
+        });
+    }
+    
+    return paths.slice(0, limit);
   } catch (error) {
     console.error("Error fetching taxonomy paths:", error);
     return [];
@@ -193,18 +219,29 @@ export async function getChildTerms(
   parentPath: TaxonomyPath
 ): Promise<TaxonomyTerm[]> {
   try {
-    const segments = (parentPath as TaxonomyPath & { _segments?: string[] })._segments || [];
-    const parentSlug = segments.join("/");
+    // API server is deprovisioned - return empty array for now
+    // TODO: Implement Supabase-based child terms if needed
+    if (USE_API) {
+      const segments = (parentPath as TaxonomyPath & { _segments?: string[] })._segments || [];
+      const parentSlug = segments.join("/");
+      
+      try {
+        const response = await fetch(
+          `${API_URL}/api/public/taxonomy/${parentSlug}/children`,
+          { next: { revalidate: 300 } }
+        );
+        
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data) return result.data;
+        }
+      } catch (apiError) {
+        // Fall through to empty array
+      }
+    }
     
-    const response = await fetch(
-      `${API_URL}/api/public/taxonomy/${parentSlug}/children`,
-      { next: { revalidate: 300 } }
-    );
-    
-    if (!response.ok) return [];
-    
-    const result = await response.json();
-    return result.data || [];
+    // Stub: Return empty array (no child terms implemented yet)
+    return [];
   } catch (error) {
     console.error("Error fetching child terms:", error);
     return [];

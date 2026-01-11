@@ -5,10 +5,12 @@
   "installCommand": "cd ../.. && pnpm install",
   "outputDirectory": ".next",
   "rewrites": [
-    {
-      "source": "/api/v1/:path*",
-      "destination": "https://api.yourplatform.com/api/:path*"
-    }
+    // API server is deprovisioned - removed rewrite rule
+    // Uncomment and update destination if API server is provisioned later:
+    // {
+    //   "source": "/api/v1/:path*",
+    //   "destination": "https://api.yourplatform.com/api/:path*"
+    // }
   ],
   "headers": [
     {
