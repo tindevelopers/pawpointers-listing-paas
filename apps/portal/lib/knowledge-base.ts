@@ -276,42 +276,43 @@ export async function getKnowledgeCategories(): Promise<
  */
 export async function markDocumentHelpful(id: string): Promise<boolean> {
   // Use Supabase directly (API server is deprovisioned)
-  if (supabase && !USE_API) {
-    try {
-      const { data: currentDoc } = await supabase
-        .from('knowledge_documents')
-        .select('metadata')
-        .eq('id', id)
-        .single();
-
-      if (!currentDoc) return false;
-
-      // Type assertion to handle Supabase type inference
-      const doc = currentDoc as {
-        metadata?: { helpful_count?: number; [key: string]: unknown };
-      };
-
-      const currentCount = doc.metadata?.helpful_count || 0;
-      const updateData = {
-        metadata: {
-          ...doc.metadata,
-          helpful_count: currentCount + 1,
-        },
-      };
-      const { error } = await supabase!
-        .from('knowledge_documents')
-        .update(updateData as Record<string, unknown>)
-        .eq('id', id);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error marking document as helpful in Supabase:', error);
-      return false;
-    }
+  if (!supabase || USE_API) {
+    return false;
   }
 
-  // Stub: Return false if not available
-  return false;
+  try {
+    const { data: currentDoc } = await supabase
+      .from('knowledge_documents')
+      .select('metadata')
+      .eq('id', id)
+      .single();
+
+    if (!currentDoc) return false;
+
+    // Type assertion to handle Supabase type inference
+    const doc = currentDoc as {
+      metadata?: { helpful_count?: number; [key: string]: unknown };
+    };
+
+    const currentCount = doc.metadata?.helpful_count || 0;
+    const updateData = {
+      metadata: {
+        ...doc.metadata,
+        helpful_count: currentCount + 1,
+      },
+    };
+    
+    // Use type assertion to bypass TypeScript inference issue
+    const { error } = await (supabase
+      .from('knowledge_documents')
+      .update(updateData as any)
+      .eq('id', id) as Promise<{ error: Error | null }>);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error marking document as helpful in Supabase:', error);
+    return false;
+  }
 }
 
