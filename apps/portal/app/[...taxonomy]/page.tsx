@@ -59,7 +59,7 @@ export async function generateMetadata({
 
   // Check Builder.io first if API key is configured
   // Skip during build to prevent errors with Builder.io React dependencies
-  if (builderConfig.apiKey && process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+  if (builderConfig.apiKey && !process.env.VERCEL) {
     try {
       const builderContent = await getBuilderContent(path, {
         preview: builderConfig.preview || resolvedSearchParams.preview === 'true',
