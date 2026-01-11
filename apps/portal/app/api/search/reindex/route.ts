@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/core/database/admin-client';
-import { syncListings, initializeCollection, clearCollection } from '@listing-platform/search';
+import { syncListings, initializeCollection } from '@listing-platform/search';
 
 /**
  * Bulk Reindex API Route
