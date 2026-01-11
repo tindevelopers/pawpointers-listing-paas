@@ -25,7 +25,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 async function checkListings() {
   console.log('🔍 Checking Supabase connection and listings...\n');
   console.log('Supabase URL:', SUPABASE_URL);
-  console.log('Anon Key:', SUPABASE_ANON_KEY.substring(0, 20) + '...\n');
+  console.log('Anon Key:', SUPABASE_ANON_KEY!.substring(0, 20) + '...\n');
 
   try {
     // 1. Check if listings table exists and has data
