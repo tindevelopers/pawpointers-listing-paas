@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BuilderComponent } from '@/components/builder/BuilderComponent';
+import dynamic from 'next/dynamic';
 import { getBuilderContent } from '@/lib/builder';
 import { builderConfig } from '@/builder.config';
+
+// Dynamically import BuilderComponent to prevent build-time errors
+const BuilderComponent = dynamic(
+  () => import('@/components/builder/BuilderComponent').then(mod => ({ default: mod.BuilderComponent })),
+  { ssr: false }
+);
 import { Header, Footer } from "@/components/layout";
 import { TaxonomyBreadcrumb } from "@/components/taxonomy/TaxonomyBreadcrumb";
 import { TaxonomyListing } from "@/components/taxonomy/TaxonomyListing";
