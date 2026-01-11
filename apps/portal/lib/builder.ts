@@ -4,8 +4,30 @@
  * Helper functions for working with Builder.io content
  */
 
-import { builder } from '@builder.io/react';
 import { builderConfig } from '@/builder.config';
+
+// Lazy import Builder.io to prevent build-time errors
+let builderInstance: any = null;
+
+async function getBuilder() {
+  if (!builderInstance) {
+    // Skip during build to prevent React context errors
+    if (process.env.VERCEL || process.env.NEXT_PHASE === 'phase-production-build') {
+      return null;
+    }
+    try {
+      const builderModule = await import('@builder.io/react');
+      builderInstance = builderModule.builder;
+      if (builderConfig.apiKey && builderInstance) {
+        builderInstance.init(builderConfig.apiKey);
+      }
+    } catch (error) {
+      console.warn('Builder.io not available:', error);
+      return null;
+    }
+  }
+  return builderInstance;
+}
 
 /**
  * Fetch Builder.io content for a given path
@@ -20,6 +42,11 @@ export async function getBuilderContent(
 ): Promise<any> {
   if (!builderConfig.apiKey) {
     throw new Error('Builder.io API key is not configured');
+  }
+
+  const builder = await getBuilder();
+  if (!builder) {
+    return null;
   }
 
   const model = options.model || builderConfig.model;
@@ -81,6 +108,11 @@ export async function getBuilderContentById(
 ): Promise<any> {
   if (!builderConfig.apiKey) {
     throw new Error('Builder.io API key is not configured');
+  }
+
+  const builder = await getBuilder();
+  if (!builder) {
+    return null;
   }
 
   const model = options.model || builderConfig.model;
