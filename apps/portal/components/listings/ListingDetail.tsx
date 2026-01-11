@@ -274,36 +274,107 @@ export function ListingDetail({ listing }: ListingDetailProps) {
         {/* Right Column - Sidebar */}
         <div className="lg:col-span-1">
           <div className="sticky top-4 space-y-4">
-            {/* Contact/CTA Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                {/* CUSTOMIZE: Update CTA text for your vertical */}
-                Interested in this listing?
-              </h3>
+            {/* Service Booking CTA Card */}
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 rounded-2xl shadow-lg p-6 text-white">
+              <h3 className="text-xl font-bold mb-2">Ready to book?</h3>
+              <p className="text-orange-100 text-sm mb-4">Secure your service with this trusted provider</p>
 
-              {/* CUSTOMIZE: Add appropriate CTAs for your vertical */}
               <button
                 type="button"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors mb-3"
+                className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2 hover:shadow-lg"
               >
-                {/* CUSTOMIZE: "Schedule Tour", "Book Now", "Contact" */}
-                Contact Seller
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Book Now
               </button>
 
               <button
                 type="button"
-                className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white"
               >
-                Save to Favorites
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Message Provider
               </button>
             </div>
 
-            {/* Listing Meta Info */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-sm text-gray-500 dark:text-gray-400">
-              <p>Listed: {new Date(listing.createdAt).toLocaleDateString()}</p>
-              <p>Updated: {new Date(listing.updatedAt).toLocaleDateString()}</p>
-              {listing.category && <p>Category: {listing.category}</p>}
+            {/* Quick Info Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-lg">Quick Info</h3>
+
+              <div className="space-y-4">
+                {/* Response Time */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Response Time</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">Usually 1 hour</p>
+                  </div>
+                </div>
+
+                {/* Services Offered */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">12 available</p>
+                  </div>
+                </div>
+
+                {/* Member Since */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Member Since</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">Jan 2023</p>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Verification Badges */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm">Verified Badges</h3>
+              <div className="flex flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full text-xs">
+                  <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                  <span className="font-semibold text-green-700 dark:text-green-300">Identity Verified</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-full text-xs">
+                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">Background Check</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Share Button */}
+            <button
+              type="button"
+              className="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C9.589 12.938 10 12.077 10 11.25c0-1.295-1.077-2.5-2.5-2.5s-2.5 1.205-2.5 2.5c0 .827.411 1.588 1.316 1.992m5.368-5.492a7.5 7.5 0 110 7.498M9 19.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Share
+            </button>
           </div>
         </div>
       </div>
