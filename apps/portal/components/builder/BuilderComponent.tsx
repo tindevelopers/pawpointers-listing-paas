@@ -86,6 +86,15 @@ export function BuilderComponent({
     fetchContent();
   }, [model, content, options]);
 
+  if (importError) {
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-yellow-800">Builder.io integration not available: {importError}</p>
+        <p className="text-sm text-yellow-700 mt-2">Content: {content?.blocks?.length || 0} blocks</p>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -98,6 +107,16 @@ export function BuilderComponent({
     return (
       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-gray-600">Loading Builder.io content...</p>
+      </div>
+    );
+  }
+
+  // If BuilderComponentRenderer is not available, show fallback
+  if (!BuilderComponentRenderer) {
+    return (
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-blue-800">Builder.io component renderer not available</p>
+        <p className="text-sm text-blue-700 mt-2">Model: {model}</p>
       </div>
     );
   }
