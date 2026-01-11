@@ -286,12 +286,17 @@ export async function markDocumentHelpful(id: string): Promise<boolean> {
 
       if (!currentDoc) return false;
 
-      const currentCount = currentDoc.metadata?.helpful_count || 0;
+      // Type assertion to handle Supabase type inference
+      const doc = currentDoc as {
+        metadata?: { helpful_count?: number; [key: string]: unknown };
+      };
+
+      const currentCount = doc.metadata?.helpful_count || 0;
       const { error } = await supabase
         .from('knowledge_documents')
         .update({
           metadata: {
-            ...currentDoc.metadata,
+            ...doc.metadata,
             helpful_count: currentCount + 1,
           },
         })
