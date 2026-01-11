@@ -7,7 +7,7 @@ import { VisualEditing } from "@/components/builder/VisualEditing";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Listing Platform - Find What You're Looking For",
+  title: "Paw Pointers - Find What You're Looking For",
   description: "Discover the best listings on our platform. Search, browse, and find exactly what you need.",
   icons: {
     icon: '/images/favicon.ico',
@@ -48,4 +48,3 @@ export default function RootLayout({
     </html>
   );
 }
-
