@@ -147,18 +147,30 @@ export async function getKnowledgeDocument(id: string): Promise<KnowledgeDocumen
 
       if (error || !data) return null;
 
+      // Type assertion to handle Supabase type inference
+      const doc = data as {
+        id: string;
+        title: string;
+        content: string;
+        excerpt: string | null;
+        metadata?: { category?: string; tags?: string[]; view_count?: number; helpful_count?: number };
+        source_type: string;
+        created_at: string;
+        updated_at: string;
+      };
+
       return {
-        id: data.id,
-        title: data.title,
-        content: data.content,
-        excerpt: data.excerpt,
-        category: data.metadata?.category,
-        tags: data.metadata?.tags || [],
-        source_type: data.source_type,
-        view_count: data.metadata?.view_count || 0,
-        helpful_count: data.metadata?.helpful_count || 0,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        excerpt: doc.excerpt || undefined,
+        category: doc.metadata?.category,
+        tags: doc.metadata?.tags || [],
+        source_type: doc.source_type,
+        view_count: doc.metadata?.view_count || 0,
+        helpful_count: doc.metadata?.helpful_count || 0,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
       };
     } catch (error) {
       console.error('Error fetching knowledge document from Supabase:', error);
