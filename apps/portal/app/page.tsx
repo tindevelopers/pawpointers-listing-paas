@@ -59,39 +59,68 @@ export default async function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20 lg:py-32">
-          <div className="container mx-auto px-4">
+        {/* Hero Section - Warm & Friendly */}
+        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-20 lg:py-32 overflow-hidden">
+          {/* Decorative background circles */}
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
+
+          <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6">
-                {/* CUSTOMIZE: Update headline for your vertical */}
-                Find Exactly What You&apos;re Looking For
+              <div className="mb-4 inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold">
+                ✨ Find Your Perfect Service Provider
+              </div>
+
+              <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-white drop-shadow-lg">
+                Discover Amazing Services Near You
               </h1>
-              <p className="text-xl lg:text-2xl text-blue-100 mb-10">
-                {/* CUSTOMIZE: Update subheadline */}
-                Browse thousands of listings and discover your perfect match.
+              <p className="text-lg lg:text-xl text-white/90 mb-10 drop-shadow-md">
+                Connect with trusted professionals and get the help you need. Browse, compare, and book with confidence.
               </p>
 
               {/* Hero Search */}
-              <div className="max-w-2xl mx-auto">
-                <SearchBar
-                  placeholder="Search listings..."
-                  showFiltersButton={false}
-                  className="bg-white rounded-xl p-2"
-                />
+              <div className="max-w-2xl mx-auto mb-8">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-2 shadow-2xl">
+                  <SearchBar
+                    placeholder="Search services, professions, or providers..."
+                    showFiltersButton={false}
+                    className="bg-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Trust Signals */}
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-white/90 mb-8">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⭐</span>
+                  <span><strong>4.8/5</strong> avg rating</span>
+                </div>
+                <div className="hidden sm:block w-px h-6 bg-white/30"></div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">👥</span>
+                  <span><strong>10,000+</strong> providers</span>
+                </div>
+                <div className="hidden sm:block w-px h-6 bg-white/30"></div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">✓</span>
+                  <span><strong>Verified & Trusted</strong></span>
+                </div>
               </div>
 
               {/* Quick Category Links */}
               {categories.length > 0 && (
-                <div className="mt-8 flex flex-wrap justify-center gap-3">
-                  <span className="text-blue-200 text-sm">Popular:</span>
-                  {categories.slice(0, 5).map((cat) => (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="text-white/80 text-sm font-medium w-full mb-2">Popular services:</span>
+                  {categories.slice(0, 6).map((cat) => (
                     <Link
                       key={cat.slug}
                       href={`/categories/${cat.slug}`}
-                      className="text-sm text-white hover:text-blue-200 underline underline-offset-4"
+                      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:scale-105"
                     >
                       {cat.name}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </Link>
                   ))}
                 </div>
@@ -234,90 +263,131 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* How It Works / Value Proposition */}
-        <section className="py-16 lg:py-24">
+        {/* How It Works / Value Proposition - Services Focus */}
+        <section className="py-16 lg:py-24 bg-gray-50 dark:bg-gray-800/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                {/* CUSTOMIZE: Update section title */}
-                How It Works
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Easy as 1, 2, 3
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                {/* CUSTOMIZE: Update section description */}
-                Getting started is easy. Follow these simple steps.
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+                Find the right professional and book your service in minutes.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* CUSTOMIZE: Update steps for your vertical */}
+              {/* Step 1: Search */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    1
-                  </span>
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Search
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Search Services
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Use our powerful search to find exactly what you need.
+                  Find exactly what you need by service type, location, or provider expertise.
                 </p>
               </div>
 
+              {/* Arrow - Desktop Only */}
+              <div className="hidden md:flex items-center justify-center">
+                <div className="text-orange-400 text-3xl">→</div>
+              </div>
+
+              {/* Step 2: Compare */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    2
-                  </span>
+                <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Compare
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Review & Compare
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Browse listings and compare options side by side.
+                  Check ratings, reviews, availability, and pricing to make the best choice.
                 </p>
               </div>
 
+              {/* Arrow - Desktop Only */}
+              <div className="hidden md:flex items-center justify-center">
+                <div className="text-cyan-400 text-3xl">→</div>
+              </div>
+
+              {/* Step 3: Book */}
               <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    3
-                  </span>
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Connect
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                  Book & Connect
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Reach out and connect with sellers directly.
+                  Instantly book your service or message the provider to finalize details.
                 </p>
+              </div>
+            </div>
+
+            {/* Key Features Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-16 max-w-5xl mx-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center card-shadow hover:card-shadow-lg transition-all">
+                <div className="text-3xl mb-3">⭐</div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Verified Reviews</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Authentic feedback from real customers</p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center card-shadow hover:card-shadow-lg transition-all">
+                <div className="text-3xl mb-3">🛡️</div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Trusted Providers</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Verified and vetted professionals</p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center card-shadow hover:card-shadow-lg transition-all">
+                <div className="text-3xl mb-3">⚡</div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Quick Booking</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Instant confirmation and scheduling</p>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center card-shadow hover:card-shadow-lg transition-all">
+                <div className="text-3xl mb-3">💬</div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Direct Messaging</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Communicate directly with providers</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-16 lg:py-24 bg-blue-600">
+        {/* CTA Section - Service Booking Focus */}
+        <section className="py-16 lg:py-24 bg-gradient-to-r from-orange-500 to-cyan-500">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-              {/* CUSTOMIZE: Update CTA headline */}
-              Ready to Get Started?
+            <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
+              Ready to Find Your Perfect Service Provider?
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              {/* CUSTOMIZE: Update CTA description */}
-              Join thousands of users who have found what they&apos;re looking for.
+            <p className="text-lg text-white/90 mb-10 max-w-2xl mx-auto">
+              Join thousands of satisfied customers and get professional help when you need it. Browse, compare, and book with confidence today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/signup"
-                className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-8 py-3 rounded-lg transition-colors"
+                href="/listings"
+                className="bg-white text-orange-600 hover:bg-gray-100 font-bold px-8 py-4 rounded-xl transition-all duration-200 hover:scale-105 inline-flex items-center gap-2 justify-center shadow-lg"
               >
-                Create Account
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Start Browsing Now
               </Link>
               <Link
-                href="/listings"
-                className="bg-blue-700 text-white hover:bg-blue-800 font-semibold px-8 py-3 rounded-lg transition-colors"
+                href="/signup"
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 border-2 border-white/50 hover:border-white inline-flex items-center gap-2 justify-center"
               >
-                Browse Listings
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Create Account
               </Link>
             </div>
           </div>

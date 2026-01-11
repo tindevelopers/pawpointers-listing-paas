@@ -1,14 +1,32 @@
 'use client';
 
-import { builder, BuilderComponent as BuilderComponentRenderer } from '@builder.io/react';
 import { useEffect, useState } from 'react';
 import { builderConfig } from '@/builder.config';
-// Import component registration
-import '@/components/builder/register-components';
 
-// Initialize Builder.io SDK
-if (builderConfig.apiKey) {
-  builder.init(builderConfig.apiKey);
+// Safely import Builder.io with error handling
+let builder: any = null;
+let BuilderComponentRenderer: any = null;
+let importError: string | null = null;
+
+try {
+  const builderModule = require('@builder.io/react');
+  builder = builderModule.builder;
+  BuilderComponentRenderer = builderModule.BuilderComponent;
+
+  // Initialize Builder.io SDK
+  if (builderConfig.apiKey && builder) {
+    builder.init(builderConfig.apiKey);
+  }
+} catch (err) {
+  importError = '@builder.io/react module not available';
+  console.warn(importError);
+}
+
+// Import component registration
+try {
+  require('@/components/builder/register-components');
+} catch (err) {
+  console.warn('Component registration failed:', err);
 }
 
 /**
@@ -35,6 +53,7 @@ export function BuilderComponent({
 }: BuilderComponentProps) {
   const [builderContent, setBuilderContent] = useState<any>(content);
   const [error, setError] = useState<string | null>(null);
+  const [moduleError] = useState<string | null>(importError);
 
   useEffect(() => {
     // If content is provided, use it directly
@@ -68,6 +87,15 @@ export function BuilderComponent({
     fetchContent();
   }, [model, content, options]);
 
+  if (moduleError) {
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-yellow-800">Builder.io integration not available: {moduleError}</p>
+        <p className="text-sm text-yellow-700 mt-2">Content: {content?.blocks?.length || 0} blocks</p>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -80,6 +108,16 @@ export function BuilderComponent({
     return (
       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
         <p className="text-gray-600">Loading Builder.io content...</p>
+      </div>
+    );
+  }
+
+  // If BuilderComponentRenderer is not available, show fallback
+  if (!BuilderComponentRenderer) {
+    return (
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-blue-800">Builder.io component renderer not available</p>
+        <p className="text-sm text-blue-700 mt-2">Model: {model}</p>
       </div>
     );
   }
@@ -102,4 +140,3 @@ export function BuilderComponent({
     />
   );
 }
-

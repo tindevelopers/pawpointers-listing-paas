@@ -7,8 +7,11 @@ import { VisualEditing } from "@/components/builder/VisualEditing";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SaaS Platform - Consumer Portal",
-  description: "Consumer-facing portal for SaaS platform",
+  title: "Listing Platform - Find What You're Looking For",
+  description: "Discover the best listings on our platform. Search, browse, and find exactly what you need.",
+  icons: {
+    icon: '/images/favicon.ico',
+  },
 };
 
 /**

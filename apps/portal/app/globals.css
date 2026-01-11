@@ -1,19 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* Friendly & Approachable Color System */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  /* Light mode */
+  --foreground-rgb: 31, 41, 55;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 249, 250, 251;
+  
+  /* Brand colors - Warm and friendly */
+  --warm-primary: 249, 115, 22;        /* Warm orange */
+  --warm-primary-light: 255, 237, 213; /* Light warm orange */
+  --warm-primary-dark: 194, 65, 12;    /* Dark warm orange */
+  
+  /* Secondary accent - Cyan for actions */
+  --accent-secondary: 6, 182, 212;     /* Cyan */
+  --accent-secondary-light: 207, 250, 254; /* Light cyan */
+  
+  /* Status colors */
+  --status-success: 34, 197, 94;       /* Green */
+  --status-warning: 217, 119, 6;       /* Amber */
+  --status-error: 239, 68, 68;         /* Red */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --foreground-rgb: 243, 244, 246;
+    --background-start-rgb: 17, 24, 39;
+    --background-end-rgb: 31, 41, 55;
   }
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -24,5 +42,124 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease;
 }
 
+/* Custom animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@layer utilities {
+  .animate-slideInUp {
+    animation: slideInUp 0.3s ease-out;
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 1000px 100%;
+  }
+
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-shadow-lg {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .text-warm-primary {
+    color: rgb(var(--warm-primary));
+  }
+
+  .bg-warm-primary {
+    background-color: rgb(var(--warm-primary));
+  }
+
+  .border-warm-primary {
+    border-color: rgb(var(--warm-primary));
+  }
+
+  .text-accent-secondary {
+    color: rgb(var(--accent-secondary));
+  }
+
+  .bg-accent-secondary {
+    background-color: rgb(var(--accent-secondary));
+  }
+
+  .availability-available {
+    color: rgb(34, 197, 94);
+    font-weight: 500;
+  }
+
+  .availability-limited {
+    color: rgb(217, 119, 6);
+    font-weight: 500;
+  }
+
+  .availability-unavailable {
+    color: rgb(239, 68, 68);
+    font-weight: 500;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .availability-available {
+      color: rgb(74, 222, 128);
+    }
+
+    .availability-limited {
+      color: rgb(251, 146, 60);
+    }
+
+    .availability-unavailable {
+      color: rgb(248, 113, 113);
+    }
+  }
+}
