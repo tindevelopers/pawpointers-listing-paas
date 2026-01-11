@@ -4,14 +4,7 @@
   "buildCommand": "cd ../.. && pnpm turbo build --filter=@tinadmin/portal",
   "installCommand": "cd ../.. && pnpm install",
   "outputDirectory": ".next",
-  "rewrites": [
-    // API server is deprovisioned - removed rewrite rule
-    // Uncomment and update destination if API server is provisioned later:
-    // {
-    //   "source": "/api/v1/:path*",
-    //   "destination": "https://api.yourplatform.com/api/:path*"
-    // }
-  ],
+  "rewrites": [],
   "headers": [
     {
       "source": "/(.*)",
