@@ -1,6 +1,16 @@
 # @listing-platform/reviews
 
-Reviews and Ratings SDK for listing platforms. Provides hooks, headless components, and styled components.
+Platform-agnostic Reviews and Ratings SDK. Provides hooks, headless components, styled components, and a configurable API client with adapter pattern support.
+
+## Features
+
+- **Platform-agnostic** - Uses `entityId` instead of `listingId` for broader reusability
+- **External review support** - Integrate reviews from Google, Outscraper, DataForSEO, and custom sources
+- **Adapter pattern** - Swap API implementations without changing component code
+- **SDK initialization** - Centralized configuration with React Context support
+- **AbortController support** - Automatic request cancellation on unmount
+- **Headless components** - Full control over rendering with provided logic
+- **Styled components** - Pre-built UI with Tailwind CSS
 
 ## Installation
 
@@ -8,157 +18,322 @@ Reviews and Ratings SDK for listing platforms. Provides hooks, headless componen
 pnpm add @listing-platform/reviews
 ```
 
-## Usage
+## Quick Start
 
-### Level 1: Use Styled Components As-Is
+### 1. Initialize the SDK
+
+```typescript
+// Option A: Using React Context (recommended)
+import { ReviewsProvider } from '@listing-platform/reviews';
+
+function App() {
+  return (
+    <ReviewsProvider config={{ baseUrl: 'https://api.example.com' }}>
+      <YourApp />
+    </ReviewsProvider>
+  );
+}
+
+// Option B: Using static initialization
+import { ReviewsSDK } from '@listing-platform/reviews';
+
+ReviewsSDK.init({
+  baseUrl: 'https://api.example.com',
+  headers: { 'X-API-Key': 'your-key' }
+});
+```
+
+### 2. Use Components
 
 ```typescript
 import { ReviewsList, ReviewForm } from '@listing-platform/reviews';
 
-function ListingPage({ listingId }) {
+function ListingPage({ entityId }) {
   return (
     <div>
-      <ReviewsList listingId={listingId} />
-      <ReviewForm listingId={listingId} />
+      <ReviewsList entityId={entityId} />
+      <ReviewForm 
+        entityId={entityId} 
+        onSubmit={(reviewId) => console.log('Created:', reviewId)}
+      />
     </div>
   );
 }
 ```
 
-### Level 2: Customize with Props
+## Migration from listingId
+
+The SDK now uses `entityId` as the primary identifier. `listingId` is still supported for backward compatibility but deprecated:
 
 ```typescript
-import { ReviewsList } from '@listing-platform/reviews';
+// ❌ Old way (deprecated)
+<ReviewsList listingId="123" />
 
-<ReviewsList 
-  listingId="123"
-  variant="compact"
-  className="my-custom-class"
-  filters={{
-    minRating: 4,
-    sortBy: 'date',
-    limit: 10
-  }}
-/>
+// ✅ New way
+<ReviewsList entityId="123" />
 ```
 
-### Level 3: Use Headless Components
+## Usage Levels
+
+### Level 1: Styled Components (Easiest)
+
+```typescript
+import { ReviewsList, ReviewForm, ReviewStats } from '@listing-platform/reviews';
+
+<ReviewsList entityId="123" variant="compact" />
+<ReviewForm entityId="123" onSubmit={(id) => refetch()} />
+<ReviewStats stats={stats} variant="detailed" />
+```
+
+### Level 2: Headless Components (Custom Styling)
 
 ```typescript
 import { ReviewsListHeadless } from '@listing-platform/reviews/headless';
 
 <ReviewsListHeadless
-  listingId="123"
-  renderReview={(review) => (
-    <YourCustomCard review={review} />
+  entityId="123"
+  renderList={({ reviews, hasMore, loadMore }) => (
+    <div className="my-custom-list">
+      {reviews.map(review => (
+        <MyCustomCard key={review.id} review={review} />
+      ))}
+      {hasMore && <button onClick={loadMore}>Load More</button>}
+    </div>
   )}
-  renderEmpty={() => <YourEmptyState />}
+  renderEmpty={() => <MyEmptyState />}
+  renderLoading={() => <MyLoadingSpinner />}
 />
 ```
 
-### Level 4: Use Hooks Only
+### Level 3: Hooks Only (Full Control)
 
 ```typescript
-import { useReviews } from '@listing-platform/reviews/hooks';
+import { useReviews, useReviewStats, useReviewSubmit } from '@listing-platform/reviews/hooks';
 
-function YourComponent() {
-  const { reviews, isLoading } = useReviews('123');
+function MyReviewsSection({ entityId }) {
+  const { reviews, loading, error, loadMore, hasMore } = useReviews(entityId, {
+    filters: { sortBy: 'date', sortOrder: 'desc' },
+    pollInterval: 30000 // Auto-refresh every 30s
+  });
   
-  return (
-    <YourCustomUI>
-      {reviews.map(review => (
-        <YourCustomCard key={review.id} review={review} />
-      ))}
-    </YourCustomUI>
-  );
+  const { stats } = useReviewStats(entityId);
+  const { submitReview, isSubmitting } = useReviewSubmit();
+  
+  // Build your own UI...
 }
 ```
 
-## Components
+### Level 4: Custom API Adapter (Maximum Flexibility)
+
+```typescript
+import { 
+  initReviewsSDK, 
+  type IReviewsApiClient 
+} from '@listing-platform/reviews';
+
+// Implement your own adapter
+class MyCustomAdapter implements IReviewsApiClient {
+  async getReviews(entityId, filters, signal) {
+    // Custom implementation (e.g., GraphQL, different REST API)
+    return { data: reviews };
+  }
+  // ... other methods
+}
+
+initReviewsSDK({
+  baseUrl: '', // Not used when adapter is provided
+  adapter: new MyCustomAdapter()
+});
+```
+
+## External Reviews Support
+
+The SDK supports reviews from multiple sources:
+
+```typescript
+interface Review {
+  id: string;
+  entityId: string;
+  rating: number;
+  comment?: string;
+  
+  // Provenance fields for external reviews
+  source: 'first_party' | 'google' | 'outscraper' | 'dataforseo' | string;
+  sourceType?: string;        // e.g., 'googleMaps', 'googleBusiness'
+  sourceReviewId?: string;    // Original ID from the source
+  sourceUrl?: string;         // Link back to original review
+  attribution?: {
+    label?: string;
+    license?: string;
+  };
+  
+  // Trust signals
+  isVerified?: boolean;
+  verificationMethod?: string;
+  
+  // ... other fields
+}
+```
+
+### Filtering by Source
+
+```typescript
+<ReviewsList 
+  entityId="123"
+  filters={{
+    source: 'google',      // Only show Google reviews
+    sortBy: 'rating',
+    sortOrder: 'desc'
+  }}
+/>
+```
+
+## API Response Format
+
+All API responses follow a standardized envelope:
+
+```typescript
+interface ApiResponse<T> {
+  data: T;
+  meta?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    offset?: number;
+    nextCursor?: string | null;
+  };
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+```
+
+## Components Reference
 
 ### ReviewsList
 
-Pre-styled reviews list component.
-
-**Props:**
-- `listingId` (string, required) - ID of the listing
-- `filters` (ReviewFilters, optional) - Filter options
-- `variant` ('default' | 'compact' | 'featured', optional) - Visual variant
-- `className` (string, optional) - Additional CSS classes
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `entityId` | string | Yes | Entity to show reviews for |
+| `listingId` | string | No | Deprecated: Use entityId |
+| `filters` | ReviewFilters | No | Filter and sort options |
+| `variant` | 'default' \| 'compact' \| 'featured' | No | Visual style |
+| `showLoadMore` | boolean | No | Show load more button |
+| `className` | string | No | Additional CSS classes |
 
 ### ReviewForm
 
-Pre-styled review submission form.
-
-**Props:**
-- `listingId` (string, required) - ID of the listing
-- `onSubmit` (function, optional) - Callback when review is submitted
-- `onCancel` (function, optional) - Callback when form is cancelled
-- `variant` ('default' | 'compact', optional) - Visual variant
-- `className` (string, optional) - Additional CSS classes
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `entityId` | string | Yes | Entity to submit review for |
+| `listingId` | string | No | Deprecated: Use entityId |
+| `onSubmit` | (reviewId: string) => void | No | Success callback |
+| `onCancel` | () => void | No | Cancel callback |
+| `variant` | 'default' \| 'compact' | No | Visual style |
 
 ### ReviewCard
 
-Individual review card component.
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `review` | Review | Yes | Review data to display |
+| `variant` | 'default' \| 'compact' \| 'featured' | No | Visual style |
+| `onVote` | (type: VoteType) => void | No | Vote callback |
 
-**Props:**
-- `review` (Review, required) - Review data
-- `variant` ('default' | 'compact' | 'featured', optional) - Visual variant
-- `className` (string, optional) - Additional CSS classes
-
-### RatingDisplay
-
-Star rating display component.
-
-**Props:**
-- `rating` (number, required) - Rating value (1-5)
-- `maxRating` (number, optional) - Maximum rating (default: 5)
-- `showNumber` (boolean, optional) - Show numeric rating
-- `size` ('sm' | 'md' | 'lg', optional) - Star size
-- `className` (string, optional) - Additional CSS classes
-
-## Hooks
+## Hooks Reference
 
 ### useReviews
 
-Fetch reviews for a listing.
+```typescript
+const {
+  reviews,      // Review[]
+  loading,      // boolean
+  error,        // ApiError | null
+  hasMore,      // boolean
+  total,        // number
+  refetch,      // () => Promise<void>
+  loadMore,     // () => Promise<void>
+  setFilters,   // (filters: ReviewFilters) => void
+} = useReviews(entityId, {
+  filters: { sortBy: 'date' },
+  skip: false,
+  pollInterval: 0
+});
+```
+
+### useReviewStats
 
 ```typescript
-const { reviews, isLoading, error, refetch } = useReviews(listingId, filters);
+const {
+  stats,    // ReviewStats | null
+  loading,  // boolean
+  error,    // ApiError | null
+  refetch,  // () => Promise<void>
+} = useReviewStats(entityId, {
+  skip: false,
+  pollInterval: 0
+});
 ```
 
 ### useReviewSubmit
 
-Submit a new review.
+```typescript
+const {
+  submitReview,    // (data: ReviewFormData) => Promise<Review | null>
+  isSubmitting,    // boolean
+  error,           // ApiError | null
+  clearError,      // () => void
+  submittedReview, // Review | null
+} = useReviewSubmit({
+  onSuccess: (review) => {},
+  onError: (error) => {}
+});
+```
+
+### useReviewVote
 
 ```typescript
-const { submitReview, isSubmitting, error } = useReviewSubmit();
-
-await submitReview({
-  listingId: '123',
-  rating: 5,
-  comment: 'Great service!',
-  photos: [file1, file2]
-});
+const {
+  vote,       // (reviewId: string, type: VoteType) => Promise<VoteResponse | null>
+  isVoting,   // boolean
+  error,      // ApiError | null
+  clearError, // () => void
+} = useReviewVote();
 ```
 
 ## Styling
 
-Import the styles:
+Import the default styles:
 
 ```typescript
 import '@listing-platform/reviews/styles';
 ```
 
-Or import design tokens:
+Or use with your own design tokens:
 
 ```typescript
 import '@listing-platform/design-tokens/styles/tokens.css';
 ```
 
+## TypeScript Support
+
+Full TypeScript support with exported types:
+
+```typescript
+import type { 
+  Review, 
+  ReviewFormData,
+  ReviewFilters, 
+  ReviewStats,
+  ReviewSource,
+  ApiResponse,
+  ApiError,
+  IReviewsApiClient,
+  ReviewsSDKConfig
+} from '@listing-platform/reviews';
+```
+
 ## License
 
 MIT
-
-
-

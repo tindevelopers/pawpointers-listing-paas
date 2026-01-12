@@ -1,51 +1,124 @@
 /**
- * Hook for fetching review statistics
+ * useReviewStats Hook
+ * Fetches review statistics for an entity
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import type { ReviewStats } from '../types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ReviewStats, ApiError } from '../types';
+import { useReviewsClient } from '../sdk';
+
+export interface UseReviewStatsOptions {
+  /** Skip initial fetch (manual trigger) */
+  skip?: boolean;
+  /** Poll interval in ms (0 = disabled) */
+  pollInterval?: number;
+}
 
 export interface UseReviewStatsResult {
   stats: ReviewStats | null;
-  isLoading: boolean;
-  error: Error | null;
+  loading: boolean;
+  error: ApiError | null;
+  /** Refetch stats */
   refetch: () => Promise<void>;
 }
 
-export function useReviewStats(listingId: string): UseReviewStatsResult {
+/**
+ * Hook to fetch review statistics for an entity
+ * 
+ * @param entityId - The entity ID to fetch stats for
+ * @param options - Hook options
+ * 
+ * @example
+ * ```tsx
+ * const { stats, loading, error } = useReviewStats('entity-123');
+ * if (stats) {
+ *   console.log(`Average rating: ${stats.averageRating}`);
+ * }
+ * ```
+ */
+export function useReviewStats(
+  entityId: string,
+  options: UseReviewStatsOptions = {}
+): UseReviewStatsResult {
+  const client = useReviewsClient();
   const [stats, setStats] = useState<ReviewStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [loading, setLoading] = useState(!options.skip);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  // AbortController ref for cleanup
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchStats = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-      const response = await fetch(`/api/reviews/stats/${listingId}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch review stats: ${response.statusText}`);
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await client.getStats(
+        entityId,
+        abortControllerRef.current.signal
+      );
+
+      if (response.error) {
+        setError(response.error);
+        return;
       }
 
-      const data = await response.json();
-      setStats(data.stats || data);
+      setStats(response.data);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      setError({
+        code: 'FETCH_ERROR',
+        message: err instanceof Error ? err.message : 'Failed to fetch stats',
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [listingId]);
+  }, [client, entityId]);
 
-  useEffect(() => {
-    fetchStats();
+  const refetch = useCallback(async () => {
+    await fetchStats();
   }, [fetchStats]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (!options.skip) {
+      fetchStats();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [entityId, options.skip]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Optional polling
+  useEffect(() => {
+    if (!options.pollInterval || options.pollInterval <= 0) return;
+
+    const intervalId = setInterval(() => {
+      fetchStats();
+    }, options.pollInterval);
+
+    return () => clearInterval(intervalId);
+  }, [options.pollInterval, fetchStats]);
 
   return {
     stats,
-    isLoading,
+    loading,
     error,
-    refetch: fetchStats,
+    refetch,
   };
 }
-

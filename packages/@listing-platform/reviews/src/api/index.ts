@@ -2,6 +2,15 @@
  * Reviews API Client
  */
 
-export { ReviewsApiClient, type ReviewsApiConfig } from './client';
-export { createReviewsApi } from './factory';
+export {
+  ReviewsApiClient,
+  type ReviewsApiConfig,
+  type IReviewsApiClient,
+} from './client';
 
+export {
+  createReviewsApi,
+  getReviewsApi,
+  setDefaultReviewsApi,
+  resetDefaultReviewsApi,
+} from './factory';

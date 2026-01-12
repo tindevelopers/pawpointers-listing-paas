@@ -7,9 +7,13 @@ import React, { useState } from 'react';
 import { ReviewFormHeadless } from '../headless/ReviewForm.headless';
 import { RatingDisplay } from './RatingDisplay';
 import { cn } from '../utils/cn';
+import type { ApiError } from '../types';
 
 export interface ReviewFormProps {
-  listingId: string;
+  /** Entity ID for the review */
+  entityId: string;
+  /** @deprecated Use entityId instead */
+  listingId?: string;
   onSubmit?: (reviewId: string) => void;
   onCancel?: () => void;
   variant?: 'default' | 'compact';
@@ -17,17 +21,21 @@ export interface ReviewFormProps {
 }
 
 export function ReviewForm({
+  entityId,
   listingId,
   onSubmit,
   onCancel,
   variant = 'default',
   className,
 }: ReviewFormProps) {
+  // Use entityId, fall back to listingId for backward compatibility
+  const resolvedEntityId = entityId || listingId || '';
+  
   const [hoveredRating, setHoveredRating] = useState<number>(0);
 
   return (
     <ReviewFormHeadless
-      listingId={listingId}
+      entityId={resolvedEntityId}
       onSubmit={onSubmit}
       onCancel={onCancel}
       className={cn('space-y-4', className)}
@@ -146,7 +154,7 @@ export function ReviewForm({
           Cancel
         </button>
       )}
-      renderError={(error) => (
+      renderError={(error: ApiError) => (
         <div className="p-3 bg-error-50 border border-error-200 rounded-md">
           <p className="text-sm text-error-600">{error.message}</p>
         </div>
@@ -154,6 +162,3 @@ export function ReviewForm({
     />
   );
 }
-
-
-

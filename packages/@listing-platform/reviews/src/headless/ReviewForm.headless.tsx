@@ -5,10 +5,13 @@
 
 import React, { useState } from 'react';
 import { useReviewSubmit } from '../hooks/useReviewSubmit';
-import type { ReviewFormData } from '../types';
+import type { ReviewFormData, ApiError } from '../types';
 
 export interface ReviewFormHeadlessProps {
-  listingId: string;
+  /** Entity ID for the review */
+  entityId: string;
+  /** @deprecated Use entityId instead */
+  listingId?: string;
   onSubmit?: (reviewId: string) => void;
   onCancel?: () => void;
   renderField: (props: {
@@ -26,11 +29,12 @@ export interface ReviewFormHeadlessProps {
   renderCancel?: (props: {
     onCancel: () => void;
   }) => React.ReactNode;
-  renderError?: (error: Error) => React.ReactNode;
+  renderError?: (error: ApiError) => React.ReactNode;
   className?: string;
 }
 
 export function ReviewFormHeadless({
+  entityId,
   listingId,
   onSubmit,
   onCancel,
@@ -40,6 +44,9 @@ export function ReviewFormHeadless({
   renderError,
   className,
 }: ReviewFormHeadlessProps) {
+  // Use entityId, fall back to listingId for backward compatibility
+  const resolvedEntityId = entityId || listingId || '';
+
   const { submitReview, isSubmitting, error } = useReviewSubmit();
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
@@ -65,7 +72,7 @@ export function ReviewFormHeadless({
     setFieldErrors({});
 
     const formData: ReviewFormData = {
-      listingId,
+      entityId: resolvedEntityId,
       rating,
       comment: comment.trim() || undefined,
       photos: photos.length > 0 ? photos : undefined,
@@ -134,6 +141,3 @@ export function ReviewFormHeadless({
     </form>
   );
 }
-
-
-

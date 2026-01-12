@@ -3,21 +3,51 @@
  * Reviews and Ratings SDK
  * 
  * Features:
- * - Review display components
+ * - Review display components (styled and headless)
  * - Review form with rating
  * - Review statistics
  * - Voting (helpful/not helpful)
- * - API client for reviews
- * - Moderation utilities
+ * - API client with adapter pattern
+ * - External review support (Google, Outscraper, etc.)
+ * - SDK initialization and React Context
  */
 
-// Export types
-export * from './types';
+// Export SDK initialization and context
+export {
+  initReviewsSDK,
+  getReviewsClient,
+  getReviewsConfig,
+  resetReviewsSDK,
+  ReviewsProvider,
+  useReviewsClient,
+  useReviewsConfig,
+  ReviewsSDK,
+  type ReviewsSDKConfig,
+  type ReviewsProviderProps,
+} from './sdk';
+
+// Export types (explicit to avoid conflicts)
+export type {
+  ApiError,
+  ApiResponse,
+  ReviewSource,
+  ReviewAttribution,
+  ReviewPhoto,
+  Review,
+  ReviewFilters,
+  ReviewFormData,
+  RatingDistribution,
+  SourceStats,
+  ReviewStats,
+  VoteType,
+  VoteResponse,
+} from './types';
+export { normalizeEntityId } from './types';
 
 // Export hooks
 export * from './hooks';
 
-// Export styled components (default)
+// Export styled components
 export * from './components';
 
 // Export headless components
@@ -28,7 +58,3 @@ export * from './api';
 
 // Export utilities
 export { cn } from './utils/cn';
-
-
-
-
