@@ -1,82 +1,112 @@
 /**
- * Hook for voting on reviews
+ * useReviewVote Hook
+ * Handles voting on review helpfulness with optimistic updates
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import type { VoteType, VoteResponse, ApiError } from '../types';
+import { useReviewsClient } from '../sdk';
 
-export interface UseReviewVoteResult {
-  vote: (reviewId: string, voteType: 'helpful' | 'not_helpful') => Promise<void>;
-  removeVote: (reviewId: string) => Promise<void>;
-  isVoting: boolean;
-  error: Error | null;
-  userVotes: Record<string, 'helpful' | 'not_helpful' | null>;
+export interface UseReviewVoteOptions {
+  /** Callback on successful vote */
+  onSuccess?: (response: VoteResponse) => void;
+  /** Callback on error */
+  onError?: (error: ApiError) => void;
 }
 
-export function useReviewVote(): UseReviewVoteResult {
+export interface UseReviewVoteResult {
+  /** Vote on a review */
+  vote: (reviewId: string, type: VoteType) => Promise<VoteResponse | null>;
+  /** Whether a vote is in progress */
+  isVoting: boolean;
+  /** Last error encountered */
+  error: ApiError | null;
+  /** Clear the error state */
+  clearError: () => void;
+}
+
+/**
+ * Hook to handle review voting
+ * 
+ * @param options - Hook options
+ * 
+ * @example
+ * ```tsx
+ * const { vote, isVoting, error } = useReviewVote({
+ *   onSuccess: (response) => console.log('Vote recorded:', response.helpfulCount)
+ * });
+ * 
+ * const handleHelpful = async (reviewId) => {
+ *   await vote(reviewId, 'helpful');
+ * };
+ * ```
+ */
+export function useReviewVote(
+  options: UseReviewVoteOptions = {}
+): UseReviewVoteResult {
+  const client = useReviewsClient();
   const [isVoting, setIsVoting] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const [userVotes, setUserVotes] = useState<Record<string, 'helpful' | 'not_helpful' | null>>({});
+  const [error, setError] = useState<ApiError | null>(null);
 
-  const vote = useCallback(async (reviewId: string, voteType: 'helpful' | 'not_helpful') => {
+  // AbortController ref for cleanup
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const vote = useCallback(async (
+    reviewId: string,
+    type: VoteType
+  ): Promise<VoteResponse | null> => {
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController
+    abortControllerRef.current = new AbortController();
+
+    setIsVoting(true);
+    setError(null);
+
     try {
-      setIsVoting(true);
-      setError(null);
+      const response = await client.vote(
+        reviewId,
+        type,
+        abortControllerRef.current.signal
+      );
 
-      const response = await fetch(`/api/reviews/${reviewId}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ voteType }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to vote: ${response.statusText}`);
+      if (response.error) {
+        setError(response.error);
+        options.onError?.(response.error);
+        return null;
       }
 
-      setUserVotes((prev) => ({
-        ...prev,
-        [reviewId]: voteType,
-      }));
+      options.onSuccess?.(response.data);
+      return response.data;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      throw err;
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return null;
+      }
+
+      const apiError: ApiError = {
+        code: 'VOTE_ERROR',
+        message: err instanceof Error ? err.message : 'Failed to vote on review',
+      };
+      setError(apiError);
+      options.onError?.(apiError);
+      return null;
     } finally {
       setIsVoting(false);
     }
-  }, []);
-
-  const removeVote = useCallback(async (reviewId: string) => {
-    try {
-      setIsVoting(true);
-      setError(null);
-
-      const response = await fetch(`/api/reviews/${reviewId}/vote`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to remove vote: ${response.statusText}`);
-      }
-
-      setUserVotes((prev) => ({
-        ...prev,
-        [reviewId]: null,
-      }));
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      throw err;
-    } finally {
-      setIsVoting(false);
-    }
-  }, []);
+  }, [client, options]);
 
   return {
     vote,
-    removeVote,
     isVoting,
     error,
-    userVotes,
+    clearError,
   };
 }
-

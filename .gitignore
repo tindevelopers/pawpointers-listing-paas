@@ -62,6 +62,9 @@ supabase/.temp/
 *.pem
 .cache/
 
+# SDK Publish Directory
+dist-publish/
+
 
 
 .vercel

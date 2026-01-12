@@ -1,257 +1,329 @@
 /**
  * Reviews API Client
- * Handles all API interactions for reviews
+ * Platform-agnostic API client for Reviews SDK
  */
 
-import type { Review, ReviewFilters, ReviewFormData, ReviewStats } from '../types';
+import type {
+  Review,
+  ReviewFilters,
+  ReviewFormData,
+  ReviewStats,
+  ApiResponse,
+  ApiError,
+  VoteType,
+  VoteResponse,
+  normalizeEntityId,
+} from '../types';
+import { normalizeEntityId as normalizeId } from '../types';
+
+// ============================================
+// Configuration Types
+// ============================================
 
 export interface ReviewsApiConfig {
   baseUrl: string;
   headers?: Record<string, string>;
-  onError?: (error: Error) => void;
+  /** Custom fetch implementation (for testing or adapters) */
+  fetchFn?: typeof fetch;
 }
 
-export interface ReviewsApiResponse<T> {
-  data: T;
-  meta?: {
-    total?: number;
-    page?: number;
-    limit?: number;
-  };
+// ============================================
+// API Client Interface (Adapter Pattern)
+// ============================================
+
+/**
+ * Interface for Reviews API Client
+ * Implement this to create custom adapters
+ */
+export interface IReviewsApiClient {
+  // Read operations
+  getReviews(
+    entityId: string,
+    filters?: ReviewFilters,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review[]>>;
+
+  getReviewById(
+    reviewId: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>>;
+
+  getStats(
+    entityId: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<ReviewStats>>;
+
+  // Write operations
+  createReview(data: ReviewFormData): Promise<ApiResponse<Review>>;
+
+  vote(
+    reviewId: string,
+    type: VoteType,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<VoteResponse>>;
+
+  // Admin operations (optional)
+  updateReviewStatus?(
+    reviewId: string,
+    status: Review['status'],
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>>;
+
+  addOwnerResponse?(
+    reviewId: string,
+    response: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>>;
 }
 
-export interface ReviewVote {
-  reviewId: string;
-  voteType: 'helpful' | 'not_helpful';
-}
+// ============================================
+// Default API Client Implementation
+// ============================================
 
-export class ReviewsApiClient {
+export class ReviewsApiClient implements IReviewsApiClient {
   private config: ReviewsApiConfig;
-  
+  private fetchFn: typeof fetch;
+
   constructor(config: ReviewsApiConfig) {
     this.config = config;
+    this.fetchFn = config.fetchFn || fetch;
   }
-  
+
+  /**
+   * Core request method with standardized error handling
+   */
   private async request<T>(
     endpoint: string,
     options?: RequestInit
-  ): Promise<ReviewsApiResponse<T>> {
+  ): Promise<ApiResponse<T>> {
     const url = `${this.config.baseUrl}${endpoint}`;
-    
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...this.config.headers,
-          ...options?.headers,
-        },
-      });
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || `Request failed: ${response.statusText}`);
+
+    const response = await this.fetchFn(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...this.config.headers,
+        ...options?.headers,
+      },
+    });
+
+    const json = await response.json();
+
+    // If response follows the ApiResponse envelope, return as-is
+    if ('data' in json || 'error' in json) {
+      // Standardize response structure
+      if (!response.ok && !json.error) {
+        return {
+          data: json.data ?? null,
+          error: {
+            code: `HTTP_${response.status}`,
+            message: json.message || response.statusText,
+          },
+        } as ApiResponse<T>;
       }
-      
-      return response.json();
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error('Unknown error');
-      this.config.onError?.(err);
-      throw err;
+      return json as ApiResponse<T>;
     }
+
+    // Legacy response format: wrap in envelope
+    if (!response.ok) {
+      return {
+        data: null as T,
+        error: {
+          code: `HTTP_${response.status}`,
+          message: json.message || json.error || response.statusText,
+        },
+      };
+    }
+
+    // Wrap legacy successful response
+    return {
+      data: json as T,
+    };
   }
-  
+
   /**
-   * Get reviews for a listing
+   * Get reviews for an entity
    */
   async getReviews(
-    listingId: string,
-    filters?: ReviewFilters
-  ): Promise<ReviewsApiResponse<Review[]>> {
+    entityId: string,
+    filters?: ReviewFilters,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review[]>> {
     const params = new URLSearchParams();
-    params.set('listingId', listingId);
-    
-    if (filters?.minRating) params.set('minRating', String(filters.minRating));
-    if (filters?.maxRating) params.set('maxRating', String(filters.maxRating));
-    if (filters?.hasPhotos !== undefined) params.set('hasPhotos', String(filters.hasPhotos));
-    if (filters?.hasComments !== undefined) params.set('hasComments', String(filters.hasComments));
-    if (filters?.sortBy) params.set('sortBy', filters.sortBy);
-    if (filters?.sortOrder) params.set('sortOrder', filters.sortOrder);
-    if (filters?.limit) params.set('limit', String(filters.limit));
-    if (filters?.offset) params.set('offset', String(filters.offset));
-    
-    return this.request<Review[]>(`/api/reviews?${params}`);
+    params.set('entityId', entityId);
+    // Support legacy API that might use listingId
+    params.set('listingId', entityId);
+
+    if (filters) {
+      if (filters.minRating) params.set('minRating', String(filters.minRating));
+      if (filters.maxRating) params.set('maxRating', String(filters.maxRating));
+      if (filters.hasPhotos !== undefined)
+        params.set('hasPhotos', String(filters.hasPhotos));
+      if (filters.hasComments !== undefined)
+        params.set('hasComments', String(filters.hasComments));
+      if (filters.source && filters.source !== 'all')
+        params.set('source', filters.source);
+      if (filters.sourceType) params.set('sourceType', filters.sourceType);
+      if (filters.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+      if (filters.limit) params.set('limit', String(filters.limit));
+      if (filters.offset) params.set('offset', String(filters.offset));
+    }
+
+    const response = await this.request<Review[]>(`/api/reviews?${params}`, {
+      signal,
+    });
+
+    // Handle legacy response format: { reviews: Review[] }
+    if (response.data && 'reviews' in (response.data as any)) {
+      return {
+        ...response,
+        data: (response.data as any).reviews,
+      };
+    }
+
+    return response;
   }
-  
+
   /**
    * Get a single review by ID
    */
-  async getReview(reviewId: string): Promise<ReviewsApiResponse<Review>> {
-    return this.request<Review>(`/api/reviews/${reviewId}`);
+  async getReviewById(
+    reviewId: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>> {
+    return this.request<Review>(`/api/reviews/${reviewId}`, { signal });
   }
-  
+
   /**
-   * Get review statistics for a listing
+   * Get review statistics for an entity
    */
-  async getReviewStats(listingId: string): Promise<ReviewsApiResponse<ReviewStats>> {
-    return this.request<ReviewStats>(`/api/reviews/stats/${listingId}`);
-  }
-  
-  /**
-   * Submit a new review
-   */
-  async createReview(
-    data: ReviewFormData
-  ): Promise<ReviewsApiResponse<Review>> {
-    const formData = new FormData();
-    formData.append('listingId', data.listingId);
-    formData.append('rating', String(data.rating));
-    
-    if (data.comment) {
-      formData.append('comment', data.comment);
+  async getStats(
+    entityId: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<ReviewStats>> {
+    const params = new URLSearchParams();
+    params.set('entityId', entityId);
+    // Support legacy API
+    params.set('listingId', entityId);
+
+    const response = await this.request<ReviewStats>(
+      `/api/reviews/stats?${params}`,
+      { signal }
+    );
+
+    // Handle legacy response format: { stats: ReviewStats }
+    if (response.data && 'stats' in (response.data as any)) {
+      return {
+        ...response,
+        data: (response.data as any).stats,
+      };
     }
-    
-    if (data.photos) {
-      data.photos.forEach((file, index) => {
-        formData.append(`photos[${index}]`, file);
+
+    return response;
+  }
+
+  /**
+   * Create a new review
+   */
+  async createReview(data: ReviewFormData): Promise<ApiResponse<Review>> {
+    // Use entityId, fall back to listingId for legacy compatibility
+    const entityId = normalizeId(data.entityId, data.listingId);
+
+    // Handle file uploads with FormData
+    if (data.photos && data.photos.length > 0) {
+      const formData = new FormData();
+      formData.append('entityId', entityId);
+      formData.append('listingId', entityId); // Legacy support
+      formData.append('rating', String(data.rating));
+      if (data.comment) formData.append('comment', data.comment);
+      data.photos.forEach((photo, index) => {
+        formData.append(`photos[${index}]`, photo);
       });
+
+      const url = `${this.config.baseUrl}/api/reviews`;
+      const response = await this.fetchFn(url, {
+        method: 'POST',
+        headers: {
+          ...this.config.headers,
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
+        body: formData,
+      });
+
+      const json = await response.json();
+
+      if ('data' in json || 'error' in json) {
+        return json as ApiResponse<Review>;
+      }
+
+      if (!response.ok) {
+        return {
+          data: null as unknown as Review,
+          error: {
+            code: `HTTP_${response.status}`,
+            message: json.message || json.error || response.statusText,
+          },
+        };
+      }
+
+      return { data: json };
     }
-    
-    const response = await fetch(`${this.config.baseUrl}/api/reviews`, {
+
+    // JSON request for reviews without photos
+    return this.request<Review>('/api/reviews', {
       method: 'POST',
-      headers: {
-        ...this.config.headers,
-      },
-      body: formData,
+      body: JSON.stringify({
+        entityId,
+        listingId: entityId, // Legacy support
+        rating: data.rating,
+        comment: data.comment,
+      }),
     });
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Failed to submit review');
-    }
-    
-    return response.json();
   }
-  
+
   /**
-   * Update an existing review
+   * Vote on a review's helpfulness
    */
-  async updateReview(
+  async vote(
     reviewId: string,
-    data: Partial<ReviewFormData>
-  ): Promise<ReviewsApiResponse<Review>> {
-    return this.request<Review>(`/api/reviews/${reviewId}`, {
+    type: VoteType,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<VoteResponse>> {
+    return this.request<VoteResponse>(`/api/reviews/${reviewId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+      signal,
+    });
+  }
+
+  /**
+   * Update review status (admin)
+   */
+  async updateReviewStatus(
+    reviewId: string,
+    status: Review['status'],
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>> {
+    return this.request<Review>(`/api/reviews/${reviewId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ status }),
+      signal,
     });
   }
-  
+
   /**
-   * Delete a review
-   */
-  async deleteReview(reviewId: string): Promise<void> {
-    await this.request(`/api/reviews/${reviewId}`, {
-      method: 'DELETE',
-    });
-  }
-  
-  /**
-   * Vote on a review (helpful/not helpful)
-   */
-  async voteOnReview(
-    reviewId: string,
-    voteType: 'helpful' | 'not_helpful'
-  ): Promise<ReviewsApiResponse<{ helpfulCount: number; notHelpfulCount: number }>> {
-    return this.request(`/api/reviews/${reviewId}/vote`, {
-      method: 'POST',
-      body: JSON.stringify({ voteType }),
-    });
-  }
-  
-  /**
-   * Remove vote from a review
-   */
-  async removeVote(reviewId: string): Promise<void> {
-    await this.request(`/api/reviews/${reviewId}/vote`, {
-      method: 'DELETE',
-    });
-  }
-  
-  /**
-   * Report a review for moderation
-   */
-  async reportReview(
-    reviewId: string,
-    reason: string
-  ): Promise<ReviewsApiResponse<{ reported: boolean }>> {
-    return this.request(`/api/reviews/${reviewId}/report`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
-  
-  /**
-   * Add owner response to a review
+   * Add owner response to a review (admin)
    */
   async addOwnerResponse(
     reviewId: string,
-    response: string
-  ): Promise<ReviewsApiResponse<Review>> {
-    return this.request(`/api/reviews/${reviewId}/response`, {
+    response: string,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<Review>> {
+    return this.request<Review>(`/api/reviews/${reviewId}/response`, {
       method: 'POST',
       body: JSON.stringify({ response }),
-    });
-  }
-  
-  // Admin/Moderation methods
-  
-  /**
-   * Get pending reviews for moderation
-   */
-  async getPendingReviews(
-    options?: { page?: number; limit?: number }
-  ): Promise<ReviewsApiResponse<Review[]>> {
-    const params = new URLSearchParams();
-    params.set('status', 'pending');
-    if (options?.page) params.set('page', String(options.page));
-    if (options?.limit) params.set('limit', String(options.limit));
-    
-    return this.request<Review[]>(`/api/admin/reviews?${params}`);
-  }
-  
-  /**
-   * Approve a review
-   */
-  async approveReview(reviewId: string): Promise<ReviewsApiResponse<Review>> {
-    return this.request(`/api/admin/reviews/${reviewId}/approve`, {
-      method: 'POST',
-    });
-  }
-  
-  /**
-   * Reject a review
-   */
-  async rejectReview(
-    reviewId: string,
-    reason?: string
-  ): Promise<ReviewsApiResponse<Review>> {
-    return this.request(`/api/admin/reviews/${reviewId}/reject`, {
-      method: 'POST',
-      body: JSON.stringify({ reason }),
-    });
-  }
-  
-  /**
-   * Flag a review for further review
-   */
-  async flagReview(
-    reviewId: string,
-    notes?: string
-  ): Promise<ReviewsApiResponse<Review>> {
-    return this.request(`/api/admin/reviews/${reviewId}/flag`, {
-      method: 'POST',
-      body: JSON.stringify({ notes }),
+      signal,
     });
   }
 }
-

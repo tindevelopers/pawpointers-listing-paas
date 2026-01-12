@@ -8,7 +8,7 @@ import { cn } from '../utils/cn';
 import { RatingDisplay } from './RatingDisplay';
 import type { ReviewStats as ReviewStatsType } from '../types';
 
-export interface ReviewStatsProps {
+export interface ReviewStatsDisplayProps {
   stats: ReviewStatsType;
   variant?: 'default' | 'compact' | 'detailed';
   className?: string;
@@ -18,15 +18,15 @@ export function ReviewStatsDisplay({
   stats,
   variant = 'default',
   className,
-}: ReviewStatsProps) {
-  const { averageRating, totalReviews, ratingDistribution } = stats;
+}: ReviewStatsDisplayProps) {
+  const { averageRating, total, ratingDistribution } = stats;
   
   if (variant === 'compact') {
     return (
       <div className={cn('flex items-center gap-2', className)}>
         <RatingDisplay rating={averageRating} showNumber size="md" />
         <span className="text-sm text-neutral-500">
-          ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
+          ({total} {total === 1 ? 'review' : 'reviews'})
         </span>
       </div>
     );
@@ -44,7 +44,7 @@ export function ReviewStatsDisplay({
           </div>
           <RatingDisplay rating={averageRating} size="lg" className="mt-1" />
           <div className="text-sm text-neutral-500 mt-1">
-            {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
+            {total} {total === 1 ? 'review' : 'reviews'}
           </div>
         </div>
         
@@ -84,5 +84,5 @@ export function ReviewStatsDisplay({
   );
 }
 
-// ReviewStatsDisplay is exported from index.ts
-
+// Export props type with legacy name for backward compatibility
+export type { ReviewStatsDisplayProps as ReviewStatsProps };
