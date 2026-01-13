@@ -132,11 +132,22 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                   {location.address}
                 </p>
               )}
+              <div className="px-6 pt-4">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  Get directions
+                </a>
+              </div>
               <div className="h-[300px] mt-4">
                 <Map
                   center={{ lat: location.lat, lng: location.lng }}
                   zoom={14}
                   className="w-full h-full"
+                  provider="mapbox"
                   interactive={true}
                   showControls={true}
                 >
@@ -169,7 +180,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                   showNumber
                 />
               </div>
-              <ReviewsList listingId={listing.id} variant="default" />
+              <ReviewsList entityId={listing.id} variant="default" />
             </div>
           )}
         </div>

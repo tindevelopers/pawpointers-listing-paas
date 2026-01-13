@@ -3,6 +3,8 @@
 -- =============================================================================
 -- Adds category, tags, view_count, and helpful_count for better organization
 -- and analytics
+--
+-- NOTE: This migration must run after the knowledge base schema exists.
 
 -- Add category field
 ALTER TABLE knowledge_documents 

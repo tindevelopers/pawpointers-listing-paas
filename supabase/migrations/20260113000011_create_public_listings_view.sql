@@ -3,6 +3,8 @@
 -- ===================================
 -- This view provides a public-facing interface to listings
 -- that matches what the portal app expects
+--
+-- NOTE: This migration must run after the core listings/taxonomy schema exists.
 
 CREATE OR REPLACE VIEW public_listings_view AS
 SELECT 
@@ -11,10 +13,21 @@ SELECT
   l.title,
   l.description,
   l.price,
-  -- Convert gallery jsonb array to images array
+  -- Convert gallery jsonb[] to images array
+  -- listings.gallery is declared as jsonb[] (array of jsonb objects/strings)
   COALESCE(
     ARRAY(
-      SELECT jsonb_array_elements_text(l.gallery)
+      SELECT
+        CASE
+          WHEN jsonb_typeof(img) = 'string' THEN trim(both '"' from img::text)
+          ELSE COALESCE(img->>'url', img->>'cdn_url', img->>'src')
+        END
+      FROM unnest(l.gallery) AS img
+      WHERE
+        CASE
+          WHEN jsonb_typeof(img) = 'string' THEN trim(both '"' from img::text)
+          ELSE COALESCE(img->>'url', img->>'cdn_url', img->>'src')
+        END IS NOT NULL
     ),
     ARRAY[]::text[]
   ) as images,

@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS reviews (
   -- Response from owner
   owner_response text,
   owner_response_at timestamptz,
+
+  -- Reviewer type (Pet Parent vs PawPointers Expert)
+  reviewer_type text NOT NULL DEFAULT 'pet_parent' CHECK (reviewer_type IN ('pet_parent', 'expert')),
+  expert_domain text CHECK (expert_domain IN ('vet_medicine', 'grooming', 'food', 'toys')),
+  expert_profile_id uuid, -- FK to expert_profiles (see migration)
+  is_mystery_shopper bool DEFAULT false,
+  expert_rubric jsonb,
   
   -- Timestamps
   created_at timestamptz DEFAULT now(),

@@ -241,6 +241,51 @@ export async function respondToReview(formData: FormData) {
   revalidatePath("/reviews");
 }
 
+export async function upsertDataForSeoSource(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const entityId = String(formData.get("entityId") || "");
+  const target = String(formData.get("target") || "").trim();
+  const targetType = String(formData.get("targetType") || "generic").trim();
+
+  if (!entityId || !target) {
+    throw new Error("entityId and target are required");
+  }
+
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("id, tenant_id, owner_id")
+    .eq("id", entityId)
+    .single();
+
+  if (!listing || (listing as any).owner_id !== user.id) {
+    throw new Error("Not authorized to manage this listing");
+  }
+
+  const { error } = await (supabase.from("external_review_sources") as any).upsert({
+    entity_id: entityId,
+    tenant_id: (listing as any).tenant_id || null,
+    provider: "dataforseo",
+    target_type: targetType,
+    target,
+    enabled: true,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/reviews");
+}
+
 function slugifyInput(input: string) {
   return input
     .toLowerCase()

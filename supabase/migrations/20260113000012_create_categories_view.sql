@@ -3,6 +3,8 @@
 -- ===================================
 -- This view provides a public-facing interface to categories
 -- that aggregates categories from listings with counts
+--
+-- NOTE: This migration must run after public_listings_view exists.
 
 CREATE OR REPLACE VIEW categories_view AS
 SELECT
