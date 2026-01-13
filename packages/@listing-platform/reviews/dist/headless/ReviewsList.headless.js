@@ -3,16 +3,39 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReviewsListHeadless = ReviewsListHeadless;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const useReviews_1 = require("../hooks/useReviews");
-function ReviewsListHeadless({ listingId, filters, renderReview, renderEmpty, renderLoading, renderError, className, }) {
-    const { reviews, isLoading, error } = (0, useReviews_1.useReviews)(listingId, filters);
-    if (isLoading) {
-        return ((0, jsx_runtime_1.jsx)("div", { className: className, role: "status", "aria-label": "Loading reviews", children: renderLoading ? renderLoading() : (0, jsx_runtime_1.jsx)("div", { children: "Loading reviews..." }) }));
+function ReviewsListHeadless({ entityId, listingId, filters, options, renderList, renderItem, renderLoading, renderError, renderEmpty, className, }) {
+    // Use entityId, fall back to listingId for backward compatibility
+    const resolvedEntityId = entityId || listingId || '';
+    const { reviews, loading, error, hasMore, total, loadMore, refetch } = (0, useReviews_1.useReviews)(resolvedEntityId, { filters, ...options });
+    // Show loading state
+    if (loading && reviews.length === 0) {
+        if (renderLoading) {
+            return (0, jsx_runtime_1.jsx)("div", { className: className, children: renderLoading() });
+        }
+        return (0, jsx_runtime_1.jsx)("div", { className: className, children: "Loading reviews..." });
     }
-    if (error) {
-        return ((0, jsx_runtime_1.jsx)("div", { className: className, role: "alert", "aria-live": "polite", children: renderError ? renderError(error) : (0, jsx_runtime_1.jsxs)("div", { children: ["Error: ", error.message] }) }));
+    // Show error state
+    if (error && reviews.length === 0) {
+        if (renderError) {
+            return (0, jsx_runtime_1.jsx)("div", { className: className, children: renderError(error) });
+        }
+        return ((0, jsx_runtime_1.jsxs)("div", { className: className, role: "alert", children: ["Error loading reviews: ", error.message] }));
     }
-    if (reviews.length === 0) {
-        return ((0, jsx_runtime_1.jsx)("div", { className: className, role: "status", "aria-label": "No reviews", children: renderEmpty ? renderEmpty() : (0, jsx_runtime_1.jsx)("div", { children: "No reviews yet" }) }));
+    // Show empty state
+    if (!loading && reviews.length === 0) {
+        if (renderEmpty) {
+            return (0, jsx_runtime_1.jsx)("div", { className: className, children: renderEmpty() });
+        }
+        return (0, jsx_runtime_1.jsx)("div", { className: className, children: "No reviews yet" });
     }
-    return ((0, jsx_runtime_1.jsx)("div", { className: className, role: "list", "aria-label": "Reviews", children: reviews.map((review) => ((0, jsx_runtime_1.jsx)("div", { role: "listitem", children: renderReview(review) }, review.id))) }));
+    // Render the list with render props
+    return ((0, jsx_runtime_1.jsx)("div", { className: className, children: renderList({
+            reviews,
+            loading,
+            error,
+            hasMore,
+            total,
+            loadMore,
+            refetch,
+        }) }));
 }

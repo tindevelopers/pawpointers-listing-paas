@@ -4,10 +4,15 @@
  */
 import type { ReviewFilters } from '../types';
 export interface ReviewsListProps {
-    listingId: string;
+    /** Entity ID to fetch reviews for */
+    entityId: string;
+    /** @deprecated Use entityId instead */
+    listingId?: string;
     filters?: ReviewFilters;
     variant?: 'default' | 'compact' | 'featured';
     className?: string;
+    /** Show load more button */
+    showLoadMore?: boolean;
 }
-export declare function ReviewsList({ listingId, filters, variant, className, }: ReviewsListProps): import("react/jsx-runtime").JSX.Element;
+export declare function ReviewsList({ entityId, listingId, filters, variant, className, showLoadMore, }: ReviewsListProps): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=ReviewsList.d.ts.map

@@ -85,6 +85,7 @@ export interface Review {
 
   // Review content
   rating: number; // 1-5
+  title?: string;
   comment?: string;
   photos?: ReviewPhoto[];
 

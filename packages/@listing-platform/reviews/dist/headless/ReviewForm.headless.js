@@ -8,7 +8,9 @@ const jsx_runtime_1 = require("react/jsx-runtime");
  */
 const react_1 = require("react");
 const useReviewSubmit_1 = require("../hooks/useReviewSubmit");
-function ReviewFormHeadless({ listingId, onSubmit, onCancel, renderField, renderSubmit, renderCancel, renderError, className, }) {
+function ReviewFormHeadless({ entityId, listingId, onSubmit, onCancel, renderField, renderSubmit, renderCancel, renderError, className, }) {
+    // Use entityId, fall back to listingId for backward compatibility
+    const resolvedEntityId = entityId || listingId || '';
     const { submitReview, isSubmitting, error } = (0, useReviewSubmit_1.useReviewSubmit)();
     const [rating, setRating] = (0, react_1.useState)(0);
     const [comment, setComment] = (0, react_1.useState)('');
@@ -29,7 +31,7 @@ function ReviewFormHeadless({ listingId, onSubmit, onCancel, renderField, render
         }
         setFieldErrors({});
         const formData = {
-            listingId,
+            entityId: resolvedEntityId,
             rating,
             comment: comment.trim() || undefined,
             photos: photos.length > 0 ? photos : undefined,

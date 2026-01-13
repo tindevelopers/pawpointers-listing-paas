@@ -3,8 +3,12 @@
  * Provides logic and structure only, no styling
  */
 import React from 'react';
+import type { ApiError } from '../types';
 export interface ReviewFormHeadlessProps {
-    listingId: string;
+    /** Entity ID for the review */
+    entityId: string;
+    /** @deprecated Use entityId instead */
+    listingId?: string;
     onSubmit?: (reviewId: string) => void;
     onCancel?: () => void;
     renderField: (props: {
@@ -22,8 +26,8 @@ export interface ReviewFormHeadlessProps {
     renderCancel?: (props: {
         onCancel: () => void;
     }) => React.ReactNode;
-    renderError?: (error: Error) => React.ReactNode;
+    renderError?: (error: ApiError) => React.ReactNode;
     className?: string;
 }
-export declare function ReviewFormHeadless({ listingId, onSubmit, onCancel, renderField, renderSubmit, renderCancel, renderError, className, }: ReviewFormHeadlessProps): import("react/jsx-runtime").JSX.Element;
+export declare function ReviewFormHeadless({ entityId, listingId, onSubmit, onCancel, renderField, renderSubmit, renderCancel, renderError, className, }: ReviewFormHeadlessProps): import("react/jsx-runtime").JSX.Element;
 //# sourceMappingURL=ReviewForm.headless.d.ts.map
