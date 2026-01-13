@@ -93,11 +93,13 @@ export async function POST(request: NextRequest) {
         const incrementField = type === 'helpful' ? 'helpful_count' : 'not_helpful_count';
         const decrementField = type === 'helpful' ? 'not_helpful_count' : 'helpful_count';
 
-        await supabase.rpc('increment_review_vote', {
-          review_id: reviewId,
-          increment_field: incrementField,
-          decrement_field: decrementField,
-        }).catch(async () => {
+        try {
+          await supabase.rpc('increment_review_vote', {
+            review_id: reviewId,
+            increment_field: incrementField,
+            decrement_field: decrementField,
+          });
+        } catch {
           // Fallback if RPC doesn't exist - manually update
           const { data: review } = await supabase
             .from('reviews')
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
               })
               .eq('id', reviewId);
           }
-        });
+        }
       }
     } else {
       // Create new vote
@@ -129,27 +131,33 @@ export async function POST(request: NextRequest) {
       // Update review counts
       const incrementField = type === 'helpful' ? 'helpful_count' : 'not_helpful_count';
       
-      await supabase.rpc('increment_review_vote', {
-        review_id: reviewId,
-        increment_field: incrementField,
-        decrement_field: null,
-      }).catch(async () => {
+      try {
+        await supabase.rpc('increment_review_vote', {
+          review_id: reviewId,
+          increment_field: incrementField,
+          decrement_field: null,
+        });
+      } catch {
         // Fallback if RPC doesn't exist
         const { data: review } = await supabase
           .from('reviews')
-          .select(incrementField)
+          .select('helpful_count, not_helpful_count')
           .eq('id', reviewId)
           .single();
 
         if (review) {
+          const currentCount = incrementField === 'helpful_count' 
+            ? (review.helpful_count || 0)
+            : (review.not_helpful_count || 0);
+          
           await supabase
             .from('reviews')
             .update({
-              [incrementField]: (review[incrementField] || 0) + 1,
+              [incrementField]: currentCount + 1,
             })
             .eq('id', reviewId);
         }
-      });
+      }
     }
 
     // Get updated counts
@@ -160,8 +168,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     const response: VoteResponse = {
-      reviewId,
-      type,
       helpfulCount: review?.helpful_count || 0,
       notHelpfulCount: review?.not_helpful_count || 0,
     };
