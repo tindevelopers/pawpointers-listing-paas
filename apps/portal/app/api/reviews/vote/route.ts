@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
           review_id: reviewId,
           increment_field: incrementField,
           decrement_field: decrementField,
-        }).catch(() => {
+        }).catch(async () => {
           // Fallback if RPC doesn't exist - manually update
           const { data: review } = await supabase
             .from('reviews')
