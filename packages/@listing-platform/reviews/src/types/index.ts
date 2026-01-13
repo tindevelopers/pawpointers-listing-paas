@@ -111,6 +111,8 @@ export interface Review {
   // Trust signals
   isVerified?: boolean;
   verificationMethod?: string;
+  verifiedPurchase?: boolean;
+  verifiedVisit?: boolean;
 
   // Engagement
   helpfulCount: number;
