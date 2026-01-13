@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { ApiResponse, VoteType, VoteResponse } from '@listing-platform/reviews/types';
+import type { ApiResponse, VoteType, VoteResponse } from '@listing-platform/reviews';
 
 /**
  * Review Vote API Route

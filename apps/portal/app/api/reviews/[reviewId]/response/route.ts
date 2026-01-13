@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { ApiResponse, Review } from '@listing-platform/reviews/types';
+import type { ApiResponse, Review } from '@listing-platform/reviews';
 
 /**
  * Owner/brand response endpoint
