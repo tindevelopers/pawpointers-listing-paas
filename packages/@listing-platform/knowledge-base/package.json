@@ -1,0 +1,26 @@
+{
+  "name": "@listing-platform/knowledge-base",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Knowledge base utilities (CRUD, search, listing sync) with pluggable embedding provider",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "lint": "eslint src/",
+    "type-check": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "5.9.3"
+  }
+}
+

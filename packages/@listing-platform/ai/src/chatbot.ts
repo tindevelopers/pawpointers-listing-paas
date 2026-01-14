@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openaiClient, getOpenAIConfig } from './embeddings';
-import { searchDocuments } from './knowledge';
+import { openaiClient, getOpenAIConfig, createOpenAIEmbeddingProvider } from './embeddings';
+import { searchDocuments } from '@listing-platform/knowledge-base';
 import { SYSTEM_PROMPT } from './types';
-import type { KnowledgeSearchResult } from './types';
+import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 
 /**
  * RAG Chatbot
@@ -53,8 +53,10 @@ export async function chat(
     sessionId,
   } = options;
 
+  const embeddingProvider = createOpenAIEmbeddingProvider();
+
   // Search for relevant context documents
-  const contextDocuments = await searchDocuments(supabase, userMessage, {
+  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
     tenantId,
     limit: maxContextDocs,
     threshold: similarityThreshold,
@@ -151,8 +153,10 @@ export async function* streamChat(
     similarityThreshold = 0.75,
   } = options;
 
+  const embeddingProvider = createOpenAIEmbeddingProvider();
+
   // First, yield context documents
-  const contextDocuments = await searchDocuments(supabase, userMessage, {
+  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
     tenantId,
     limit: maxContextDocs,
     threshold: similarityThreshold,
