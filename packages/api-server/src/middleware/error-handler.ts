@@ -6,6 +6,10 @@ import { ZodError } from 'zod';
  * Global error handler for the API
  */
 export function errorHandler(err: Error, c: Context) {
+  // #region agent log
+  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'error-handler.ts:9',message:'Error handler invoked',data:{name:err.name,message:err.message,hasCode:'code' in err,code:('code' in err)?String((err as any).code):undefined,path:c.req.path},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+  // #endregion
+  
   console.error('API Error:', {
     name: err.name,
     message: err.message,

@@ -46,59 +46,94 @@ const listQuerySchema = z.object({
  * Get published listings (for portal browse/search)
  */
 publicRoutes.get('/listings', async (c) => {
-  const query = listQuerySchema.parse(c.req.query());
-  const supabase = getAdminClient();
+  // #region agent log
+  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:48',message:'GET /listings endpoint called',data:{query:c.req.query()},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+  // #endregion
+  
+  try {
+    const query = listQuerySchema.parse(c.req.query());
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:52',message:'Getting admin client',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'B,D'})}).catch(()=>{});
+    // #endregion
+    
+    const supabase = getAdminClient();
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:55',message:'Admin client obtained, building query',data:{page:query.page,limit:query.limit},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
 
-  let selectFields = '*';
-  if (query.fields) {
-    // Allow limiting fields for SSG (e.g., fields=id,slug,title)
-    selectFields = query.fields;
+    let selectFields = '*';
+    if (query.fields) {
+      // Allow limiting fields for SSG (e.g., fields=id,slug,title)
+      selectFields = query.fields;
+    }
+
+    let dbQuery = supabase
+      .from('listings')
+      .select(selectFields, { count: 'exact' })
+      .eq('status', 'published')
+      .lte('published_at', new Date().toISOString())
+      .order(query.sortBy, { ascending: query.sortOrder === 'asc' })
+      .range((query.page - 1) * query.limit, query.page * query.limit - 1);
+
+    if (query.search) {
+      const escapedSearch = escapeSearchQuery(query.search);
+      dbQuery = dbQuery.or(
+        `title.ilike.%${escapedSearch}%,description.ilike.%${escapedSearch}%`
+      );
+    }
+
+    if (query.category) {
+      dbQuery = dbQuery.eq('category', query.category);
+    }
+
+    if (query.minPrice !== undefined) {
+      dbQuery = dbQuery.gte('price', query.minPrice);
+    }
+
+    if (query.maxPrice !== undefined) {
+      dbQuery = dbQuery.lte('price', query.maxPrice);
+    }
+
+    if (query.featured) {
+      dbQuery = dbQuery.eq('featured', true);
+    }
+
+    // Location search (simple city/state match)
+    if (query.location) {
+      const escapedLocation = escapeSearchQuery(query.location);
+      dbQuery = dbQuery.or(
+        `address->city.ilike.%${escapedLocation}%,address->region.ilike.%${escapedLocation}%`
+      );
+    }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:97',message:'Executing database query',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    
+    const { data, error, count } = await dbQuery;
+    
+  // #region agent log
+  console.log('[DEBUG] Query result:', {hasError:!!error,errorCode:error?.code,errorMessage:error?.message,dataLength:data?.length||0,count:count||0});
+  fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:100',message:'Query result received',data:{hasError:!!error,errorCode:error?.code,errorMessage:error?.message,dataLength:data?.length||0,count:count||0},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'E'})}).catch(()=>{});
+  // #endregion
+
+    if (error) {
+    // #region agent log
+    console.error('[DEBUG] Database query error:', {code:error.code,message:error.message,details:error.details,hint:error.hint});
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:103',message:'Database query error',data:{code:error.code,message:error.message,details:error.details,hint:error.hint},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+      throw error;
+    }
+
+    return paginated(c, data || [], query.page, query.limit, count || 0);
+  } catch (err) {
+    // #region agent log
+    fetch('http://127.0.0.1:7248/ingest/eed908bc-e684-48e5-ad88-bbd7eba2f91e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'public.ts:108',message:'Exception in /listings endpoint',data:{error:err instanceof Error?err.message:String(err),stack:err instanceof Error?err.stack:undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'runtime',hypothesisId:'A,B,C,D,E'})}).catch(()=>{});
+    // #endregion
+    throw err;
   }
-
-  let dbQuery = supabase
-    .from('listings')
-    .select(selectFields, { count: 'exact' })
-    .eq('status', 'published')
-    .lte('published_at', new Date().toISOString())
-    .order(query.sortBy, { ascending: query.sortOrder === 'asc' })
-    .range((query.page - 1) * query.limit, query.page * query.limit - 1);
-
-  if (query.search) {
-    const escapedSearch = escapeSearchQuery(query.search);
-    dbQuery = dbQuery.or(
-      `title.ilike.%${escapedSearch}%,description.ilike.%${escapedSearch}%`
-    );
-  }
-
-  if (query.category) {
-    dbQuery = dbQuery.eq('category', query.category);
-  }
-
-  if (query.minPrice !== undefined) {
-    dbQuery = dbQuery.gte('price', query.minPrice);
-  }
-
-  if (query.maxPrice !== undefined) {
-    dbQuery = dbQuery.lte('price', query.maxPrice);
-  }
-
-  if (query.featured) {
-    dbQuery = dbQuery.eq('featured', true);
-  }
-
-  // Location search (simple city/state match)
-  if (query.location) {
-    const escapedLocation = escapeSearchQuery(query.location);
-    dbQuery = dbQuery.or(
-      `address->city.ilike.%${escapedLocation}%,address->region.ilike.%${escapedLocation}%`
-    );
-  }
-
-  const { data, error, count } = await dbQuery;
-
-  if (error) throw error;
-
-  return paginated(c, data || [], query.page, query.limit, count || 0);
 });
 
 /**
@@ -124,7 +159,11 @@ publicRoutes.get('/listings/slug/:slug', async (c) => {
   }
 
   // Increment view count (fire and forget)
-  supabase.rpc('increment_view_count', { listing_id: data.id }).catch(() => {});
+  void (async () => {
+    try {
+      await supabase.rpc('increment_view_count', { listing_id: data.id });
+    } catch {}
+  })();
 
   return success(c, data);
 });
@@ -181,24 +220,61 @@ publicRoutes.get('/featured', async (c) => {
  * Get all categories with listing counts
  */
 publicRoutes.get('/categories', async (c) => {
-  const supabase = getAdminClient();
+  try {
+    const supabase = getAdminClient();
 
-  // Get categories from taxonomy_terms table if it exists,
-  // otherwise aggregate from listings
-  const { data: taxonomyData } = await supabase
-    .from('taxonomy_terms')
-    .select('id, name, slug, parent_id')
-    .eq('taxonomy_type', 'category')
-    .order('name');
+    // Get categories from taxonomy_terms table if it exists,
+    // otherwise aggregate from listings
+    const { data: taxonomyData, error: taxonomyError } = await supabase
+      .from('taxonomy_terms')
+      .select('id, name, slug, parent_id')
+      .eq('taxonomy_type', 'category')
+      .order('name');
 
-  if (taxonomyData && taxonomyData.length > 0) {
+    // If taxonomy_terms table doesn't exist or has no data, try fallback
+    if (taxonomyError || !taxonomyData || taxonomyData.length === 0) {
+      console.log('Taxonomy terms not found, trying fallback from listings');
+      
+      // Fallback: aggregate categories from listings
+      const { data: listings, error: listingsError } = await supabase
+        .from('listings')
+        .select('category')
+        .eq('status', 'published')
+        .not('category', 'is', null);
+
+      if (listingsError) {
+        console.error('Error fetching listings for categories:', listingsError);
+        // Return empty array instead of throwing error
+        return success(c, []);
+      }
+
+      const categoryCounts: Record<string, number> = {};
+      listings?.forEach((l: { category: string | null }) => {
+        if (l.category) {
+          categoryCounts[l.category] = (categoryCounts[l.category] || 0) + 1;
+        }
+      });
+
+      const categories = Object.entries(categoryCounts).map(([name, count]) => ({
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        name,
+        count,
+      }));
+
+      return success(c, categories);
+    }
+
     // Get counts for each category
     const categoriesWithCounts = await Promise.all(
-      taxonomyData.map(async (cat) => {
-        const { count } = await supabase
+      taxonomyData.map(async (cat: { id: string; name: string; slug: string; parent_id: string | null }) => {
+        const { count, error: countError } = await supabase
           .from('listing_taxonomies')
           .select('*', { count: 'exact', head: true })
           .eq('taxonomy_term_id', cat.id);
+
+        if (countError) {
+          console.warn(`Error getting count for category ${cat.id}:`, countError);
+        }
 
         return {
           ...cat,
@@ -208,29 +284,11 @@ publicRoutes.get('/categories', async (c) => {
     );
 
     return success(c, categoriesWithCounts);
+  } catch (error) {
+    console.error('Error in /categories endpoint:', error);
+    // Return empty array instead of throwing error to prevent 500
+    return success(c, []);
   }
-
-  // Fallback: aggregate categories from listings
-  const { data: listings } = await supabase
-    .from('listings')
-    .select('category')
-    .eq('status', 'published')
-    .not('category', 'is', null);
-
-  const categoryCounts: Record<string, number> = {};
-  listings?.forEach((l) => {
-    if (l.category) {
-      categoryCounts[l.category] = (categoryCounts[l.category] || 0) + 1;
-    }
-  });
-
-  const categories = Object.entries(categoryCounts).map(([name, count]) => ({
-    slug: name.toLowerCase().replace(/\s+/g, '-'),
-    name,
-    count,
-  }));
-
-  return success(c, categories);
 });
 
 /**
@@ -276,7 +334,7 @@ publicRoutes.get('/popular', async (c) => {
   if (error) throw error;
 
   return success(c, {
-    slugs: data?.map((l) => l.slug) || [],
+    slugs: data?.map((l: { slug: string }) => l.slug) || [],
   });
 });
 
@@ -356,7 +414,11 @@ publicRoutes.get('/knowledge-base', async (c) => {
   // Increment view counts (fire and forget)
   if (data && data.length > 0) {
     data.forEach((doc) => {
-      supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).catch(() => {});
+      void (async () => {
+        try {
+          await supabase.rpc('increment_knowledge_document_views', { document_id: doc.id });
+        } catch {}
+      })();
     });
   }
 
@@ -386,7 +448,11 @@ publicRoutes.get('/knowledge-base/:id', async (c) => {
   }
 
   // Increment view count (fire and forget)
-  supabase.rpc('increment_knowledge_document_views', { document_id: id }).catch(() => {});
+  void (async () => {
+    try {
+      await supabase.rpc('increment_knowledge_document_views', { document_id: id });
+    } catch {}
+  })();
 
   return success(c, data);
 });
@@ -415,8 +481,12 @@ publicRoutes.get('/knowledge-base/search', async (c) => {
     });
 
     // Increment view counts (fire and forget)
-    results.forEach((doc) => {
-      supabase.rpc('increment_knowledge_document_views', { document_id: doc.id }).catch(() => {});
+    results.forEach((doc: { id: string }) => {
+      void (async () => {
+        try {
+          await supabase.rpc('increment_knowledge_document_views', { document_id: doc.id });
+        } catch {}
+      })();
     });
 
     return success(c, results);
@@ -477,7 +547,7 @@ publicRoutes.get('/knowledge-base/categories', async (c) => {
   }
 
   const categoryCounts: Record<string, number> = {};
-  data?.forEach((doc) => {
+  data?.forEach((doc: { category: string | null }) => {
     if (doc.category) {
       categoryCounts[doc.category] = (categoryCounts[doc.category] || 0) + 1;
     }
@@ -489,4 +559,71 @@ publicRoutes.get('/knowledge-base/categories', async (c) => {
   }));
 
   return success(c, categories);
+});
+
+// ============================================================================
+// Public Accounts/Tenants Endpoints
+// ============================================================================
+
+/**
+ * GET /api/public/accounts/featured
+ * Get featured accounts/tenants for portal showcase
+ */
+publicRoutes.get('/accounts/featured', async (c) => {
+  const limit = Number(c.req.query('limit')) || 4;
+  const supabase = getAdminClient();
+
+  try {
+    // Get active tenants with their first user (for description/avatar)
+    const { data: tenants, error } = await supabase
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        domain,
+        plan,
+        avatar_url,
+        created_at,
+        status
+      `)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching featured accounts:', error);
+      return success(c, []);
+    }
+
+    // Get user info for each tenant to add descriptions
+    const accountsWithUsers = await Promise.all(
+      (tenants || []).map(async (tenant) => {
+        // Get the first user for this tenant
+        const { data: user } = await supabase
+          .from('users')
+          .select('full_name, email')
+          .eq('tenant_id', tenant.id)
+          .eq('status', 'active')
+          .limit(1)
+          .single();
+
+        return {
+          id: tenant.id,
+          name: tenant.name,
+          domain: tenant.domain,
+          plan: tenant.plan,
+          avatar_url: tenant.avatar_url,
+          created_at: tenant.created_at,
+          description: user?.full_name 
+            ? `${user.full_name}'s ${tenant.name}` 
+            : `${tenant.name} - Quality services you can trust`,
+        };
+      })
+    );
+
+    return success(c, accountsWithUsers);
+  } catch (error) {
+    console.error('Error in /accounts/featured endpoint:', error);
+    return success(c, []);
+  }
 });

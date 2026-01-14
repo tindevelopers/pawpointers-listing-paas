@@ -204,6 +204,17 @@ Vercel automatically deploys on push to main branch. To customize:
 2. Configure branch deployments
 3. Set up preview deployments for PRs
 
+### Path-aware deploys (skip unchanged apps)
+
+- `.github/workflows/vercel-deploy.yml` uses `dorny/paths-filter` to deploy only apps whose paths changed.
+- Triggers: pushes/PRs on `main` and `pawpointers-portal`.
+- Deploy conditions:
+  - Portal when `apps/portal/**` or shared deps change (`packages/@tinadmin/{core,config,ui-consumer}`, `config/**`, workspace manifests).
+  - Admin when `apps/admin/**` or shared deps change (`packages/@tinadmin/{core,config,ui-admin}`, `config/**`, workspace manifests).
+  - Dashboard when `apps/dashboard/**` or shared deps change.
+  - API when `packages/api-server/**` or shared deps change (`packages/@tinadmin/{core,config}`, `packages/@listing-platform/**`).
+- Benefit: saves CI minutes and avoids unnecessary Vercel deploys when unrelated files change.
+
 ### Manual Deployment
 
 ```bash

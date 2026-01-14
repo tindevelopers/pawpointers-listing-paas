@@ -31,8 +31,14 @@ export async function generateMetadata({
 
 // Generate static paths for common categories
 export async function generateStaticParams() {
-  const categories = await getCategories();
-  return categories.map((cat) => ({ category: cat.slug }));
+  try {
+    const categories = await getCategories();
+    return categories.map((cat) => ({ category: cat.slug }));
+  } catch (error) {
+    console.error('Error generating static params for categories:', error);
+    // Return empty array - pages will be generated on-demand
+    return [];
+  }
 }
 
 export default async function CategoryPage({

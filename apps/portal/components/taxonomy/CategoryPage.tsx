@@ -58,7 +58,7 @@ export function CategoryPage({
           )}
           
           <div className={`mt-4 text-sm ${term.image ? "text-gray-300" : "text-gray-500 dark:text-gray-400"}`}>
-            {total} {total === 1 ? config.primaryTaxonomy.labels.singular : config.primaryTaxonomy.labels.plural}
+            {total.toLocaleString()} {total === 1 ? config.primaryTaxonomy.labels.singular : config.primaryTaxonomy.labels.plural}
           </div>
           
           {/* Child Categories */}
@@ -89,7 +89,7 @@ export function CategoryPage({
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500 dark:text-gray-400">
-            Showing {listings.length} of {total} results
+            Showing {listings.length.toLocaleString()} of {total.toLocaleString()} results
           </span>
         </div>
         

@@ -1,48 +1,54 @@
 # ============================================================================
-# MULTI-STAGE DOCKERFILE FOR CLOUD RUN
+# Multi-stage Dockerfile for Cloud Run (pnpm / monorepo)
 # ============================================================================
 
-# Stage 1: Build
+# Stage 1: Build with pnpm in monorepo context
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Install pnpm
+ENV PNPM_HOME=/root/.local/share/pnpm
+ENV PNPM_STORE_PATH=/app/.pnpm-store
+RUN npm install -g pnpm@10
 
-# Install all dependencies (including dev deps for build)
-RUN npm ci
+# Copy workspace manifests
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# Copy monorepo packages (needed for dependency graph) and configs
+COPY packages ./packages
+COPY config ./config
+COPY tsconfig.json ./tsconfig.json
 
-# Copy source code
-COPY tsconfig.json ./
-COPY src/ ./src/
+# Install all deps (dev + prod) using pnpm with frozen lockfile
+RUN pnpm install --frozen-lockfile
 
-# Build TypeScript
-RUN npm run build
+# Build only the api-server package
+RUN pnpm --filter @listing-platform/api-server run build
 
-# Remove dev dependencies
-RUN npm prune --production
-
-# ============================================================================
-# Stage 2: Production
-# ============================================================================
+# Stage 2: Runtime image
 FROM node:20-slim AS production
 
-# Set production environment
 ENV NODE_ENV=production
-
 WORKDIR /app
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 api
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 api
 
-# Copy built application
-COPY --from=builder --chown=api:nodejs /app/dist ./dist
-COPY --from=builder --chown=api:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=api:nodejs /app/package.json ./
+# Copy workspace manifests for prod install
+COPY --from=builder --chown=api:nodejs /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json ./
+COPY --from=builder --chown=api:nodejs /app/packages /app/packages
 
-# Use non-root user
+# Install pnpm and production dependencies for api-server
+ENV PNPM_HOME=/root/.local/share/pnpm
+ENV PNPM_STORE_PATH=/app/.pnpm-store
+RUN npm install -g pnpm@10 && \
+    pnpm config set node-linker hoisted && \
+    pnpm install --filter @listing-platform/api-server --prod --frozen-lockfile
+
+# Copy built artifacts
+COPY --from=builder --chown=api:nodejs /app/packages/api-server/dist ./dist
+COPY --from=builder --chown=api:nodejs /app/packages/api-server/package.json ./package.json
+
 USER api
 
 # Cloud Run uses PORT environment variable

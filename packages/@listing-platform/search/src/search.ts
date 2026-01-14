@@ -97,12 +97,15 @@ export async function searchListings(params: SearchParams): Promise<SearchResult
     });
 
     // Transform results
-    const hits: SearchHit[] = (searchResult.hits || []).map((hit) => ({
-      document: hit.document as ListingDocument,
-      highlight: hit.highlight as Record<string, { snippet: string; matched_tokens: string[] }>,
-      text_match: hit.text_match,
-      geo_distance_meters: hit.geo_distance_meters,
-    }));
+    const hits: SearchHit[] = (searchResult.hits || []).map((hit) => {
+      const hitWithGeo = hit as typeof hit & { geo_distance_meters?: number };
+      return {
+        document: hit.document as ListingDocument,
+        highlight: hit.highlight as Record<string, { snippet: string; matched_tokens: string[] }>,
+        text_match: hit.text_match,
+        geo_distance_meters: hitWithGeo.geo_distance_meters,
+      };
+    });
 
     // Transform facets
     const facets: Record<string, { value: string; count: number }[]> = {};

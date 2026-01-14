@@ -27,6 +27,20 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'cdn.yourplatform.com',
       },
+      // Builder.io images
+      {
+        protocol: 'https',
+        hostname: 'cdn.builder.io',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.builder.io',
+      },
+      // Unsplash images (for sample/placeholder images)
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
       // Add more patterns as needed for your CDN
       ...(process.env.NEXT_PUBLIC_CDN_URL
         ? [
@@ -42,14 +56,20 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
   
+  // Output configuration for static export (optional)
+  // Note: 'standalone' is for production builds only, not dev mode
+  // output: 'standalone',
+  
   // Bundle optimization for consumer portal
-  experimental: {
-    optimizePackageImports: [
-      "@tinadmin/core",
-      "@tinadmin/ui-consumer",
-      "@heroicons/react",
-    ],
-  },
+  // Temporarily disabled due to Next.js 15.5.9 bug: expandNextJsTemplate is not a function
+  // experimental: {
+  //   optimizePackageImports: [
+  //     "@tinadmin/core",
+  //     "@tinadmin/ui-consumer",
+  //     "@heroicons/react",
+  //     "@builder.io/react",
+  //   ],
+  // },
   
   // Webpack configuration
   webpack(config, { isServer }) {
@@ -65,6 +85,8 @@ const nextConfig: NextConfig = {
       '@tinadmin/core': path.resolve(__dirname, '../../packages/@tinadmin/core/src'),
       '@tinadmin/ui-consumer': path.resolve(__dirname, '../../packages/@tinadmin/ui-consumer/src'),
       '@tinadmin/config': path.resolve(__dirname, '../../packages/@tinadmin/config/src'),
+      // Resolve @/core/* imports from @tinadmin/core package
+      '@/core': path.resolve(__dirname, '../../packages/@tinadmin/core/src'),
     };
     
     if (!isServer) {

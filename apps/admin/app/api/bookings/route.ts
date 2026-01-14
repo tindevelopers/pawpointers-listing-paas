@@ -202,7 +202,6 @@ export async function POST(req: NextRequest) {
     // Get event type if provided to calculate pricing
     let basePrice = 0;
     let currency = "USD";
-    let teamMemberId = null;
     
     if (event_type_id) {
       const { data: eventType } = await adminClient

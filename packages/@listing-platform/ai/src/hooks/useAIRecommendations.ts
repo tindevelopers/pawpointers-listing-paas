@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Recommendation } from '../types';
+import type { Recommendation } from '../types/index';
 
 interface UseAIRecommendationsResult {
   recommendations: Recommendation[];

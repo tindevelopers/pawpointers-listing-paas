@@ -40,8 +40,16 @@ export function ReviewCard({ review, variant = 'default', className }: ReviewCar
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className={cn('text-lg font-semibold', textColor)}>
-            {review.authorName}
+            {review.authorName || (review.reviewerType === 'expert' ? 'PawPointers Expert' : 'Pet Parent')}
           </h3>
+          {review.reviewerType === 'expert' && (review.expertCredentials || review.expertDomain) && (
+            <p className={cn('text-sm', textSecondaryColor)}>
+              {review.expertCredentials ? review.expertCredentials : null}
+              {review.expertCredentials && review.expertDomain ? ' • ' : null}
+              {review.expertDomain ? String(review.expertDomain).replace('_', ' ') : null}
+              {review.isMysteryShopper ? ' • Mystery shopper' : null}
+            </p>
+          )}
           <p className={cn('text-sm', textMutedColor)}>
             {formatDate(review.createdAt)}
           </p>

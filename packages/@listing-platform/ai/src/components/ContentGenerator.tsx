@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { cn } from '../utils/cn';
 import { useContentGenerator } from '../hooks/useContentGenerator';
-import type { GenerationType } from '../types';
+import type { GenerationType } from '../types/index';
 
 export interface ContentGeneratorProps {
   type: GenerationType;

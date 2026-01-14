@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { ImageAnalysis } from '../types';
+import type { ImageAnalysis } from '../types/index';
 
 interface UseImageAnalysisResult {
   analyze: (imageUrl: string | File) => Promise<ImageAnalysis>;

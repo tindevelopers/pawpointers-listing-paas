@@ -7,7 +7,7 @@ import type { TypesenseConfig } from './types';
  * CUSTOMIZE: Update the configuration for your Typesense deployment
  */
 
-let _client: Typesense.Client | null = null;
+let _client: InstanceType<typeof Typesense.Client> | null = null;
 
 /**
  * Get Typesense configuration from environment variables
@@ -34,7 +34,7 @@ export function getTypesenseConfig(): TypesenseConfig {
 /**
  * Create a Typesense client with the given configuration
  */
-export function createTypesenseClient(config: TypesenseConfig): Typesense.Client {
+export function createTypesenseClient(config: TypesenseConfig): InstanceType<typeof Typesense.Client> {
   return new Typesense.Client({
     nodes: [
       {
@@ -52,7 +52,7 @@ export function createTypesenseClient(config: TypesenseConfig): Typesense.Client
  * Get the singleton Typesense client
  * Uses environment variables for configuration
  */
-export function typesenseClient(): Typesense.Client {
+export function typesenseClient(): InstanceType<typeof Typesense.Client> {
   if (!_client) {
     const config = getTypesenseConfig();
     _client = createTypesenseClient(config);

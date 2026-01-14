@@ -26,6 +26,9 @@
       "@/*": [
         "./*"
       ],
+      "@/core/*": [
+        "../../packages/@tinadmin/core/src/*"
+      ],
       "@/../config/*": [
         "../../config/*"
       ],

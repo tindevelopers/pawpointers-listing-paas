@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { SimilarListing } from '../types';
+import type { SimilarListing } from '../types/index';
 
 interface UseSimilarListingsResult {
   similar: SimilarListing[];

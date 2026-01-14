@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar, FilterPanel, SearchResults } from "@/components/search";
@@ -52,15 +52,27 @@ function SearchContent() {
       setHasSearched(true);
     } catch (error) {
       console.error("Search error:", error);
+      setListings([]);
+      setTotal(0);
+      setTotalPages(0);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Auto-search if there are params
-  if (!hasSearched && searchParams.toString()) {
-    performSearch();
-  }
+  // Auto-search if there are params - use useEffect to avoid calling during render
+  useEffect(() => {
+    const searchQuery = searchParams.get("q");
+    const hasSearchParams = searchParams.toString().length > 0;
+    
+    if (hasSearchParams && !hasSearched) {
+      performSearch();
+    }
+    // Reset search state when query changes
+    if (hasSearched && searchQuery !== searchParams.get("q")) {
+      setHasSearched(false);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const query = searchParams.get("q");
 

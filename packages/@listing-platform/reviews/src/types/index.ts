@@ -85,6 +85,7 @@ export interface Review {
 
   // Review content
   rating: number; // 1-5
+  title?: string;
   comment?: string;
   photos?: ReviewPhoto[];
 
@@ -100,9 +101,18 @@ export interface Review {
   authorName?: string;
   authorAvatar?: string;
 
+  // Reviewer type (Pet Parent vs PawPointers Expert)
+  reviewerType?: 'pet_parent' | 'expert' | 'external';
+  expertDomain?: 'vet_medicine' | 'grooming' | 'food' | 'toys';
+  expertCredentials?: string;
+  isMysteryShopper?: boolean;
+  expertRubric?: Record<string, unknown>;
+
   // Trust signals
   isVerified?: boolean;
   verificationMethod?: string;
+  verifiedPurchase?: boolean;
+  verifiedVisit?: boolean;
 
   // Engagement
   helpfulCount: number;
@@ -154,6 +164,12 @@ export interface ReviewFormData {
   rating: number;
   comment?: string;
   photos?: File[];
+
+  // Optional: expert submission (typically from admin tooling)
+  reviewerType?: 'pet_parent' | 'expert';
+  expertDomain?: 'vet_medicine' | 'grooming' | 'food' | 'toys';
+  isMysteryShopper?: boolean;
+  expertRubric?: Record<string, unknown>;
 }
 
 // ============================================

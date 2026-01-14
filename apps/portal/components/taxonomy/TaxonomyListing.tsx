@@ -7,7 +7,7 @@ import { isFeatureEnabled } from "@/lib/taxonomy-config";
 
 // Conditional SDK imports
 import { ReviewsList, RatingDisplay } from "@listing-platform/reviews";
-import { Map, Marker, NearbyPlaces } from "@listing-platform/maps";
+import { Map, Marker } from "@listing-platform/maps";
 
 interface TaxonomyListingProps {
   listing: Listing;
@@ -132,11 +132,22 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                   {location.address}
                 </p>
               )}
+              <div className="px-6 pt-4">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  Get directions
+                </a>
+              </div>
               <div className="h-[300px] mt-4">
                 <Map
                   center={{ lat: location.lat, lng: location.lng }}
                   zoom={14}
                   className="w-full h-full"
+                  provider="mapbox"
                   interactive={true}
                   showControls={true}
                 >
@@ -147,12 +158,13 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                 </Map>
               </div>
               {/* Nearby Places */}
-              <div className="p-6 border-t border-gray-100 dark:border-gray-700">
+              {/* TODO: Implement nearby places fetching and pass places array to NearbyPlaces component */}
+              {/* <div className="p-6 border-t border-gray-100 dark:border-gray-700">
                 <h3 className="font-medium mb-4 text-gray-900 dark:text-white">
                   Nearby
                 </h3>
-                <NearbyPlaces listingId={listing.id} />
-              </div>
+                <NearbyPlaces places={[]} />
+              </div> */}
             </div>
           )}
           
@@ -165,10 +177,10 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                 </h2>
                 <RatingDisplay 
                   rating={(listing as unknown as { rating_average?: number }).rating_average || 0} 
-                  count={(listing as unknown as { rating_count?: number }).rating_count || 0} 
+                  showNumber
                 />
               </div>
-              <ReviewsList listingId={listing.id} variant="default" />
+              <ReviewsList entityId={listing.id} variant="default" />
             </div>
           )}
         </div>
@@ -181,11 +193,11 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(listing.price)}
               </div>
-              {customFields.pricing_type && (
+              {customFields.pricing_type ? (
                 <p className="text-gray-500 dark:text-gray-400">
                   {formatFieldValue(customFields.pricing_type, "select")}
                 </p>
-              )}
+              ) : null}
             </div>
           )}
           
@@ -196,27 +208,27 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                 Contact
               </h3>
               
-              {customFields.phone && (
+              {customFields.phone ? (
                 <a
-                  href={`tel:${customFields.phone}`}
+                  href={`tel:${String(customFields.phone)}`}
                   className="flex items-center gap-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                 >
                   <PhoneIcon className="w-5 h-5" />
                   <span>{String(customFields.phone)}</span>
                 </a>
-              )}
+              ) : null}
               
-              {customFields.email && (
+              {customFields.email ? (
                 <a
-                  href={`mailto:${customFields.email}`}
+                  href={`mailto:${String(customFields.email)}`}
                   className="flex items-center gap-3 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                 >
                   <EmailIcon className="w-5 h-5" />
                   <span>{String(customFields.email)}</span>
                 </a>
-              )}
+              ) : null}
               
-              {customFields.website && (
+              {customFields.website ? (
                 <a
                   href={String(customFields.website)}
                   target="_blank"
@@ -226,7 +238,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                   <WebsiteIcon className="w-5 h-5" />
                   <span>Visit Website</span>
                 </a>
-              )}
+              ) : null}
               
               <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
                 Send Inquiry

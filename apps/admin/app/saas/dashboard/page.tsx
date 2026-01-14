@@ -1,6 +1,7 @@
 "use client";
 
 import TenantBreadcrumbs from "@/components/tenant/TenantBreadcrumbs";
+import SupabaseConnectionStatus from "@/components/supabase/SupabaseConnectionStatus";
 import { useTenant } from "@/core/multi-tenancy";
 import React from "react";
 
@@ -36,6 +37,9 @@ export default function DashboardPage() {
             </p>
           </div>
         </section>
+
+        {/* Supabase Connection Status */}
+        <SupabaseConnectionStatus />
 
         {/* Dashboard Stats */}
         <div className="grid gap-6 lg:grid-cols-3">

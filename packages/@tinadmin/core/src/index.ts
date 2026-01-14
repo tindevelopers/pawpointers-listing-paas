@@ -136,6 +136,7 @@ export * from './database';
  * ```
  */
 export * from './shared';
+export * from './marketplace/interfaces';
 
 // ============================================================================
 // 📋 CORE METADATA

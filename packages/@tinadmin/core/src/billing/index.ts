@@ -85,7 +85,6 @@ export {
   createConnectLoginLink,
   updateConnectAccount,
   createConnectedPayment,
-  createPayout,
   getConnectAccountBalance,
 } from './connect';
 

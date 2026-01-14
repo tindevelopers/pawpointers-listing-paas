@@ -334,12 +334,20 @@ const navItems: NavItem[] = [
 const othersItems: NavItem[] = othersNavItems;
 const supportItems: NavItem[] = supportNavItems;
 
+const platformOnlySections = new Set([
+  "Admin",
+  "System Admin",
+  "SaaS",
+  "Billing & Plans",
+]);
+
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const { tenant, isLoading: isTenantLoading } = useTenant();
   const { branding } = useWhiteLabel();
   const [isMounted, setIsMounted] = useState(false);
+  const isPlatformAdmin = !isTenantLoading && !tenant;
   
   // Prevent hydration mismatch by only rendering dynamic content after mount
   useEffect(() => {
@@ -352,6 +360,18 @@ const AppSidebar: React.FC = () => {
   const logoUrl = branding.logo || "/images/logo/logo.svg";
   const logoDarkUrl = branding.logo || "/images/logo/logo-dark.svg";
   const logoIconUrl = branding.favicon || "/images/logo/logo-icon.svg";
+
+  const filteredNavItems = navItems.filter(
+    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  );
+
+  const filteredSupportItems = supportItems.filter(
+    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  );
+
+  const filteredOtherItems = othersItems.filter(
+    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  );
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -742,7 +762,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems, "main")}
             </div>
             <div>
               <h2
@@ -758,7 +778,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(supportItems, "support")}
+              {renderMenuItems(filteredSupportItems, "support")}
             </div>
             <div>
               <h2
@@ -774,7 +794,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(filteredOtherItems, "others")}
             </div>
           </div>
         </nav>

@@ -18,7 +18,7 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/api-server:latest'
       - '-f'
-      - 'Dockerfile'
+      - 'packages/api-server/Dockerfile'
       - '.'
 
   # Push the image to Container Registry
@@ -38,7 +38,7 @@ steps:
       - '--image'
       - 'gcr.io/$PROJECT_ID/api-server:$SHORT_SHA'
       - '--region'
-      - 'us-central1'
+      - 'us-east1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'

@@ -12,7 +12,7 @@
 
 export { typesenseClient, createTypesenseClient, getTypesenseConfig } from './client';
 export { searchListings, searchWithFilters, getSearchSuggestions } from './search';
-export { syncListing, syncListings, deleteListing, initializeCollection } from './sync';
+export { syncListing, syncListings, deleteListing, initializeCollection, clearCollection } from './sync';
 export type {
   TypesenseConfig,
   SearchParams,

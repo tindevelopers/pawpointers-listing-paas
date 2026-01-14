@@ -9,9 +9,11 @@ const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const ReviewForm_headless_1 = require("../headless/ReviewForm.headless");
 const cn_1 = require("../utils/cn");
-function ReviewForm({ listingId, onSubmit, onCancel, variant = 'default', className, }) {
+function ReviewForm({ entityId, listingId, onSubmit, onCancel, variant = 'default', className, }) {
+    // Use entityId, fall back to listingId for backward compatibility
+    const resolvedEntityId = entityId || listingId || '';
     const [hoveredRating, setHoveredRating] = (0, react_1.useState)(0);
-    return ((0, jsx_runtime_1.jsx)(ReviewForm_headless_1.ReviewFormHeadless, { listingId: listingId, onSubmit: onSubmit, onCancel: onCancel, className: (0, cn_1.cn)('space-y-4', className), renderField: ({ name, label, type, value, onChange, error }) => {
+    return ((0, jsx_runtime_1.jsx)(ReviewForm_headless_1.ReviewFormHeadless, { entityId: resolvedEntityId, onSubmit: onSubmit, onCancel: onCancel, className: (0, cn_1.cn)('space-y-4', className), renderField: ({ name, label, type, value, onChange, error }) => {
             if (type === 'rating') {
                 return ((0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsxs)("label", { className: "block text-sm font-medium text-neutral-700 mb-2", children: [label, " ", error && (0, jsx_runtime_1.jsx)("span", { className: "text-error-600", children: "*" })] }), (0, jsx_runtime_1.jsx)("div", { className: "flex gap-1", children: [1, 2, 3, 4, 5].map((star) => ((0, jsx_runtime_1.jsx)("button", { type: "button", onClick: () => onChange(star), onMouseEnter: () => setHoveredRating(star), onMouseLeave: () => setHoveredRating(0), className: "focus:outline-none focus:ring-2 focus:ring-primary-500 rounded", "aria-label": `Rate ${star} stars`, children: (0, jsx_runtime_1.jsx)("svg", { className: (0, cn_1.cn)('w-6 h-6 transition-colors', (hoveredRating >= star || value >= star)
                                         ? 'text-warning-400'

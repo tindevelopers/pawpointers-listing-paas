@@ -57,8 +57,24 @@ export interface ListingSearchResult {
   totalPages: number;
 }
 
-// CUSTOMIZE: Update API_URL to match your deployment
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
+  const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
+  
+  throw new Error(
+    `Missing Supabase environment variables in apps/portal. ` +
+    `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
+    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
+    `Please create apps/portal/.env.local with these variables and restart the dev server.`
+  );
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
  * Fetch a single listing by slug
@@ -66,17 +82,33 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
  */
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
-    const response = await fetch(`${API_URL}/api/public/listings/slug/${slug}`, {
-      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
-    });
+    const { data, error } = await supabase
+      .from('public_listings_view')
+      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .eq('slug', slug)
+      .eq('status', 'active')
+      .maybeSingle();
 
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch listing: ${response.statusText}`);
+    if (error) {
+      console.error('Failed to fetch listing by slug:', error.message);
+      return null;
     }
 
-    const result = await response.json();
-    return result.data || null;
+    return data
+      ? {
+          id: data.id,
+          slug: data.slug,
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          images: data.images || [],
+          category: data.category,
+          location: data.location,
+          status: data.status,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        }
+      : null;
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -89,17 +121,33 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
  */
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
-    const response = await fetch(`${API_URL}/api/public/listings/${id}`, {
-      next: { revalidate: 60 },
-    });
+    const { data, error } = await supabase
+      .from('public_listings_view')
+      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .eq('id', id)
+      .eq('status', 'active')
+      .maybeSingle();
 
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Failed to fetch listing: ${response.statusText}`);
+    if (error) {
+      console.error('Failed to fetch listing by id:', error.message);
+      return null;
     }
 
-    const result = await response.json();
-    return result.data || null;
+    return data
+      ? {
+          id: data.id,
+          slug: data.slug,
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          images: data.images || [],
+          category: data.category,
+          location: data.location,
+          status: data.status,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+        }
+      : null;
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -113,47 +161,49 @@ export async function getListingById(id: string): Promise<Listing | null> {
 export async function searchListings(
   params: ListingSearchParams = {}
 ): Promise<ListingSearchResult> {
-  const searchParams = new URLSearchParams();
-
-  if (params.query) searchParams.set('search', params.query);
-  if (params.category) searchParams.set('category', params.category);
-  if (params.minPrice) searchParams.set('minPrice', params.minPrice.toString());
-  if (params.maxPrice) searchParams.set('maxPrice', params.maxPrice.toString());
-  if (params.location) searchParams.set('location', params.location);
-  if (params.page) searchParams.set('page', params.page.toString());
-  if (params.limit) searchParams.set('limit', params.limit.toString());
-  if (params.sortBy) searchParams.set('sortBy', params.sortBy === 'date' ? 'published_at' : params.sortBy);
-  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+  const page = params.page ?? 1;
+  const limit = params.limit ?? 12;
 
   try {
-    const response = await fetch(
-      `${API_URL}/api/public/listings?${searchParams.toString()}`,
-      {
-        next: { revalidate: 30 }, // Shorter cache for search results
-      }
-    );
+    const query = supabase
+      .from('public_listings_view')
+      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at', { count: 'exact' })
+      .eq('status', 'active')
+      .range((page - 1) * limit, page * limit - 1);
 
-    if (!response.ok) {
-      throw new Error(`Failed to search listings: ${response.statusText}`);
+    if (params.category) query.eq('category', params.category);
+    if (params.query) query.ilike('title', `%${params.query}%`);
+    if (params.minPrice) query.gte('price', params.minPrice);
+    if (params.maxPrice) query.lte('price', params.maxPrice);
+    if (params.sortBy) query.order(params.sortBy === 'date' ? 'created_at' : params.sortBy, { ascending: params.sortOrder === 'asc' });
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      throw new Error(`Failed to search listings: ${error.message}`);
     }
 
-    const result = await response.json();
-    return {
-      listings: result.data || [],
-      total: result.meta?.total || 0,
-      page: result.meta?.page || 1,
-      limit: result.meta?.limit || 12,
-      totalPages: result.meta?.totalPages || 0,
-    };
+    const listings = (data || []).map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      description: item.description,
+      price: item.price,
+      images: item.images || [],
+      category: item.category,
+      location: item.location,
+      status: item.status,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return { listings, total, page, limit, totalPages };
   } catch (error) {
     console.error('Error searching listings:', error);
-    return {
-      listings: [],
-      total: 0,
-      page: 1,
-      limit: 12,
-      totalPages: 0,
-    };
+    return { listings: [], total: 0, page: 1, limit: 12, totalPages: 0 };
   }
 }
 
@@ -174,19 +224,30 @@ export async function getListingsByCategory(
  */
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
-    const response = await fetch(
-      `${API_URL}/api/public/featured?limit=${limit}`,
-      {
-        next: { revalidate: 300 }, // Cache featured for 5 minutes
-      }
-    );
+    const { data, error } = await supabase
+      .from('public_listings_view')
+      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch featured listings: ${response.statusText}`);
+    if (error) {
+      throw new Error(`Failed to fetch featured listings: ${error.message}`);
     }
 
-    const result = await response.json();
-    return result.data?.listings || [];
+    return (data || []).map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      description: item.description,
+      price: item.price,
+      images: item.images || [],
+      category: item.category,
+      location: item.location,
+      status: item.status,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
   } catch (error) {
     console.error('Error fetching featured listings:', error);
     return [];
@@ -195,26 +256,24 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
 
 /**
  * Get all categories for navigation
- * Uses the public API endpoint (no auth required)
- * CUSTOMIZE: Update to fetch from your categories endpoint
+ * Uses Supabase public view with RLS-friendly anon access
  */
 export async function getCategories(): Promise<
   Array<{ slug: string; name: string; count: number }>
 > {
   try {
-    const response = await fetch(`${API_URL}/api/public/categories`, {
-      next: { revalidate: 600 }, // Cache categories for 10 minutes
-    });
+    const { data, error } = await supabase
+      .from('categories_view')
+      .select('slug, name, count')
+      .order('name', { ascending: true });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.statusText}`);
+    if (error) {
+      throw new Error(`Failed to fetch categories: ${error.message}`);
     }
 
-    const result = await response.json();
-    return result.data || [];
+    return data || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
-    // CUSTOMIZE: Return default categories for your vertical
     return [];
   }
 }
@@ -241,11 +300,14 @@ export function formatPrice(price: number | undefined): string {
  */
 export async function getAllListingSlugs(): Promise<string[]> {
   try {
-    const response = await fetch(`${API_URL}/api/public/sitemap?limit=10000`);
-    if (!response.ok) return [];
+    const { data, error } = await supabase
+      .from('public_listings_view')
+      .select('slug')
+      .eq('status', 'active')
+      .limit(10000);
 
-    const result = await response.json();
-    return result.data?.listings?.map((l: { slug: string }) => l.slug) || [];
+    if (error) return [];
+    return data?.map((l) => l.slug) || [];
   } catch {
     return [];
   }
@@ -257,11 +319,15 @@ export async function getAllListingSlugs(): Promise<string[]> {
  */
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
   try {
-    const response = await fetch(`${API_URL}/api/public/popular?limit=${limit}`);
-    if (!response.ok) return [];
+    const { data, error } = await supabase
+      .from('public_listings_view')
+      .select('slug')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-    const result = await response.json();
-    return result.data?.slugs || [];
+    if (error) return [];
+    return data?.map((l) => l.slug) || [];
   } catch {
     return [];
   }

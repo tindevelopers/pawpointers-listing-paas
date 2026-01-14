@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-      case "transfer.paid":
+      case "transfer.paid" as any:
         await handleTransferPaid(event.data.object as Stripe.Transfer);
         break;
 
@@ -360,16 +360,16 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 
   try {
     // Update booking payment status to failed
-    await adminClient
-      .from("bookings")
+    await (adminClient
+      .from("bookings") as any)
       .update({
         payment_status: "failed",
       })
       .eq("payment_intent_id", paymentIntent.id);
 
     // Update revenue transaction status
-    await adminClient
-      .from("revenue_transactions")
+    await (adminClient
+      .from("revenue_transactions") as any)
       .update({
         status: "failed",
       })
@@ -386,8 +386,8 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
     // Update booking with transfer ID if it exists
     const bookingId = transfer.metadata?.booking_id;
     if (bookingId) {
-      await adminClient
-        .from("bookings")
+      await (adminClient
+        .from("bookings") as any)
         .update({
           transfer_id: transfer.id,
           payout_status: "transferred",
@@ -395,8 +395,8 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
         .eq("id", bookingId);
 
       // Update revenue transaction
-      await adminClient
-        .from("revenue_transactions")
+      await (adminClient
+        .from("revenue_transactions") as any)
         .update({
           stripe_transfer_id: transfer.id,
         })
@@ -414,8 +414,8 @@ async function handleTransferPaid(transfer: Stripe.Transfer) {
     // Update booking payout status
     const bookingId = transfer.metadata?.booking_id;
     if (bookingId) {
-      await adminClient
-        .from("bookings")
+      await (adminClient
+        .from("bookings") as any)
         .update({
           payout_status: "transferred",
         })
@@ -442,8 +442,8 @@ async function handlePayoutPaid(payout: Stripe.Payout) {
 
     if (payoutResult.data) {
       // Update payout status to paid
-      await adminClient
-        .from("payouts")
+      await (adminClient
+        .from("payouts") as any)
         .update({
           status: "paid",
           processed_at: new Date().toISOString(),
@@ -460,8 +460,8 @@ async function handlePayoutPaid(payout: Stripe.Payout) {
         .single();
 
       if (payoutDetails.data?.booking_ids) {
-        await adminClient
-          .from("bookings")
+        await (adminClient
+          .from("bookings") as any)
           .update({
             payout_status: "paid_out",
           })
@@ -489,8 +489,8 @@ async function handlePayoutFailed(payout: Stripe.Payout) {
 
     if (payoutResult.data) {
       // Update payout status to failed
-      await adminClient
-        .from("payouts")
+      await (adminClient
+        .from("payouts") as any)
         .update({
           status: "failed",
         })

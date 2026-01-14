@@ -1,6 +1,6 @@
 "use server";
 
-import { getStripe } from "./config";
+import { getStripeLazy } from "./config";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import {
@@ -11,7 +11,14 @@ import {
 } from "./revenue";
 import type Stripe from "stripe";
 
-const stripe = getStripe();
+// Lazy getter for Stripe instance to prevent build-time errors
+function getStripe(): Stripe {
+  const stripe = getStripeLazy();
+  if (!stripe) {
+    throw new Error("Stripe is not configured");
+  }
+  return stripe;
+}
 
 export interface BookingPaymentParams {
   bookingId: string;
@@ -103,7 +110,7 @@ export async function createBookingPayment(
     customerId = customerResult.data.stripe_customer_id;
 
     // Create payment intent with transfer_data (modern approach)
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: params.amount,
       currency: currency,
       customer: customerId,
@@ -126,8 +133,8 @@ export async function createBookingPayment(
     });
 
     // Update booking with payment intent and revenue details
-    await adminClient
-      .from("bookings")
+    await (adminClient
+      .from("bookings") as any)
       .update({
         payment_intent_id: paymentIntent.id,
         platform_fee_percent: revenueCalculation.platformFeePercent,
@@ -140,16 +147,16 @@ export async function createBookingPayment(
       .eq("id", params.bookingId);
 
     // Create revenue transaction record
+    const bookingQuery = await adminClient
+      .from("bookings")
+      .select("listing_id")
+      .eq("id", params.bookingId)
+      .single();
+    
     await adminClient.from("revenue_transactions").insert({
       booking_id: params.bookingId,
       tenant_id: params.listingOwnerTenantId,
-      listing_id: (
-        await adminClient
-          .from("bookings")
-          .select("listing_id")
-          .eq("id", params.bookingId)
-          .single()
-      ).data?.listing_id,
+      listing_id: (bookingQuery.data as any)?.listing_id,
       transaction_type: "booking",
       amount: params.amount,
       platform_fee: revenueCalculation.platformFeeTotal,
@@ -157,7 +164,7 @@ export async function createBookingPayment(
       currency: currency,
       stripe_payment_intent_id: paymentIntent.id,
       status: "pending",
-    });
+    } as any);
 
     return {
       success: true,
@@ -186,7 +193,7 @@ export async function processBookingPayment(
     const adminClient = createAdminClient();
 
     // Get payment intent from Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== "succeeded") {
       return {
@@ -212,8 +219,8 @@ export async function processBookingPayment(
     const booking = bookingResult.data;
 
     // Update booking payment status
-    await adminClient
-      .from("bookings")
+    await (adminClient
+      .from("bookings") as any)
       .update({
         payment_status: "paid",
         paid_at: new Date().toISOString(),
@@ -222,8 +229,8 @@ export async function processBookingPayment(
       .eq("id", booking.id);
 
     // Update revenue transaction status
-    await adminClient
-      .from("revenue_transactions")
+    await (adminClient
+      .from("revenue_transactions") as any)
       .update({
         status: "completed",
         stripe_transfer_id: (paymentIntent.transfer_data as any)?.transfer || null,
@@ -243,7 +250,7 @@ export async function processBookingPayment(
       .single();
 
     if (bookingDetails.data) {
-      await adminClient.rpc("update_connect_account_revenue", {
+      await (adminClient.rpc as any)("update_connect_account_revenue", {
         account_id: bookingDetails.data.stripe_connect_account_id,
         amount: bookingDetails.data.listing_owner_amount,
       });
@@ -300,7 +307,7 @@ export async function refundBookingPayment(
     const refundAmount = amount || booking.total_amount;
 
     // Create refund in Stripe
-    const refund = await stripe.refunds.create({
+    const refund = await getStripe().refunds.create({
       payment_intent: booking.payment_intent_id,
       amount: refundAmount,
       reason: reason ? (reason as Stripe.RefundCreateParams.Reason) : undefined,
@@ -320,8 +327,8 @@ export async function refundBookingPayment(
     );
 
     // Update booking
-    await adminClient
-      .from("bookings")
+    await (adminClient
+      .from("bookings") as any)
       .update({
         payment_status: refundAmount === booking.total_amount ? "refunded" : "partially_refunded",
         refund_amount: refundAmount,
@@ -329,8 +336,8 @@ export async function refundBookingPayment(
       .eq("id", bookingId);
 
     // Update revenue transaction
-    await adminClient
-      .from("revenue_transactions")
+    await (adminClient
+      .from("revenue_transactions") as any)
       .update({
         status: "refunded",
       })
@@ -344,11 +351,12 @@ export async function refundBookingPayment(
       .single();
 
     if (accountResult.data) {
-      await adminClient
-        .from("stripe_connect_accounts")
+      const accountData = (accountResult as any).data;
+      await (adminClient
+        .from("stripe_connect_accounts") as any)
         .update({
-          total_revenue: Math.max(0, accountResult.data.total_revenue - refundedListingOwnerAmount),
-          pending_payout: Math.max(0, accountResult.data.pending_payout - refundedListingOwnerAmount),
+          total_revenue: Math.max(0, accountData.total_revenue - refundedListingOwnerAmount),
+          pending_payout: Math.max(0, accountData.pending_payout - refundedListingOwnerAmount),
         })
         .eq("stripe_account_id", booking.stripe_connect_account_id);
     }
@@ -374,7 +382,7 @@ export async function calculateBookingTotal(
     const adminClient = createAdminClient();
 
     // Use database function to calculate total
-    const result = await adminClient.rpc("calculate_booking_total", {
+    const result = await (adminClient.rpc as any)("calculate_booking_total", {
       booking_uuid: bookingId,
     });
 

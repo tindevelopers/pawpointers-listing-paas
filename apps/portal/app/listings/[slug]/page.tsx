@@ -34,7 +34,7 @@ export async function generateMetadata({
     `View details for ${listing.title}`;
 
   return {
-    title: `${listing.title} | Listing Platform`,
+    title: `${listing.title} | Paw Pointers`,
     description,
     openGraph: {
       title: listing.title,

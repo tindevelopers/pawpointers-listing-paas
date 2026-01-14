@@ -33,12 +33,37 @@ export function isStripeConfigured(): boolean {
 }
 
 /**
+ * Get Stripe instance lazily (for use in modules that need it at top level)
+ * Returns null if Stripe is not configured, preventing build-time errors
+ */
+export function getStripeLazy(): Stripe | null {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return null;
+  }
+  try {
+    return getStripe();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Get Stripe instance (for backward compatibility)
  * @deprecated Use getStripe() instead
  */
 export const stripe = new Proxy({} as Stripe, {
   get(_target, prop) {
-    return getStripe()[prop as keyof Stripe];
+    // During build time or when Stripe is not configured, return undefined
+    // This prevents build failures when Stripe credentials are not set
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return undefined;
+    }
+    try {
+      return getStripe()[prop as keyof Stripe];
+    } catch (error) {
+      // Return undefined instead of throwing during build
+      return undefined;
+    }
   },
 });
 

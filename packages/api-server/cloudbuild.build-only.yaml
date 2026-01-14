@@ -1,0 +1,30 @@
+# Build-only Cloud Build (no deploy)
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/api-server:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/api-server:latest'
+      - '-f'
+      - 'packages/api-server/Dockerfile'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/api-server:$SHORT_SHA'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/api-server:latest'
+
+images:
+  - 'gcr.io/$PROJECT_ID/api-server:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/api-server:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+timeout: '1200s'
+

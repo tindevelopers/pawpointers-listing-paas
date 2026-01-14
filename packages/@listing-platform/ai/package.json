@@ -19,6 +19,7 @@
   "dependencies": {
     "openai": "^4.102.0",
     "@listing-platform/knowledge-base": "workspace:*"
+    "@listing-platform/shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { GenerationType, GenerationResult } from '../types';
+import type { GenerationType, GenerationResult } from '../types/index';
 
 interface UseContentGeneratorResult {
   generate: (type: GenerationType, context: Record<string, unknown>) => Promise<GenerationResult>;

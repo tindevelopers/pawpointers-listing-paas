@@ -10,15 +10,16 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { HelpfulButton } from "@/components/knowledge-base/HelpfulButton";
 
 interface KnowledgeDocumentPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({
   params,
 }: KnowledgeDocumentPageProps): Promise<Metadata> {
-  const doc = await getKnowledgeDocument(params.id);
+  const { id } = await params;
+  const doc = await getKnowledgeDocument(id);
 
   if (!doc) {
     return {
@@ -35,7 +36,8 @@ export async function generateMetadata({
 export default async function KnowledgeDocumentPage({
   params,
 }: KnowledgeDocumentPageProps) {
-  const doc = await getKnowledgeDocument(params.id);
+  const { id } = await params;
+  const doc = await getKnowledgeDocument(id);
 
   if (!doc) {
     notFound();
