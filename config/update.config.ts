@@ -88,6 +88,14 @@ export const updateConfig: Record<string, PackageUpdateConfig> = {
     conflictResolution: 'manual',
     description: 'Maps and location SDK',
   },
+
+  'packages/@listing-platform/knowledge-base': {
+    enabled: true,
+    strategy: 'merge',
+    dependencies: ['packages/@listing-platform/shared'],
+    conflictResolution: 'manual',
+    description: 'Knowledge base CRUD/search/sync utilities',
+  },
   
   'packages/@listing-platform/booking': {
     enabled: true,

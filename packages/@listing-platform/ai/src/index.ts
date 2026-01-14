@@ -10,14 +10,26 @@
  * - Knowledge base management
  */
 
-export { openaiClient, getOpenAIConfig, generateEmbedding, generateEmbeddings } from './embeddings';
+export {
+  openaiClient,
+  getOpenAIConfig,
+  generateEmbedding,
+  generateEmbeddings,
+  createOpenAIEmbeddingProvider,
+} from './embeddings';
 export { chat, streamChat, createSession, getSessionHistory } from './chatbot';
 export type { ChatMessage, ChatOptions, ChatResponse } from './chatbot';
+
+// Re-export knowledge-base APIs for compatibility
 export {
   addDocument,
   updateDocument,
   deleteDocument,
   searchDocuments,
   syncListingsToKnowledge,
-} from './knowledge';
-export type { KnowledgeDocument, KnowledgeSearchResult } from './types';
+} from '@listing-platform/knowledge-base';
+export type {
+  KnowledgeDocument,
+  KnowledgeSearchResult,
+  EmbeddingProvider,
+} from '@listing-platform/knowledge-base';

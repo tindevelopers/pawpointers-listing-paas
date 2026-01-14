@@ -86,3 +86,43 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 export function resetClient(): void {
   _client = null;
 }
+
+/**
+ * Adapter: create an embedding provider compatible with @listing-platform/knowledge-base
+ */
+export function createOpenAIEmbeddingProvider(configOverride?: Partial<OpenAIConfig>) {
+  return {
+    embed: async (text: string) => {
+      if (configOverride) {
+        // Temporarily override env-driven config
+        const config = { ...getOpenAIConfig(), ...configOverride };
+        const client = new OpenAI({ apiKey: config.apiKey });
+        const response = await client.embeddings.create({
+          model: config.embeddingModel,
+          input: text,
+        });
+        return response.data[0].embedding;
+      }
+      return generateEmbedding(text);
+    },
+    embedMany: async (texts: string[]) => {
+      if (configOverride) {
+        const config = { ...getOpenAIConfig(), ...configOverride };
+        if (texts.length === 0) return [];
+        const client = new OpenAI({ apiKey: config.apiKey });
+        const batchSize = 100;
+        const embeddings: number[][] = [];
+        for (let i = 0; i < texts.length; i += batchSize) {
+          const batch = texts.slice(i, i + batchSize);
+          const response = await client.embeddings.create({
+            model: config.embeddingModel,
+            input: batch,
+          });
+          embeddings.push(...response.data.map((d) => d.embedding));
+        }
+        return embeddings;
+      }
+      return generateEmbeddings(texts);
+    },
+  };
+}
