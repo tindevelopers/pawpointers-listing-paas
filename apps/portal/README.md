@@ -11,7 +11,8 @@ This directory contains a sanitized base portal template for listing-style appli
 - `NEXT_PUBLIC_PLATFORM_NAME` for display name/logo initial
 - `NEXT_PUBLIC_API_URL` for public API calls
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` if using Supabase
-- `OPENAI_API_KEY` (optional) to enable chat widget and chat API route
+- `AI_GATEWAY_URL` + `AI_GATEWAY_API_KEY` to enable chat (preferred)
+- `OPENAI_API_KEY` (fallback) if gateway is not configured
 - `ROUTING_STRATEGY` (`industry` | `geographic`) to control middleware routing
 - `TAXONOMY_CONFIG` (`industry` | `location` | `hybrid`) to pick taxonomy config
 - `NEXT_PUBLIC_CDN_URL` / `NEXT_PUBLIC_IMAGE_HOSTS` to allow remote images
@@ -34,4 +35,5 @@ This directory contains a sanitized base portal template for listing-style appli
 - Public assets under `public/images` are placeholders; replace for production.
 - Builder.io components are present; remove if not needed.
 - Keep `CUSTOMIZE` comments as guidance for downstream teams.
+
 

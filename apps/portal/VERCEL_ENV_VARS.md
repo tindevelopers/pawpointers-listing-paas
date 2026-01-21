@@ -28,12 +28,23 @@ BUILDER_PREVIEW=false
 
 **Note:** Get your Builder.io API key from https://builder.io/account/space
 
+### AI Configuration
+```
+# Preferred: Vercel AI Gateway
+AI_GATEWAY_URL=<your-gateway-url>
+AI_GATEWAY_API_KEY=<your-gateway-key>
+AI_MODEL=openai/gpt-4.1
+EMBEDDING_MODEL=openai/text-embedding-3-small
+
+# Fallback (if no gateway)
+OPENAI_API_KEY=<optional-fallback>
+```
+
 ### Optional Environment Variables
 
 ```
 NEXT_PUBLIC_SITE_URL=https://your-portal-domain.com
 REVALIDATION_SECRET=<your-revalidation-secret>
-OPENAI_API_KEY=<if-using-chat-features>
 ```
 
 ## How to Set Environment Variables in Vercel

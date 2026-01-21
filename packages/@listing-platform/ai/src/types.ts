@@ -4,10 +4,18 @@
 
 export interface OpenAIConfig {
   apiKey: string;
+  baseURL?: string;
   model: string;
   embeddingModel: string;
   maxTokens: number;
   temperature: number;
+}
+
+export interface GatewayConfig {
+  baseURL: string;
+  apiKey: string;
+  model: string;
+  embeddingModel: string;
 }
 
 export interface KnowledgeDocument {

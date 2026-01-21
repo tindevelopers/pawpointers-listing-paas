@@ -194,7 +194,13 @@ NEXT_PUBLIC_SITE_URL=
 # Optional - Enable as needed
 STRIPE_SECRET_KEY=           # Payments
 TYPESENSE_API_KEY=           # Fast search
-OPENAI_API_KEY=              # AI chatbot
+
+# AI (gateway preferred)
+AI_GATEWAY_URL=              # Vercel AI Gateway URL
+AI_GATEWAY_API_KEY=          # Vercel AI Gateway key
+AI_MODEL=openai/gpt-4.1
+EMBEDDING_MODEL=openai/text-embedding-3-small
+OPENAI_API_KEY=              # Fallback if gateway not set
 WASABI_ACCESS_KEY=           # Image storage
 ```
 

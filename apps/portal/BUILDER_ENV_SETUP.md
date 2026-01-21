@@ -65,7 +65,8 @@ npx @builder.io/cli deploy
 
 | Variable | Description | When Needed |
 |----------|-------------|-------------|
-| `OPENAI_API_KEY` | OpenAI API key | If using AI chat features |
+| `AI_GATEWAY_URL` / `AI_GATEWAY_API_KEY` | Vercel AI Gateway | Preferred for AI chat |
+| `OPENAI_API_KEY` | OpenAI API key | Fallback if gateway not configured |
 | `TYPESENSE_API_KEY` | Typesense API key | If using fast search |
 | `REVALIDATION_SECRET` | Secret for revalidation | For ISR revalidation |
 

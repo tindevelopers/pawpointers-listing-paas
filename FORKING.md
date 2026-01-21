@@ -321,7 +321,12 @@ NEXT_PUBLIC_API_URL=https://api.yourplatform.com
 NEXT_PUBLIC_SITE_URL=https://yourplatform.com
 ROUTING_STRATEGY=industry  # or 'geographic'
 REVALIDATION_SECRET=your-secret
-# Optional: AI Chat
+# Optional: AI Chat (gateway preferred)
+AI_GATEWAY_URL=https://api.ai.gateway.example.com
+AI_GATEWAY_API_KEY=your-gateway-key
+AI_MODEL=openai/gpt-4.1
+EMBEDDING_MODEL=openai/text-embedding-3-small
+# Fallback if gateway not configured
 OPENAI_API_KEY=sk-xxx
 # Optional: Fast Search
 TYPESENSE_API_KEY=xxx
@@ -394,9 +399,9 @@ Set `ROUTING_STRATEGY=industry` or `ROUTING_STRATEGY=geographic` in Portal env v
 2. Set `WASABI_*` environment variables
 3. Configure CDN (optional) and set `NEXT_PUBLIC_CDN_URL`
 
-#### OpenAI (AI Chat)
-1. Get API key from [platform.openai.com](https://platform.openai.com)
-2. Set `OPENAI_API_KEY` in Portal and API projects
+#### AI Gateway (AI Chat)
+1. Set `AI_GATEWAY_URL` and `AI_GATEWAY_API_KEY` (preferred)
+2. Optionally set `OPENAI_API_KEY` as fallback
 3. Chat widget appears automatically when configured
 
 ---

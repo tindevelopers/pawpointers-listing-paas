@@ -22,7 +22,7 @@ export const metadata: Metadata = {
  * Root Layout for Consumer Portal
  * 
  * CUSTOMIZE: Update the ChatWidget props for your platform branding.
- * Set OPENAI_API_KEY environment variable to enable AI chat.
+ * Set AI_GATEWAY_URL + AI_GATEWAY_API_KEY (or OPENAI_API_KEY) to enable AI chat.
  */
 export default function RootLayout({
   children,
@@ -30,7 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // Only show chat widget if AI is configured
-  const showChat = !!process.env.OPENAI_API_KEY;
+  const showChat =
+    (!!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY) ||
+    !!process.env.OPENAI_API_KEY;
 
   return (
     <html lang="en" suppressHydrationWarning>
