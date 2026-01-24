@@ -268,11 +268,10 @@ This platform is designed to be deployed as **3 separate Vercel projects** from 
 |---------|---------------|--------|--------------|
 | Portal | `apps/portal` | yourplatform.com | `@tinadmin/portal` |
 | Admin | `apps/admin` | admin.yourplatform.com | `@tinadmin/admin` |
-| API | `packages/api-server` | api.yourplatform.com | `api-server` |
 
 ### Step-by-Step Vercel Setup
 
-#### 1. Create Three Vercel Projects
+#### 1. Create Two Vercel Projects
 
 ```bash
 # Install Vercel CLI
@@ -281,7 +280,6 @@ npm i -g vercel
 # Link each project (run from repo root)
 cd apps/portal && vercel link
 cd apps/admin && vercel link
-cd packages/api-server && vercel link
 ```
 
 #### 2. Configure Each Project
@@ -296,12 +294,6 @@ cd packages/api-server && vercel link
 - Root Directory: `apps/admin`
 - Framework: Next.js
 - Build Command: `cd ../.. && pnpm turbo build --filter=@tinadmin/admin`
-- Install Command: `cd ../.. && pnpm install`
-
-**API Project:**
-- Root Directory: `packages/api-server`
-- Framework: Other
-- Build Command: `pnpm build`
 - Install Command: `cd ../.. && pnpm install`
 
 #### 3. Environment Variables
@@ -340,26 +332,11 @@ STRIPE_SECRET_KEY=sk_xxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_xxx
 ```
 
-**API Specific:**
-```bash
-ALLOWED_ORIGINS=https://yourplatform.com,https://admin.yourplatform.com
-PORTAL_REVALIDATE_URL=https://yourplatform.com/api/revalidate
-REVALIDATION_SECRET=your-secret
-# Optional services
-TYPESENSE_API_KEY=xxx
-TYPESENSE_HOST=xxx.typesense.net
-WASABI_ACCESS_KEY=xxx
-WASABI_SECRET_KEY=xxx
-WASABI_BUCKET=your-bucket
-NEXT_PUBLIC_CDN_URL=https://cdn.yourplatform.com
-```
-
 #### 4. Configure Domains
 
 In each Vercel project dashboard:
 - Portal: `yourplatform.com` + `www.yourplatform.com`
 - Admin: `admin.yourplatform.com`
-- API: `api.yourplatform.com`
 
 #### 5. Enable Supabase Database Webhooks
 
@@ -599,7 +576,6 @@ git commit
 | `@listing-platform/media` | Wasabi image storage | ❌ No (configure) |
 | `@listing-platform/ai` | AI chatbot with RAG | ❌ No (configure) |
 | `@tinadmin/*` | UI component library | ❌ No (use) |
-| `api-server` | Hono API server | ⚠️ Extend routes |
 
 ### Database
 

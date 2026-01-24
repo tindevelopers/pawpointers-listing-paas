@@ -34,3 +34,4 @@ const results = await searchDocuments(supabase, embeddings, 'list my property');
 - Requires `@supabase/supabase-js` as a peer dependency.
 - Embedding provider is pluggable; AI package provides an OpenAI-based provider.
 
+

@@ -44,19 +44,25 @@ END $$;
 -- ===================================
 -- 2. CREATE BOOKING ADD-ONS TABLES
 -- ===================================
-CREATE TABLE IF NOT EXISTS booking_addons (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
-  tenant_id uuid REFERENCES tenants(id),
-  name text NOT NULL,
-  description text,
-  price numeric(10,2) NOT NULL,
-  currency text DEFAULT 'USD',
-  active bool DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  CHECK (price >= 0)
-);
+-- Create booking_addons table only if listings table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'listings') THEN
+    CREATE TABLE IF NOT EXISTS booking_addons (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+      tenant_id uuid REFERENCES tenants(id),
+      name text NOT NULL,
+      description text,
+      price numeric(10,2) NOT NULL,
+      currency text DEFAULT 'USD',
+      active bool DEFAULT true,
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now(),
+      CHECK (price >= 0)
+    );
+  END IF;
+END $$;
 
 -- Create booking_addon_selections table only if bookings table exists
 DO $$
@@ -78,9 +84,14 @@ BEGIN
   END IF;
 END $$;
 
--- Indexes for add-ons
-CREATE INDEX IF NOT EXISTS idx_booking_addons_listing ON booking_addons(listing_id);
-CREATE INDEX IF NOT EXISTS idx_booking_addons_tenant ON booking_addons(tenant_id);
+-- Indexes for add-ons (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addons') THEN
+    CREATE INDEX IF NOT EXISTS idx_booking_addons_listing ON booking_addons(listing_id);
+    CREATE INDEX IF NOT EXISTS idx_booking_addons_tenant ON booking_addons(tenant_id);
+  END IF;
+END $$;
 -- Only create indexes on booking_addon_selections if table exists
 DO $$
 BEGIN
@@ -119,22 +130,28 @@ BEGIN
   END IF;
 END $$;
 
-CREATE TABLE IF NOT EXISTS payouts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id uuid REFERENCES tenants(id),
-  listing_id uuid REFERENCES listings(id),
-  total_amount numeric(10,2) NOT NULL,
-  currency text DEFAULT 'USD',
-  stripe_payout_id text,
-  status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed', 'canceled')),
-  booking_ids uuid[],
-  revenue_transaction_ids uuid[],
-  processed_at timestamptz,
-  created_by uuid REFERENCES users(id),
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  CHECK (total_amount >= 0)
-);
+-- Create payouts table only if listings table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'listings') THEN
+    CREATE TABLE IF NOT EXISTS payouts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id uuid REFERENCES tenants(id),
+      listing_id uuid REFERENCES listings(id),
+      total_amount numeric(10,2) NOT NULL,
+      currency text DEFAULT 'USD',
+      stripe_payout_id text,
+      status text DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'paid', 'failed', 'canceled')),
+      booking_ids uuid[],
+      revenue_transaction_ids uuid[],
+      processed_at timestamptz,
+      created_by uuid REFERENCES users(id),
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now(),
+      CHECK (total_amount >= 0)
+    );
+  END IF;
+END $$;
 
 -- Indexes for revenue tracking (only if table exists)
 DO $$
@@ -148,273 +165,367 @@ BEGIN
   END IF;
 END $$;
 
-CREATE INDEX IF NOT EXISTS idx_payouts_tenant ON payouts(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_payouts_listing ON payouts(listing_id);
-CREATE INDEX IF NOT EXISTS idx_payouts_status ON payouts(status);
-CREATE INDEX IF NOT EXISTS idx_payouts_stripe_payout ON payouts(stripe_payout_id);
+-- Indexes for payouts (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payouts') THEN
+    CREATE INDEX IF NOT EXISTS idx_payouts_tenant ON payouts(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_payouts_listing ON payouts(listing_id);
+    CREATE INDEX IF NOT EXISTS idx_payouts_status ON payouts(status);
+    CREATE INDEX IF NOT EXISTS idx_payouts_stripe_payout ON payouts(stripe_payout_id);
+  END IF;
+END $$;
 
 -- ===================================
 -- 4. CREATE STRIPE CONNECT ACCOUNTS TABLE (if not exists)
 -- ===================================
-CREATE TABLE IF NOT EXISTS stripe_connect_accounts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  stripe_account_id text NOT NULL UNIQUE,
-  account_type text NOT NULL CHECK (account_type IN ('express', 'standard', 'custom')),
-  charges_enabled boolean DEFAULT false,
-  payouts_enabled boolean DEFAULT false,
-  details_submitted boolean DEFAULT false,
-  country text,
-  default_currency text DEFAULT 'usd',
-  email text,
-  business_name text,
-  metadata jsonb DEFAULT '{}'::jsonb,
-  revenue_settings jsonb DEFAULT '{"fee_percent": 10, "fee_fixed": 200, "minimum_payout": 1000}'::jsonb,
-  total_revenue numeric(10,2) DEFAULT 0,
-  pending_payout numeric(10,2) DEFAULT 0,
-  paid_out numeric(10,2) DEFAULT 0,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(tenant_id, stripe_account_id),
-  CHECK (total_revenue >= 0),
-  CHECK (pending_payout >= 0),
-  CHECK (paid_out >= 0)
-);
-
--- Indexes for Connect accounts
-CREATE INDEX IF NOT EXISTS idx_stripe_connect_accounts_tenant ON stripe_connect_accounts(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_stripe_connect_accounts_stripe_id ON stripe_connect_accounts(stripe_account_id);
+-- Create stripe_connect_accounts table only if tenants table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tenants') THEN
+    CREATE TABLE IF NOT EXISTS stripe_connect_accounts (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+      stripe_account_id text NOT NULL UNIQUE,
+      account_type text NOT NULL CHECK (account_type IN ('express', 'standard', 'custom')),
+      charges_enabled boolean DEFAULT false,
+      payouts_enabled boolean DEFAULT false,
+      details_submitted boolean DEFAULT false,
+      country text,
+      default_currency text DEFAULT 'usd',
+      email text,
+      business_name text,
+      metadata jsonb DEFAULT '{}'::jsonb,
+      revenue_settings jsonb DEFAULT '{"fee_percent": 10, "fee_fixed": 200, "minimum_payout": 1000}'::jsonb,
+      total_revenue numeric(10,2) DEFAULT 0,
+      pending_payout numeric(10,2) DEFAULT 0,
+      paid_out numeric(10,2) DEFAULT 0,
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now(),
+      UNIQUE(tenant_id, stripe_account_id),
+      CHECK (total_revenue >= 0),
+      CHECK (pending_payout >= 0),
+      CHECK (paid_out >= 0)
+    );
+    
+    -- Indexes for Connect accounts
+    CREATE INDEX IF NOT EXISTS idx_stripe_connect_accounts_tenant ON stripe_connect_accounts(tenant_id);
+    CREATE INDEX IF NOT EXISTS idx_stripe_connect_accounts_stripe_id ON stripe_connect_accounts(stripe_account_id);
+  END IF;
+END $$;
 
 -- ===================================
 -- 5. ENABLE ROW LEVEL SECURITY
 -- ===================================
-ALTER TABLE booking_addons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE booking_addon_selections ENABLE ROW LEVEL SECURITY;
-ALTER TABLE revenue_transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE stripe_connect_accounts ENABLE ROW LEVEL SECURITY;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addons') THEN
+    ALTER TABLE booking_addons ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addon_selections') THEN
+    ALTER TABLE booking_addon_selections ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions') THEN
+    ALTER TABLE revenue_transactions ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payouts') THEN
+    ALTER TABLE payouts ENABLE ROW LEVEL SECURITY;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'stripe_connect_accounts') THEN
+    ALTER TABLE stripe_connect_accounts ENABLE ROW LEVEL SECURITY;
+  END IF;
+END $$;
 
 -- ===================================
 -- 6. RLS POLICIES
 -- ===================================
 
--- Booking Add-ons Policies
-CREATE POLICY "Users can view add-ons for their tenant's listings"
-  ON booking_addons FOR SELECT
-  USING (
-    tenant_id IN (
-      SELECT tenant_id FROM users WHERE id = auth.uid()
-    )
-  );
+-- Booking Add-ons Policies (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addons') THEN
+    -- Drop existing policies if they exist
+    DROP POLICY IF EXISTS "Users can view add-ons for their tenant's listings" ON booking_addons;
+    DROP POLICY IF EXISTS "Listing owners can manage add-ons for their listings" ON booking_addons;
+    
+    CREATE POLICY "Users can view add-ons for their tenant's listings"
+      ON booking_addons FOR SELECT
+      USING (
+        tenant_id IN (
+          SELECT tenant_id FROM users WHERE id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Listing owners can manage add-ons for their listings"
-  ON booking_addons FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM listings
-      WHERE listings.id = booking_addons.listing_id
-      AND listings.owner_id = auth.uid()
-    )
-  );
+    CREATE POLICY "Listing owners can manage add-ons for their listings"
+      ON booking_addons FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1 FROM listings
+          WHERE listings.id = booking_addons.listing_id
+          AND listings.owner_id = auth.uid()
+        )
+      );
+  END IF;
+END $$;
 
--- Booking Add-on Selections Policies
-CREATE POLICY "Users can view their own booking addon selections"
-  ON booking_addon_selections FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM bookings
-      WHERE bookings.id = booking_addon_selections.booking_id
-      AND bookings.user_id = auth.uid()
-    )
-  );
+-- Booking Add-on Selections Policies (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addon_selections') THEN
+    DROP POLICY IF EXISTS "Users can view their own booking addon selections" ON booking_addon_selections;
+    DROP POLICY IF EXISTS "Listing owners can view addon selections for their listings" ON booking_addon_selections;
+    DROP POLICY IF EXISTS "Users can create addon selections for their bookings" ON booking_addon_selections;
+    
+    CREATE POLICY "Users can view their own booking addon selections"
+      ON booking_addon_selections FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM bookings
+          WHERE bookings.id = booking_addon_selections.booking_id
+          AND bookings.user_id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Listing owners can view addon selections for their listings"
-  ON booking_addon_selections FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM bookings
-      JOIN listings ON listings.id = bookings.listing_id
-      WHERE bookings.id = booking_addon_selections.booking_id
-      AND listings.owner_id = auth.uid()
-    )
-  );
+    CREATE POLICY "Listing owners can view addon selections for their listings"
+      ON booking_addon_selections FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM bookings
+          JOIN listings ON listings.id = bookings.listing_id
+          WHERE bookings.id = booking_addon_selections.booking_id
+          AND listings.owner_id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Users can create addon selections for their bookings"
-  ON booking_addon_selections FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM bookings
-      WHERE bookings.id = booking_addon_selections.booking_id
-      AND bookings.user_id = auth.uid()
-      AND bookings.status = 'pending'
-    )
-  );
+    CREATE POLICY "Users can create addon selections for their bookings"
+      ON booking_addon_selections FOR INSERT
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM bookings
+          WHERE bookings.id = booking_addon_selections.booking_id
+          AND bookings.user_id = auth.uid()
+          AND bookings.status = 'pending'
+        )
+      );
+  END IF;
+END $$;
 
--- Revenue Transactions Policies
-CREATE POLICY "Tenants can view their own revenue transactions"
-  ON revenue_transactions FOR SELECT
-  USING (
-    tenant_id IN (
-      SELECT tenant_id FROM users WHERE id = auth.uid()
-    )
-  );
+-- Revenue Transactions Policies (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions') THEN
+    DROP POLICY IF EXISTS "Tenants can view their own revenue transactions" ON revenue_transactions;
+    DROP POLICY IF EXISTS "Listing owners can view revenue for their listings" ON revenue_transactions;
+    DROP POLICY IF EXISTS "Platform admins can view all revenue transactions" ON revenue_transactions;
+    
+    CREATE POLICY "Tenants can view their own revenue transactions"
+      ON revenue_transactions FOR SELECT
+      USING (
+        tenant_id IN (
+          SELECT tenant_id FROM users WHERE id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Listing owners can view revenue for their listings"
-  ON revenue_transactions FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM listings
-      WHERE listings.id = revenue_transactions.listing_id
-      AND listings.owner_id = auth.uid()
-    )
-  );
+    CREATE POLICY "Listing owners can view revenue for their listings"
+      ON revenue_transactions FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM listings
+          WHERE listings.id = revenue_transactions.listing_id
+          AND listings.owner_id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Platform admins can view all revenue transactions"
-  ON revenue_transactions FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.tenant_id IS NULL
-      AND EXISTS (
-        SELECT 1 FROM user_tenant_roles utr
-        JOIN roles r ON r.id = utr.role_id
-        WHERE utr.user_id = auth.uid()
-        AND r.name = 'Platform Admin'
-      )
-    )
-  );
+    CREATE POLICY "Platform admins can view all revenue transactions"
+      ON revenue_transactions FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM users
+          WHERE users.id = auth.uid()
+          AND users.tenant_id IS NULL
+          AND EXISTS (
+            SELECT 1 FROM user_tenant_roles utr
+            JOIN roles r ON r.id = utr.role_id
+            WHERE utr.user_id = auth.uid()
+            AND r.name = 'Platform Admin'
+          )
+        )
+      );
+  END IF;
+END $$;
 
--- Payouts Policies
-CREATE POLICY "Tenants can view their own payouts"
-  ON payouts FOR SELECT
-  USING (
-    tenant_id IN (
-      SELECT tenant_id FROM users WHERE id = auth.uid()
-    )
-  );
+-- Payouts Policies (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payouts') THEN
+    DROP POLICY IF EXISTS "Tenants can view their own payouts" ON payouts;
+    DROP POLICY IF EXISTS "Platform admins can manage all payouts" ON payouts;
+    
+    CREATE POLICY "Tenants can view their own payouts"
+      ON payouts FOR SELECT
+      USING (
+        tenant_id IN (
+          SELECT tenant_id FROM users WHERE id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Platform admins can manage all payouts"
-  ON payouts FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.tenant_id IS NULL
-      AND EXISTS (
-        SELECT 1 FROM user_tenant_roles utr
-        JOIN roles r ON r.id = utr.role_id
-        WHERE utr.user_id = auth.uid()
-        AND r.name = 'Platform Admin'
-      )
-    )
-  );
+    CREATE POLICY "Platform admins can manage all payouts"
+      ON payouts FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1 FROM users
+          WHERE users.id = auth.uid()
+          AND users.tenant_id IS NULL
+          AND EXISTS (
+            SELECT 1 FROM user_tenant_roles utr
+            JOIN roles r ON r.id = utr.role_id
+            WHERE utr.user_id = auth.uid()
+            AND r.name = 'Platform Admin'
+          )
+        )
+      );
+  END IF;
+END $$;
 
--- Stripe Connect Accounts Policies
-CREATE POLICY "Tenants can view their own Connect accounts"
-  ON stripe_connect_accounts FOR SELECT
-  USING (
-    tenant_id IN (
-      SELECT tenant_id FROM users WHERE id = auth.uid()
-    )
-  );
+-- Stripe Connect Accounts Policies (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'stripe_connect_accounts') THEN
+    DROP POLICY IF EXISTS "Tenants can view their own Connect accounts" ON stripe_connect_accounts;
+    DROP POLICY IF EXISTS "Platform admins can view all Connect accounts" ON stripe_connect_accounts;
+    
+    CREATE POLICY "Tenants can view their own Connect accounts"
+      ON stripe_connect_accounts FOR SELECT
+      USING (
+        tenant_id IN (
+          SELECT tenant_id FROM users WHERE id = auth.uid()
+        )
+      );
 
-CREATE POLICY "Platform admins can view all Connect accounts"
-  ON stripe_connect_accounts FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM users
-      WHERE users.id = auth.uid()
-      AND users.tenant_id IS NULL
-      AND EXISTS (
-        SELECT 1 FROM user_tenant_roles utr
-        JOIN roles r ON r.id = utr.role_id
-        WHERE utr.user_id = auth.uid()
-        AND r.name = 'Platform Admin'
-      )
-    )
-  );
+    CREATE POLICY "Platform admins can view all Connect accounts"
+      ON stripe_connect_accounts FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1 FROM users
+          WHERE users.id = auth.uid()
+          AND users.tenant_id IS NULL
+          AND EXISTS (
+            SELECT 1 FROM user_tenant_roles utr
+            JOIN roles r ON r.id = utr.role_id
+            WHERE utr.user_id = auth.uid()
+            AND r.name = 'Platform Admin'
+          )
+        )
+      );
+  END IF;
+END $$;
 
 -- ===================================
 -- 7. CREATE TRIGGERS FOR UPDATED_AT
 -- ===================================
-CREATE TRIGGER update_booking_addons_updated_at
-  BEFORE UPDATE ON booking_addons
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_revenue_transactions_updated_at
-  BEFORE UPDATE ON revenue_transactions
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_payouts_updated_at
-  BEFORE UPDATE ON payouts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_stripe_connect_accounts_updated_at
-  BEFORE UPDATE ON stripe_connect_accounts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addons') THEN
+    DROP TRIGGER IF EXISTS update_booking_addons_updated_at ON booking_addons;
+    CREATE TRIGGER update_booking_addons_updated_at
+      BEFORE UPDATE ON booking_addons
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions') THEN
+    DROP TRIGGER IF EXISTS update_revenue_transactions_updated_at ON revenue_transactions;
+    CREATE TRIGGER update_revenue_transactions_updated_at
+      BEFORE UPDATE ON revenue_transactions
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payouts') THEN
+    DROP TRIGGER IF EXISTS update_payouts_updated_at ON payouts;
+    CREATE TRIGGER update_payouts_updated_at
+      BEFORE UPDATE ON payouts
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'stripe_connect_accounts') THEN
+    DROP TRIGGER IF EXISTS update_stripe_connect_accounts_updated_at ON stripe_connect_accounts;
+    CREATE TRIGGER update_stripe_connect_accounts_updated_at
+      BEFORE UPDATE ON stripe_connect_accounts
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at_column();
+  END IF;
+END $$;
 
 -- ===================================
 -- 8. HELPER FUNCTIONS
 -- ===================================
 
 -- Function to calculate booking total including add-ons (only if bookings table exists)
-DO $$
+-- Note: This function will be created when bookings table exists
+CREATE OR REPLACE FUNCTION calculate_booking_total(booking_uuid uuid)
+RETURNS numeric AS $$
+DECLARE
+  base_total numeric;
+  addon_total numeric;
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bookings') THEN
-    CREATE OR REPLACE FUNCTION calculate_booking_total(booking_uuid uuid)
-    RETURNS numeric AS $$
-    DECLARE
-      base_total numeric;
-      addon_total numeric;
-    BEGIN
-      -- Get base booking total
-      SELECT total_amount INTO base_total
-      FROM bookings
-      WHERE id = booking_uuid;
-      
-      -- Get addon total
-      SELECT COALESCE(SUM(total_price), 0) INTO addon_total
-      FROM booking_addon_selections
-      WHERE booking_id = booking_uuid;
-      
-      RETURN COALESCE(base_total, 0) + COALESCE(addon_total, 0);
-    END;
-    $$ LANGUAGE plpgsql;
+  -- Check if bookings table exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bookings') THEN
+    RETURN 0;
   END IF;
-END $$;
+  
+  -- Get base booking total
+  SELECT total_amount INTO base_total
+  FROM bookings
+  WHERE id = booking_uuid;
+  
+  -- Get addon total (if table exists)
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'booking_addon_selections') THEN
+    SELECT COALESCE(SUM(total_price), 0) INTO addon_total
+    FROM booking_addon_selections
+    WHERE booking_id = booking_uuid;
+  ELSE
+    addon_total := 0;
+  END IF;
+  
+  RETURN COALESCE(base_total, 0) + COALESCE(addon_total, 0);
+END;
+$$ LANGUAGE plpgsql;
 
--- Function to update Connect account revenue totals (only if tables exist)
+-- Function to update Connect account revenue totals
+CREATE OR REPLACE FUNCTION update_connect_account_revenue()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Check if required tables exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bookings') 
+     OR NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions')
+     OR NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'stripe_connect_accounts') THEN
+    RETURN NEW;
+  END IF;
+  
+  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+    -- Update Connect account totals
+    UPDATE stripe_connect_accounts
+    SET 
+      total_revenue = total_revenue + NEW.listing_owner_amount,
+      pending_payout = pending_payout + NEW.listing_owner_amount,
+      updated_at = now()
+    WHERE stripe_account_id = (
+      SELECT stripe_connect_account_id
+      FROM bookings
+      WHERE id = NEW.booking_id
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for revenue transaction updates (only if table exists)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bookings') 
-     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions') THEN
-    CREATE OR REPLACE FUNCTION update_connect_account_revenue()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
-        -- Update Connect account totals
-        UPDATE stripe_connect_accounts
-        SET 
-          total_revenue = total_revenue + NEW.listing_owner_amount,
-          pending_payout = pending_payout + NEW.listing_owner_amount,
-          updated_at = now()
-        WHERE stripe_account_id = (
-          SELECT stripe_connect_account_id
-          FROM bookings
-          WHERE id = NEW.booking_id
-        );
-      END IF;
-      
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-
-    -- Create trigger for revenue transaction updates
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'revenue_transactions') THEN
     DROP TRIGGER IF EXISTS trigger_update_connect_account_revenue ON revenue_transactions;
     CREATE TRIGGER trigger_update_connect_account_revenue
       AFTER UPDATE OF status ON revenue_transactions
@@ -446,10 +557,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for payout updates
-DROP TRIGGER IF EXISTS trigger_update_payout_revenue ON payouts;
-CREATE TRIGGER trigger_update_payout_revenue
-  AFTER UPDATE OF status ON payouts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_payout_revenue();
+-- Create trigger for payout updates (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'payouts') THEN
+    DROP TRIGGER IF EXISTS trigger_update_payout_revenue ON payouts;
+    CREATE TRIGGER trigger_update_payout_revenue
+      AFTER UPDATE OF status ON payouts
+      FOR EACH ROW
+      EXECUTE FUNCTION update_payout_revenue();
+  END IF;
+END $$;
 

@@ -12,6 +12,8 @@ export default function IntegrationSettingsPage() {
     enableWebhooks: true,
     webhookSecret: "whsec_abc123...",
     rateLimitPerMinute: 100,
+    defaultBookingProvider: "builtin" as "builtin" | "gohighlevel" | "calcom",
+    enableBookingSync: true,
   });
 
   return (
@@ -59,6 +61,57 @@ export default function IntegrationSettingsPage() {
                 id="require-approval"
                 defaultChecked={settings.requireApproval}
                 onChange={(checked) => setSettings({ ...settings, requireApproval: checked })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Booking Providers */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+            Booking Providers
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="default-booking-provider">Default Provider</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Select which provider should handle bookings by default.
+                </p>
+              </div>
+              <select
+                id="default-booking-provider"
+                value={settings.defaultBookingProvider}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    defaultBookingProvider: e.target.value as any,
+                  })
+                }
+                className="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90"
+              >
+                <option value="builtin">Built-in (local)</option>
+                <option value="gohighlevel">GoHighLevel</option>
+                <option value="calcom">Cal.com</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="enable-booking-sync">Enable Sync</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Allow syncing bookings with external providers.
+                </p>
+              </div>
+              <Switch
+                id="enable-booking-sync"
+                defaultChecked={settings.enableBookingSync}
+                onChange={(checked) =>
+                  setSettings({
+                    ...settings,
+                    enableBookingSync: checked,
+                  })
+                }
               />
             </div>
           </div>

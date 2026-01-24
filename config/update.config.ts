@@ -233,13 +233,6 @@ export const updateConfig: Record<string, PackageUpdateConfig> = {
     description: 'Booking SDK client',
   },
   
-  // API Server
-  'packages/api-server': {
-    enabled: true,
-    strategy: 'merge',
-    conflictResolution: 'manual',
-    description: 'Hono API server',
-  },
   
   // UI Packages - usually safe to update
   'packages/@tinadmin/core': {

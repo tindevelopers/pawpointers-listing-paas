@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS knowledge_documents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   
   -- Document content
@@ -74,7 +74,7 @@ EXECUTE FUNCTION update_knowledge_documents_updated_at();
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   
@@ -105,7 +105,7 @@ ON chat_sessions(tenant_id);
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS chat_messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
   
   -- Message content

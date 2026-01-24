@@ -46,7 +46,7 @@ See [FORKING.md](FORKING.md) for the complete customization guide.
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │    Portal    │  │    Admin     │  │     API      │          │
-│  │  (Next.js)   │  │  (Next.js)   │  │   (Hono)     │          │
+│  │  (Next.js)   │  │  (Next.js)   │  │              │          │
 │  │              │  │              │  │              │          │
 │  │ yoursite.com │  │ admin.your   │  │ api.your     │          │
 │  │              │  │ site.com     │  │ site.com     │          │
@@ -123,7 +123,6 @@ listing-platform-as-a-service/
 │   │   ├── payments/       # Stripe integration
 │   │   └── ...             # More feature packages
 │   │
-│   └── api-server/         # Hono API server
 │
 ├── config/                 # Platform configuration
 │   ├── listing.config.ts   # Listing type definition
@@ -161,17 +160,8 @@ Best for small platforms, associations, directories.
 |---------|---------------|-----|
 | Portal | `apps/portal` | yoursite.com |
 | Admin | `apps/admin` | admin.yoursite.com |
-| API | `packages/api-server` | api.yoursite.com |
 
-### Option B: Enterprise (Cloud Run API)
-
-Best for tourism, real estate, high-traffic platforms.
-
-| Project | Platform | URL |
-|---------|----------|-----|
-| Portal | Vercel | yoursite.com |
-| Admin | Vercel | admin.yoursite.com |
-| API | Cloud Run | api.yoursite.com |
+All API functionality is handled via Next.js API routes in Portal and Admin apps, connecting directly to Supabase.
 
 See [FORKING.md](FORKING.md) for detailed deployment instructions.
 
@@ -265,7 +255,7 @@ pnpm type-check       # TypeScript check
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js 15, React 19, Tailwind CSS |
-| **Backend** | Hono (API), Supabase (Database + Auth) |
+| **Backend** | Next.js API Routes, Supabase (Database + Auth) |
 | **Database** | PostgreSQL + pgvector |
 | **Payments** | Stripe |
 | **Search** | Typesense (optional) |

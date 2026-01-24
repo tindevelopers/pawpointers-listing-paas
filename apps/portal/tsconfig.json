@@ -59,6 +59,9 @@
       "@listing-platform/reviews": [
         "../../packages/@listing-platform/reviews/src"
       ],
+      "@listing-platform/reviews-sdk": [
+        "../../packages/@listing-platform/reviews-sdk/src"
+      ],
       "@listing-platform/maps": [
         "../../packages/@listing-platform/maps/src"
       ]

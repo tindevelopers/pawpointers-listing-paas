@@ -40,3 +40,4 @@ export interface SyncListingsOptions {
 
 export type SupabaseClientLike = SupabaseClient;
 
+

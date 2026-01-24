@@ -5,7 +5,7 @@
  * Import this instead of navigation.tsx to get program-filtered navigation.
  */
 
-import { isProgramEnabled, type ProgramId } from '../../../../config/programs.config';
+import { isProgramEnabled, type ProgramId } from '../../../config/programs.config';
 import {
   mainNavItems as allMainNavItems,
   supportNavItems as allSupportNavItems,

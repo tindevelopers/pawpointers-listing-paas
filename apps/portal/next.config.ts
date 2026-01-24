@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
      * - NEXT_PUBLIC_IMAGE_HOSTS: comma-separated hostnames (e.g., img1.example.com,img2.example.com)
      */
     remotePatterns: [
+      // Allow Unsplash images (commonly used in templates)
+      {
+        protocol: "https" as const,
+        hostname: "images.unsplash.com",
+      },
       ...(process.env.NEXT_PUBLIC_CDN_URL
         ? [
             {

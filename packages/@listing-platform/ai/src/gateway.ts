@@ -2,7 +2,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import type { GatewayConfig, OpenAIConfig } from './types';
 import { DEFAULT_OPENAI_CONFIG } from './types';
 
-export type ClientMode = 'gateway' | 'direct';
+export type ClientMode = 'gateway' | 'direct' | 'abacus';
 
 interface AIClientConfig {
   client: ReturnType<typeof createOpenAI>;
@@ -13,17 +13,38 @@ interface AIClientConfig {
 }
 
 function resolveConfig(): OpenAIConfig {
+  const provider = process.env.AI_PROVIDER || 'gateway';
   const gatewayUrl = process.env.AI_GATEWAY_URL;
   const gatewayKey = process.env.AI_GATEWAY_API_KEY;
-  const apiKey = gatewayKey || process.env.OPENAI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const abacusKey = process.env.ABACUS_AI_API_KEY;
+  const abacusUrl = process.env.ABACUS_AI_BASE_URL;
 
-  if (!apiKey) {
-    throw new Error('Missing AI configuration: set AI_GATEWAY_API_KEY/AI_GATEWAY_URL or OPENAI_API_KEY.');
+  let apiKey: string;
+  let baseURL: string | undefined;
+
+  // Determine API key and base URL based on provider
+  if (provider === 'abacus' && abacusKey) {
+    apiKey = abacusKey;
+    baseURL = abacusUrl || 'https://api.abacus.ai';
+  } else if (provider === 'gateway' && gatewayKey && gatewayUrl) {
+    apiKey = gatewayKey;
+    baseURL = gatewayUrl;
+  } else if (openaiKey) {
+    apiKey = openaiKey;
+    baseURL = undefined; // Direct OpenAI
+  } else {
+    throw new Error('Missing AI configuration: set AI_GATEWAY_API_KEY/AI_GATEWAY_URL, OPENAI_API_KEY, or ABACUS_AI_API_KEY.');
   }
 
-  const model = process.env.AI_MODEL || process.env.OPENAI_MODEL || DEFAULT_OPENAI_CONFIG.model;
+  const model = process.env.AI_MODEL || 
+                process.env.OPENAI_MODEL || 
+                process.env.ABACUS_AI_MODEL || 
+                DEFAULT_OPENAI_CONFIG.model;
   const embeddingModel =
-    process.env.EMBEDDING_MODEL || process.env.OPENAI_EMBEDDING_MODEL || DEFAULT_OPENAI_CONFIG.embeddingModel;
+    process.env.EMBEDDING_MODEL || 
+    process.env.OPENAI_EMBEDDING_MODEL || 
+    DEFAULT_OPENAI_CONFIG.embeddingModel;
   const maxTokens = parseInt(
     process.env.OPENAI_MAX_TOKENS || String(DEFAULT_OPENAI_CONFIG.maxTokens),
     10
@@ -34,7 +55,7 @@ function resolveConfig(): OpenAIConfig {
 
   return {
     apiKey,
-    baseURL: gatewayUrl || undefined,
+    baseURL,
     model,
     embeddingModel,
     maxTokens,
@@ -56,11 +77,19 @@ export function getAIClient(): AIClientConfig {
   const chatModel = client.chat(config.model);
   const embeddingModel = client.embedding(config.embeddingModel);
 
+  const provider = process.env.AI_PROVIDER || 'gateway';
+  let mode: ClientMode = 'direct';
+  if (provider === 'abacus' && config.baseURL) {
+    mode = 'abacus';
+  } else if (config.baseURL && provider === 'gateway') {
+    mode = 'gateway';
+  }
+
   _cached = {
     client,
     chatModel,
     embeddingModel,
-    mode: config.baseURL ? 'gateway' : 'direct',
+    mode,
     resolvedConfig: config,
   };
 
