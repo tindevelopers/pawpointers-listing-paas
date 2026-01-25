@@ -300,7 +300,7 @@ export default function WhyJoinPage() {
           </div>
           <div className="border-t border-gray-800 pt-8 text-center">
             <p>
-              &copy; 2024 Paw Pointers. Your trusted guide to happy and healthy pets.
+              &copy; 2026 Paw Pointers. Your trusted guide to happy and healthy pets.
             </p>
           </div>
         </div>
