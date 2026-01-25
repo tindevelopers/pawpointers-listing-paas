@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Navbar } from "./Navbar";
 
-const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "PawPointers";
 const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
 /**
