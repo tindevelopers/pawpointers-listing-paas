@@ -77,27 +77,40 @@ export default function WhyJoinPage() {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            Why Join Paw Pointers?
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 text-blue-100 max-w-2xl mx-auto">
-            Your trusted guide to happy and healthy pets. Connect with the best pet care
-            professionals in your community.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/signup/user"
-              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-bold transition-colors inline-block"
-            >
-              Find Pet Services
-            </Link>
-            <Link
-              href="/signup/member"
-              className="bg-blue-500 hover:bg-blue-400 text-white px-8 py-3 rounded-lg font-bold transition-colors inline-block"
-            >
-              Offer Your Services
-            </Link>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div className="flex-1 text-center lg:text-left">
+              <h1 className="text-5xl md:text-6xl font-bold mb-6">
+                Why Join Paw Pointers?
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-blue-100">
+                Your trusted guide to happy and healthy pets. Connect with the best pet care
+                professionals in your community.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link
+                  href="/signup/user"
+                  className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-bold transition-colors inline-block text-center"
+                >
+                  Find Pet Services
+                </Link>
+                <Link
+                  href="/signup/member"
+                  className="bg-blue-500 hover:bg-blue-400 text-white px-8 py-3 rounded-lg font-bold transition-colors inline-block text-center"
+                >
+                  Offer Your Services
+                </Link>
+              </div>
+            </div>
+            <div className="flex-1 flex justify-center">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl max-w-sm w-full">
+                <img
+                  src="https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2F04e4ae100f06472fa0e3df9d17b701a3?format=webp&width=800&height=1200"
+                  alt="Paw Pointers - Your trusted guide to happy and healthy pets"
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
