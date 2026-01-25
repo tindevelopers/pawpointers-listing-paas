@@ -318,6 +318,11 @@ AI_GATEWAY_URL=https://api.ai.gateway.example.com
 AI_GATEWAY_API_KEY=your-gateway-key
 AI_MODEL=openai/gpt-4.1
 EMBEDDING_MODEL=openai/text-embedding-3-small
+AI_CHAT_PROVIDER=gateway   # switch to abacus to use Abacus deployments
+AI_EMBEDDING_PROVIDER=gateway
+ABACUS_DEPLOYMENT_ID=
+ABACUS_DEPLOYMENT_TOKEN=
+ABACUS_API_KEY=
 # Fallback if gateway not configured
 OPENAI_API_KEY=sk-xxx
 # Optional: Fast Search

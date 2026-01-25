@@ -12,8 +12,9 @@ interface AIClientConfig {
   resolvedConfig: OpenAIConfig;
 }
 
-function resolveConfig(): OpenAIConfig {
-  const provider = process.env.AI_PROVIDER || 'gateway';
+function resolveConfig(providerEnv?: string): OpenAIConfig {
+  const provider =
+    (providerEnv || process.env.AI_PROVIDER || 'gateway').toLowerCase();
   const gatewayUrl = process.env.AI_GATEWAY_URL;
   const gatewayKey = process.env.AI_GATEWAY_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -23,7 +24,6 @@ function resolveConfig(): OpenAIConfig {
   let apiKey: string;
   let baseURL: string | undefined;
 
-  // Determine API key and base URL based on provider
   if (provider === 'abacus' && abacusKey) {
     apiKey = abacusKey;
     baseURL = abacusUrl || 'https://api.abacus.ai';
@@ -32,9 +32,11 @@ function resolveConfig(): OpenAIConfig {
     baseURL = gatewayUrl;
   } else if (openaiKey) {
     apiKey = openaiKey;
-    baseURL = undefined; // Direct OpenAI
+    baseURL = undefined;
   } else {
-    throw new Error('Missing AI configuration: set AI_GATEWAY_API_KEY/AI_GATEWAY_URL, OPENAI_API_KEY, or ABACUS_AI_API_KEY.');
+    throw new Error(
+      'Missing AI configuration: set AI_GATEWAY_API_KEY/AI_GATEWAY_URL, OPENAI_API_KEY, or ABACUS_AI_API_KEY.'
+    );
   }
 
   const model = process.env.AI_MODEL || 
@@ -63,7 +65,7 @@ function resolveConfig(): OpenAIConfig {
   };
 }
 
-let _cached: AIClientConfig | null = null;
+  let _cached: AIClientConfig | null = null;
 
 export function getAIClient(): AIClientConfig {
   if (_cached) return _cached;
@@ -96,7 +98,11 @@ export function getAIClient(): AIClientConfig {
   return _cached;
 }
 
-export function resetAIClientCache(): void {
   _cached = null;
+}
+
+export function getEmbeddingConfig(): OpenAIConfig {
+  const provider = process.env.AI_EMBEDDING_PROVIDER || process.env.AI_PROVIDER;
+  return resolveConfig(provider);
 }
 

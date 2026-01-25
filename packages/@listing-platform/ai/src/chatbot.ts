@@ -1,10 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateText, streamText } from 'ai';
 import { createOpenAIEmbeddingProvider } from './embeddings';
 import { searchDocuments } from '@listing-platform/knowledge-base';
 import { SYSTEM_PROMPT } from './types';
 import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 import { getAIClient } from './gateway';
+import { getChatProvider } from './providers/factory';
 
 /**
  * RAG Chatbot
@@ -88,14 +88,12 @@ export async function chat(
     },
   ];
 
-  const { chatModel, resolvedConfig } = getAIClient();
+  const { resolvedConfig } = getAIClient();
+  const chatProvider = getChatProvider();
 
-  const completion = await generateText({
-    model: chatModel,
-    messages: messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+  const completion = await chatProvider.complete({
+    messages,
+    systemPrompt: systemPrompt,
     maxTokens: resolvedConfig.maxTokens,
     temperature: resolvedConfig.temperature,
   });
@@ -188,26 +186,29 @@ export async function* streamChat(
     },
   ];
 
-  const { chatModel, resolvedConfig } = getAIClient();
+  const { resolvedConfig } = getAIClient();
+  const chatProvider = getChatProvider();
 
-  const streamResult = await streamText({
-    model: chatModel,
-    messages: messages.map((m) => ({
-      role: m.role,
-      content: m.content,
-    })),
+  const request = {
+    messages,
+    systemPrompt,
     maxTokens: resolvedConfig.maxTokens,
     temperature: resolvedConfig.temperature,
-  });
+  };
 
-  let fullResponse = '';
-
-  for await (const textPart of streamResult.textStream) {
-    fullResponse += textPart;
-    yield { type: 'token', data: textPart };
+  if (chatProvider.stream) {
+    let fullResponse = '';
+    for await (const textPart of chatProvider.stream(request)) {
+      fullResponse += textPart;
+      yield { type: 'token', data: textPart };
+    }
+    yield { type: 'done', data: { message: fullResponse, contextDocuments } };
+  } else {
+    const completion = await chatProvider.complete(request);
+    const responseText = completion.text || '';
+    yield { type: 'token', data: responseText };
+    yield { type: 'done', data: { message: responseText, contextDocuments } };
   }
-
-  yield { type: 'done', data: { message: fullResponse, contextDocuments } };
 }
 
 /**

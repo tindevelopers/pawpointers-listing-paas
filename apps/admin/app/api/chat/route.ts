@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { streamText } from "ai";
-import { getAIClient } from "@listing-platform/ai";
+import { getAIClient, getChatProvider } from "@listing-platform/ai";
 
 /**
  * Basic AI Chatbot Backend
@@ -18,7 +17,7 @@ Be friendly and professional. If you don't know something, say so honestly.`;
 export async function POST(req: NextRequest) {
   try {
     // Get the AI client (gateway first, fallback to direct OpenAI)
-    const { chatModel, resolvedConfig } = getAIClient();
+    const { resolvedConfig } = getAIClient();
 
     // Parse request body
     const body = await req.json();
@@ -34,20 +33,46 @@ export async function POST(req: NextRequest) {
     // Use custom system prompt if provided, otherwise use default
     const finalSystemPrompt = systemPrompt || SYSTEM_PROMPT;
 
-    // Stream the response
-    const result = await streamText({
-      model: chatModel,
-      system: finalSystemPrompt,
-      messages: messages.map((msg: any) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
+    const chatProvider = getChatProvider();
+    const request = {
+      messages,
+      systemPrompt: finalSystemPrompt,
       maxTokens: resolvedConfig.maxTokens,
       temperature: resolvedConfig.temperature,
-    });
+    };
 
-    // Return streaming response
-    return result.toDataStreamResponse();
+    const streamGenerator = chatProvider.stream
+      ? chatProvider.stream(request)
+      : (async function* () {
+          const completion = await chatProvider.complete(request);
+          yield completion.text || "";
+        })();
+
+    const encoder = new TextEncoder();
+
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of streamGenerator) {
+              const payload = JSON.stringify({ text: chunk });
+              controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+            }
+            controller.enqueue(encoder.encode("event: done\ndata: {}\n\n"));
+            controller.close();
+          } catch (error) {
+            controller.error(error);
+          }
+        },
+      }),
+      {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      }
+    );
   } catch (error) {
     console.error("[api/chat] Error:", error);
     

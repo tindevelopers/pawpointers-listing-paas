@@ -1,7 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { embed, embedMany } from 'ai';
 import type { OpenAIConfig } from './types';
-import { getAIClient, resetAIClientCache } from './gateway';
+import { getAIClient, getEmbeddingConfig, resetAIClientCache } from './gateway';
 
 /**
  * OpenAI Embeddings
@@ -11,8 +11,7 @@ import { getAIClient, resetAIClientCache } from './gateway';
  * Get OpenAI configuration (gateway-first)
  */
 export function getOpenAIConfig(): OpenAIConfig {
-  const { resolvedConfig } = getAIClient();
-  return resolvedConfig;
+  return getEmbeddingConfig();
 }
 
 /**
