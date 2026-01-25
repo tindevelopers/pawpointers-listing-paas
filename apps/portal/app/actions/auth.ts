@@ -21,7 +21,36 @@ async function getRoleIdByName(roleName: string, adminClient: ReturnType<typeof 
 async function getPlatformTenantOrThrow(): Promise<string> {
   const tenantId = await getPlatformTenantId();
   if (!tenantId) {
-    throw new Error("Platform tenant not configured. Please ensure the platform tenant exists.");
+    // Try to create the platform tenant if it doesn't exist
+    const adminClient = createAdminClient();
+    try {
+      const { data: newTenant, error: createError } = await adminClient
+        .from("tenants")
+        .insert({
+          name: "Platform Tenant",
+          domain: "platform",
+          mode: "organization-only",
+          status: "active",
+          plan: "enterprise",
+          region: "global",
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newTenant?.id) {
+        console.error("Failed to create platform tenant:", createError);
+        throw new Error(
+          "Platform tenant not configured. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database."
+        );
+      }
+
+      return newTenant.id;
+    } catch (error) {
+      console.error("Error creating platform tenant:", error);
+      throw new Error(
+        "Platform tenant not configured. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database."
+      );
+    }
   }
   return tenantId;
 }
