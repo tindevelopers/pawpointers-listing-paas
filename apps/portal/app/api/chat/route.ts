@@ -67,7 +67,6 @@ export async function POST(request: NextRequest) {
     const tenantSlug = tenantId || request.headers.get('x-tenant-slug');
 
     // Dynamically import the AI package
-    let chatResponse;
     const { chat, createSession } = await import('@listing-platform/ai');
 
     // Create a session if not provided
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate response using RAG
-    chatResponse = await chat(message, {
+    const chatResponse = await chat(message, {
       supabase,
       tenantId: tenantSlug || undefined,
       history: history.map((m) => ({

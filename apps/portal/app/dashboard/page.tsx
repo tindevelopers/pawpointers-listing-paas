@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createServerClient } from "@supabase/ssr";
 
 export const dynamic = "force-dynamic";
@@ -71,19 +72,19 @@ export default async function DashboardPage() {
           </h2>
           <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
             <li>
-              <a href="/listings" className="hover:underline">
+              <Link href="/listings" className="hover:underline">
                 Browse listings
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/search" className="hover:underline">
+              <Link href="/search" className="hover:underline">
                 Search
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/categories" className="hover:underline">
+              <Link href="/categories" className="hover:underline">
                 Categories
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

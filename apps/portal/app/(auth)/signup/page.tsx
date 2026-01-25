@@ -52,7 +52,7 @@ export default function SignUpPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                I'm a Customer
+                I&apos;m a Customer
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Sign up to book appointments, access knowledge base, and get member benefits
@@ -85,7 +85,7 @@ export default function SignUpPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                I'm a Service Provider
+                I&apos;m a Service Provider
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 Join as a provider to offer services, manage bookings, and grow your business
