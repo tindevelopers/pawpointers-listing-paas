@@ -24,40 +24,76 @@ async function getPlatformTenantOrThrow(): Promise<string> {
     // Try to create the platform tenant if it doesn't exist
     const adminClient = createAdminClient();
     try {
-      // First, check if a tenant with domain='platform' exists (might have wrong mode)
+      // First, check if a tenant with domain='platform' exists (don't query mode column as it might not exist)
       const { data: existingTenant } = await (adminClient
         .from("tenants") as any)
-        .select("id, mode")
+        .select("id")
         .eq("domain", "platform")
         .maybeSingle();
 
       if (existingTenant?.id) {
-        // Tenant exists but might have wrong mode - update it
-        const { data: updatedTenant, error: updateError } = await (adminClient
+        // Tenant exists - try to update mode if column exists, otherwise just return the ID
+        try {
+          const { data: updatedTenant, error: updateError } = await (adminClient
+            .from("tenants") as any)
+            .update({ mode: "organization-only" })
+            .eq("id", existingTenant.id)
+            .select("id")
+            .single();
+
+          if (!updateError && updatedTenant?.id) {
+            return updatedTenant.id;
+          }
+          // If update fails (e.g., column doesn't exist), just return the existing tenant ID
+        } catch {
+          // Mode column doesn't exist, that's okay - return existing tenant
+        }
+        return existingTenant.id;
+      }
+
+      // Try to create new platform tenant with mode column (if it exists)
+      let tenantData: any = {
+        name: "Platform Tenant",
+        domain: "platform",
+        status: "active",
+        plan: "enterprise",
+        region: "global",
+      };
+
+      // Try including mode column - if it doesn't exist, we'll catch the error and retry without it
+      try {
+        const { data: newTenant, error: createError } = await (adminClient
           .from("tenants") as any)
-          .update({ mode: "organization-only" })
-          .eq("id", existingTenant.id)
+          .insert({
+            ...tenantData,
+            mode: "organization-only",
+          })
           .select("id")
           .single();
 
-        if (updateError) {
-          console.error("Failed to update platform tenant mode:", updateError);
-        } else if (updatedTenant?.id) {
-          return updatedTenant.id;
+        if (!createError && newTenant?.id) {
+          return newTenant.id;
+        }
+
+        // If error is about missing column, retry without mode
+        if (createError?.message?.includes("mode") || createError?.message?.includes("column")) {
+          console.log("Mode column doesn't exist, creating tenant without it");
+        } else {
+          throw createError;
+        }
+      } catch (modeError: any) {
+        // If mode column doesn't exist, create without it
+        if (modeError?.message?.includes("mode") || modeError?.message?.includes("column")) {
+          console.log("Creating platform tenant without mode column");
+        } else {
+          throw modeError;
         }
       }
 
-      // Create new platform tenant
+      // Create tenant without mode column
       const { data: newTenant, error: createError } = await (adminClient
         .from("tenants") as any)
-        .insert({
-          name: "Platform Tenant",
-          domain: "platform",
-          mode: "organization-only",
-          status: "active",
-          plan: "enterprise",
-          region: "global",
-        })
+        .insert(tenantData)
         .select("id")
         .single();
 
@@ -83,7 +119,7 @@ async function getPlatformTenantOrThrow(): Promise<string> {
         }
         
         throw new Error(
-          `Platform tenant not configured. Database error: ${createError.message || "Unknown error"}. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database.`
+          `Platform tenant not configured. Database error: ${createError.message || "Unknown error"}. Please ensure a tenant with domain='platform' exists in the database.`
         );
       }
 
@@ -98,7 +134,7 @@ async function getPlatformTenantOrThrow(): Promise<string> {
       console.error("Error creating platform tenant:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(
-        `Platform tenant not configured. ${errorMessage} Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database.`
+        `Platform tenant not configured. ${errorMessage} Please ensure a tenant with domain='platform' exists in the database.`
       );
     }
   }
