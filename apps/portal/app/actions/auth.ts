@@ -24,8 +24,8 @@ async function getPlatformTenantOrThrow(): Promise<string> {
     // Try to create the platform tenant if it doesn't exist
     const adminClient = createAdminClient();
     try {
-      const { data: newTenant, error: createError } = await adminClient
-        .from("tenants")
+      const { data: newTenant, error: createError } = await (adminClient
+        .from("tenants") as any)
         .insert({
           name: "Platform Tenant",
           domain: "platform",
