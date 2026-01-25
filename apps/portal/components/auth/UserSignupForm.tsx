@@ -77,6 +77,7 @@ export default function UserSignupForm() {
           onChange={(e) => setFullName(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="John Doe"
+          suppressHydrationWarning
         />
       </div>
 
@@ -95,6 +96,7 @@ export default function UserSignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="you@example.com"
+          suppressHydrationWarning
         />
       </div>
 
@@ -115,6 +117,7 @@ export default function UserSignupForm() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="••••••••"
+            suppressHydrationWarning
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Must be at least 8 characters
@@ -135,6 +138,7 @@ export default function UserSignupForm() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="••••••••"
+            suppressHydrationWarning
           />
         </div>
       </div>
@@ -153,6 +157,7 @@ export default function UserSignupForm() {
           onChange={(e) => setPhoneNumber(e.target.value)}
           className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="+1 (555) 123-4567"
+          suppressHydrationWarning
         />
       </div>
 
