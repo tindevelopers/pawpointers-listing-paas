@@ -104,3 +104,4 @@ Once accounts are created, the portal homepage will automatically display them v
 
 The portal fetches real data from the API, so no code changes are needed after seeding.
 
+

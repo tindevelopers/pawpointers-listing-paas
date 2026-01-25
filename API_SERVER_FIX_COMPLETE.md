@@ -106,3 +106,4 @@ Expected response: JSON data, not 500 errors.
 
 Once environment variables are set and the project is redeployed, the API should work correctly and the portal will display data properly.
 
+

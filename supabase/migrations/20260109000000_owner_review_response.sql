@@ -38,3 +38,4 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.respond_to_review(uuid, text) TO authenticated;
 
+

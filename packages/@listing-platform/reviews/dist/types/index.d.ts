@@ -75,6 +75,8 @@ export interface Review {
     expertRubric?: Record<string, unknown>;
     isVerified?: boolean;
     verificationMethod?: string;
+    verifiedPurchase?: boolean;
+    verifiedVisit?: boolean;
     helpfulCount: number;
     notHelpfulCount?: number;
     ownerResponse?: string;

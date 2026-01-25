@@ -113,3 +113,4 @@ You should see the Supabase Connection Status component showing:
 2. Create your first user
 3. Explore Supabase Studio (local: http://localhost:54323)
 
+

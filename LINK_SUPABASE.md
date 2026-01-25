@@ -194,3 +194,4 @@ After linking to Supabase:
 - [Supabase Setup Guide](./SUPABASE_SETUP.md)
 - [Database Schema](./database/README.md)
 
+

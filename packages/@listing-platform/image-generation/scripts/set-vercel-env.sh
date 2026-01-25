@@ -95,3 +95,4 @@ echo "1. Redeploy: vercel --prod"
 echo "2. Test: curl https://pawpointers-api.tinconnect.com/health"
 echo "3. Check diagnostic: curl https://pawpointers-api.tinconnect.com/api/diagnostic"
 
+

@@ -54,3 +54,4 @@ But this might introduce other issues. The pinned version should work reliably.
 
 ✅ **Fixed** - Next.js version pinned to 15.4.8 to match @next/swc
 
+

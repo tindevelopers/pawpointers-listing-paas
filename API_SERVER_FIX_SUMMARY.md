@@ -144,3 +144,4 @@ curl https://pawpointers-api.tinconnect.com/api/public/featured
 
 Once environment variables are set, the API should work correctly and the portal will display data properly.
 
+

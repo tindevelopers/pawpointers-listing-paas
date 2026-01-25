@@ -100,3 +100,4 @@ NEXT_PUBLIC_API_URL=https://pawpointers-api.tinconnect.com pnpm dev
 3. Monitor deployment logs for any API connection issues
 4. Update API response format if needed to match portal expectations
 
+

@@ -59,3 +59,4 @@ Make sure these are set in Vercel Dashboard → Settings → Environment Variabl
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (if needed)
 
+

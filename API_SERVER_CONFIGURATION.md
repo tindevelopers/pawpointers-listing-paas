@@ -97,3 +97,4 @@ curl https://pawpointers-api.tinconnect.com/api/public/featured
 
 If these return 500 errors, the API server needs environment variables set.
 
+

@@ -74,3 +74,4 @@ Once fixed, the API should:
 - Return diagnostic info showing env vars are present
 - Return listings data from Supabase
 
+

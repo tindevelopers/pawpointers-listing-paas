@@ -113,3 +113,4 @@ After adding environment variables, you can verify they're set by:
 - Checking the Vercel dashboard → Settings → Environment Variables
 - Or using the Vercel CLI: `vercel env ls pawpointers-admin`
 
+

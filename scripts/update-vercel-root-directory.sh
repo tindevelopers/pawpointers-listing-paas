@@ -73,3 +73,4 @@ echo ""
 echo -e "${GREEN}✓ Project settings updated successfully!${NC}"
 echo -e "${YELLOW}You can now deploy with: cd apps/portal && vercel --prod${NC}"
 
+

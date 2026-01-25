@@ -158,3 +158,4 @@ Or manually via Supabase Dashboard → SQL Editor:
 4. **Create initial Platform Admin user** via Supabase SQL or admin UI
 5. **Test end-to-end flows**: signup → create tenant → create listing → publish → review → respond
 
+

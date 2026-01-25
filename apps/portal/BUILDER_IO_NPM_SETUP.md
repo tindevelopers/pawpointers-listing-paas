@@ -84,3 +84,4 @@ cd apps/portal && npm list next
 
 Should show: `next@15.4.8`
 
+

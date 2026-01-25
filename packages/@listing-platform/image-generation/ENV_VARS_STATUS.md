@@ -64,3 +64,4 @@ If the API still returns 500 errors:
    - The environment variables are updated, but a redeploy is needed for them to take effect
    - Either wait for the next GitHub push or manually redeploy from Vercel Dashboard
 
+

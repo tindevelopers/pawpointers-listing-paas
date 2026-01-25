@@ -148,3 +148,4 @@ vercel env pull .env.development --environment=development
 echo "Environment variables set! Redeploy with: vercel --prod"
 ```
 
+

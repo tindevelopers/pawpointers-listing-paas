@@ -54,3 +54,4 @@ ngrok http 3030
 # Cleanup on exit
 trap "echo ''; echo '🛑 Stopping dev server...'; kill $DEV_PID 2>/dev/null || true; exit" EXIT INT TERM
 
+

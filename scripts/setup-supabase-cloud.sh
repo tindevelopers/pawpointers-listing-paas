@@ -169,3 +169,4 @@ echo "2. Check Supabase dashboard: https://app.supabase.com"
 echo "3. Start development: npm run dev"
 echo ""
 
+

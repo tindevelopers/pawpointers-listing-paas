@@ -89,3 +89,4 @@ console.log('  2. Run: pnpm dev');
 console.log('  3. Test Builder.io connection in Builder.io dashboard');
 console.log('  4. Check Builder.io project settings for correct dev command\n');
 
+

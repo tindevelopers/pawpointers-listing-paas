@@ -158,3 +158,4 @@ echo "   The dashboard will show Supabase connection status"
 echo ""
 echo -e "${GREEN}✓ Setup complete!${NC}"
 
+

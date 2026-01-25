@@ -354,3 +354,4 @@ npm run setup:all                # Full setup (Supabase + Vercel)
 ./scripts/sync-env-to-vercel.sh  # Sync .env.local to Vercel
 ```
 
+
