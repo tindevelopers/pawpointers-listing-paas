@@ -17,13 +17,16 @@ SELECT
   l.title,
   l.description,
   l.price,
+  -- Flatten gallery JSON objects into string URLs for next/image
   COALESCE(
     ARRAY(
-      SELECT jsonb::text
+      SELECT jsonb ->> 'url'
       FROM unnest(l.gallery) AS jsonb
+      WHERE jsonb ? 'url'
     ),
     ARRAY[]::text[]
   ) as images,
+  -- Fallback category from taxonomy or custom_fields
   COALESCE(
     (SELECT tt.name 
      FROM listing_taxonomies lt
@@ -34,6 +37,7 @@ SELECT
     l.custom_fields->>'category',
     'Uncategorized'
   ) as category,
+  -- Human-friendly location string
   COALESCE(
     CONCAT_WS(', ',
       l.address->>'city',

@@ -76,6 +76,25 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function normalizeImageUrls(images: string[] | null | undefined): string[] {
+  if (!images || images.length === 0) return [];
+  return images
+    .map((img) => {
+      if (!img) return null;
+      const trimmed = img.trim();
+      if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (parsed && typeof parsed.url === "string") return parsed.url;
+        } catch (_e) {
+          return null;
+        }
+      }
+      return trimmed;
+    })
+    .filter((u): u is string => !!u && /^https?:\/\//.test(u));
+}
+
 /**
  * Fetch a single listing by slug
  * Uses the public API endpoint (no auth required)
@@ -101,7 +120,7 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
           title: data.title,
           description: data.description,
           price: data.price,
-          images: data.images || [],
+          images: normalizeImageUrls(data.images),
           category: data.category,
           location: data.location,
           status: data.status,
@@ -189,7 +208,7 @@ export async function searchListings(
       title: item.title,
       description: item.description,
       price: item.price,
-      images: item.images || [],
+      images: normalizeImageUrls(item.images),
       category: item.category,
       location: item.location,
       status: item.status,
@@ -241,7 +260,7 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
       title: item.title,
       description: item.description,
       price: item.price,
-      images: item.images || [],
+      images: normalizeImageUrls(item.images),
       category: item.category,
       location: item.location,
       status: item.status,
