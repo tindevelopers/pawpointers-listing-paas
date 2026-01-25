@@ -3,7 +3,7 @@
 import Link from "next/link";
 import MemberSignupForm from "@/components/auth/MemberSignupForm";
 
-const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Paw Pointers";
 const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
 export default function MemberSignUpPage() {
@@ -25,7 +25,7 @@ export default function MemberSignUpPage() {
         {/* Form Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">
-            Join as a Service Provider
+            Become a Service Provider
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-center mb-8">
             Offer your services through {PLATFORM_NAME}
@@ -50,4 +50,3 @@ export default function MemberSignUpPage() {
     </div>
   );
 }
-
