@@ -24,6 +24,30 @@ async function getPlatformTenantOrThrow(): Promise<string> {
     // Try to create the platform tenant if it doesn't exist
     const adminClient = createAdminClient();
     try {
+      // First, check if a tenant with domain='platform' exists (might have wrong mode)
+      const { data: existingTenant } = await (adminClient
+        .from("tenants") as any)
+        .select("id, mode")
+        .eq("domain", "platform")
+        .maybeSingle();
+
+      if (existingTenant?.id) {
+        // Tenant exists but might have wrong mode - update it
+        const { data: updatedTenant, error: updateError } = await (adminClient
+          .from("tenants") as any)
+          .update({ mode: "organization-only" })
+          .eq("id", existingTenant.id)
+          .select("id")
+          .single();
+
+        if (updateError) {
+          console.error("Failed to update platform tenant mode:", updateError);
+        } else if (updatedTenant?.id) {
+          return updatedTenant.id;
+        }
+      }
+
+      // Create new platform tenant
       const { data: newTenant, error: createError } = await (adminClient
         .from("tenants") as any)
         .insert({
@@ -37,18 +61,44 @@ async function getPlatformTenantOrThrow(): Promise<string> {
         .select("id")
         .single();
 
-      if (createError || !newTenant?.id) {
-        console.error("Failed to create platform tenant:", createError);
+      if (createError) {
+        console.error("Failed to create platform tenant:", {
+          code: createError.code,
+          message: createError.message,
+          details: createError.details,
+          hint: createError.hint,
+        });
+        
+        // If it's a unique constraint violation, try to fetch the existing tenant
+        if (createError.code === "23505") {
+          const { data: existing } = await (adminClient
+            .from("tenants") as any)
+            .select("id")
+            .eq("domain", "platform")
+            .single();
+          
+          if (existing?.id) {
+            return existing.id;
+          }
+        }
+        
         throw new Error(
-          "Platform tenant not configured. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database."
+          `Platform tenant not configured. Database error: ${createError.message || "Unknown error"}. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database.`
+        );
+      }
+
+      if (!newTenant?.id) {
+        throw new Error(
+          "Platform tenant creation succeeded but no ID was returned."
         );
       }
 
       return newTenant.id;
     } catch (error) {
       console.error("Error creating platform tenant:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(
-        "Platform tenant not configured. Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database."
+        `Platform tenant not configured. ${errorMessage} Please ensure a tenant with domain='platform' and mode='organization-only' exists in the database.`
       );
     }
   }
