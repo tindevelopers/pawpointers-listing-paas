@@ -54,14 +54,14 @@ export default function UserSignupForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning>
       {error && (
         <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      <div>
+      <div suppressHydrationWarning>
         <label
           htmlFor="fullName"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
@@ -81,7 +81,7 @@ export default function UserSignupForm() {
         />
       </div>
 
-      <div>
+      <div suppressHydrationWarning>
         <label
           htmlFor="email"
           className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
@@ -100,8 +100,8 @@ export default function UserSignupForm() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" suppressHydrationWarning>
+        <div suppressHydrationWarning>
           <label
             htmlFor="password"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
@@ -123,7 +123,7 @@ export default function UserSignupForm() {
             Must be at least 8 characters
           </p>
         </div>
-        <div>
+        <div suppressHydrationWarning>
           <label
             htmlFor="confirmPassword"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
