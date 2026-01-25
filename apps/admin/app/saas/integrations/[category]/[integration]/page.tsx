@@ -30,6 +30,42 @@ interface IntegrationConfig {
 }
 
 const integrationConfigs: Record<string, IntegrationConfig> = {
+  // Booking
+  "booking-builtin": {
+    name: "Built-in Booking",
+    category: "Booking",
+    description: "Use the built-in booking engine with local availability and payments.",
+    status: "connected",
+    fields: [],
+  },
+  "gohighlevel-booking": {
+    name: "GoHighLevel Booking",
+    category: "Booking",
+    description: "Send bookings to GoHighLevel appointments.",
+    status: "pending",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", required: true },
+      { name: "locationId", label: "Location ID", type: "text", required: true },
+    ],
+    additionalSettings: [
+      { name: "syncDirection", label: "Sync Direction", type: "select", options: ["export", "import", "bidirectional"] },
+      { name: "autoCreateContacts", label: "Auto-create Contacts", type: "switch" },
+    ],
+  },
+  "calcom": {
+    name: "Cal.com",
+    category: "Booking",
+    description: "Use Cal.com as the booking provider.",
+    status: "disconnected",
+    fields: [
+      { name: "apiKey", label: "API Key", type: "password", required: true },
+      { name: "apiUrl", label: "API URL", type: "url", required: false, placeholder: "https://api.cal.com" },
+    ],
+    additionalSettings: [
+      { name: "syncDirection", label: "Sync Direction", type: "select", options: ["export", "import", "bidirectional"] },
+      { name: "autoConfirm", label: "Auto-confirm Bookings", type: "switch" },
+    ],
+  },
   // CRM
   "salesforce": {
     name: "Salesforce",

@@ -1,0 +1,82 @@
+{
+  "name": "@listing-platform/reviews-sdk",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Platform-agnostic Reviews and Ratings SDK for React",
+  "author": "Tin Developers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tindevelopers/listing-paas-base.git",
+    "directory": "packages/@listing-platform/reviews-sdk"
+  },
+  "homepage": "https://github.com/tindevelopers/listing-paas-base/tree/main/packages/@listing-platform/reviews-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/tindevelopers/listing-paas-base/issues"
+  },
+  "keywords": [
+    "reviews",
+    "ratings",
+    "sdk",
+    "react",
+    "headless",
+    "components",
+    "platform-agnostic",
+    "listing-platform",
+    "external-reviews",
+    "google-reviews"
+  ],
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sdk": "./src/sdk.ts",
+    "./headless": "./src/headless/index.ts",
+    "./components": "./src/components/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./types": "./src/types/index.ts",
+    "./api": "./src/api/index.ts",
+    "./utils/cn": "./src/utils/cn.ts",
+    "./styles": "./src/styles/reviews.css",
+    "./styles.css": "./src/styles/reviews.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@listing-platform/design-tokens": "workspace:*",
+    "@listing-platform/shared": "workspace:*",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "tsup": "^8.0.0",
+    "tsx": "^4.19.0",
+    "@types/react": "^18.0.0 || ^19.0.0",
+    "@types/node": "^20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

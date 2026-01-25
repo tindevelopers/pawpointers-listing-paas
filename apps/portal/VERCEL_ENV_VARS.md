@@ -12,8 +12,8 @@ NEXT_PUBLIC_API_URL=https://pawpointers-api.tinconnect.com
 
 ### Supabase Configuration
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://omczmkjrpsykpwiyptfj.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3pta2pycHN5a3B3aXlwdGZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODIyMjMsImV4cCI6MjA4MzU1ODIyM30.JZnXOYmO-fxR1i9ak13_TKqXLBF40ETHHr0P26hqd5s
+NEXT_PUBLIC_SUPABASE_URL=https://gakuwocsamrqcplrxvmh.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdha3V3b2NzYW1ycWNwbHJ4dm1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMjU4NzMsImV4cCI6MjA4NDYwMTg3M30.83Ka_MlIYx_oR2V5FaF0b1G7J_hmmaCq3WwvtFl39p0
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
 
@@ -28,12 +28,23 @@ BUILDER_PREVIEW=false
 
 **Note:** Get your Builder.io API key from https://builder.io/account/space
 
+### AI Configuration
+```
+# Preferred: Vercel AI Gateway
+AI_GATEWAY_URL=<your-gateway-url>
+AI_GATEWAY_API_KEY=<your-gateway-key>
+AI_MODEL=openai/gpt-4.1
+EMBEDDING_MODEL=openai/text-embedding-3-small
+
+# Fallback (if no gateway)
+OPENAI_API_KEY=<optional-fallback>
+```
+
 ### Optional Environment Variables
 
 ```
 NEXT_PUBLIC_SITE_URL=https://your-portal-domain.com
 REVALIDATION_SECRET=<your-revalidation-secret>
-OPENAI_API_KEY=<if-using-chat-features>
 ```
 
 ## How to Set Environment Variables in Vercel

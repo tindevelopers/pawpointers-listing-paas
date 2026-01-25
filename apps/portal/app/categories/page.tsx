@@ -4,14 +4,16 @@ import { Header, Footer } from "@/components/layout";
 import { getCategories } from "@/lib/listings";
 import { getTaxonomyConfig } from "@/lib/taxonomy-config";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 /**
  * Categories Index Page
  * Lists all available categories/professions
  */
 
 export const metadata: Metadata = {
-  title: "Categories | Listing Platform",
-  description: "Browse all categories and professions available on our platform.",
+  title: `Categories | ${PLATFORM_NAME}`,
+  description: "Browse all categories and professions available on this platform.",
 };
 
 // Force dynamic rendering to avoid build-time API failures

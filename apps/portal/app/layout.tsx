@@ -5,11 +5,14 @@ import { ChatWidget } from "@/components/chat";
 import { VisualEditing } from "@/components/builder/VisualEditing";
 import { ReviewsProviderWrapper } from "@/components/ReviewsProviderWrapper";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Paw Pointers - Find What You're Looking For",
-  description: "Discover the best listings on our platform. Search, browse, and find exactly what you need.",
+  title: `${PLATFORM_NAME} - Find What You're Looking For`,
+  description:
+    "Discover the best listings on this platform. Search, browse, and find exactly what you need.",
   icons: {
     icon: '/images/favicon.ico',
   },
@@ -19,7 +22,7 @@ export const metadata: Metadata = {
  * Root Layout for Consumer Portal
  * 
  * CUSTOMIZE: Update the ChatWidget props for your platform branding.
- * Set OPENAI_API_KEY environment variable to enable AI chat.
+ * Set AI_GATEWAY_URL + AI_GATEWAY_API_KEY (or OPENAI_API_KEY) to enable AI chat.
  */
 export default function RootLayout({
   children,
@@ -27,7 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // Only show chat widget if AI is configured
-  const showChat = !!process.env.OPENAI_API_KEY;
+  const showChat =
+    (!!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY) ||
+    !!process.env.OPENAI_API_KEY;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -42,7 +47,7 @@ export default function RootLayout({
               position="bottom-right"
               primaryColor="#3b82f6"
               title="Need help?"
-              welcomeMessage="Hi! I'm here to help you find what you're looking for. Ask me anything about our listings!"
+              welcomeMessage={`Hi! I'm here to help you find what you're looking for on ${PLATFORM_NAME}. Ask me anything about our listings.`}
               placeholder="Type your question..."
             />
           )}

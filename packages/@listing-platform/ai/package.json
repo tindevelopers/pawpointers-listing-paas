@@ -17,9 +17,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "openai": "^4.102.0",
-    "@listing-platform/knowledge-base": "workspace:*",
-    "@listing-platform/shared": "workspace:*"
+    "@ai-sdk/openai": "^1.1.11",
+    "ai": "^4.1.42",
+    "@listing-platform/knowledge-base": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

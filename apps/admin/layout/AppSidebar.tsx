@@ -54,53 +54,8 @@ const navItems: NavItem[] = [
       { name: "Tasks", path: "/crm/tasks" },
     ],
   },
-  {
-    name: "AI Assistant",
-    icon: <AiIcon />,
-    new: true,
-    subItems: [
-      {
-        name: "Assistant",
-        path: "/ai-assistant",
-      },
-      {
-        name: "Text Generator",
-        path: "/text-generator",
-      },
-      {
-        name: "Image Generator",
-        path: "/image-generator",
-      },
-      {
-        name: "Code Generator",
-        path: "/code-generator",
-      },
-      {
-        name: "Video Generator",
-        path: "/video-generator",
-      },
-    ],
-  },
-  {
-    name: "Knowledge Base",
-    icon: <PageIcon />,
-    path: "/knowledge-base",
-  },
-  {
-    name: "E-commerce",
-    icon: <CartIcon />,
-    new: true,
-    subItems: [
-      { name: "Products", path: "/products-list" },
-      { name: "Add Product", path: "/add-product" },
-      { name: "Billing", path: "/billing" },
-      { name: "Invoices", path: "/invoices" },
-      { name: "Single Invoice", path: "/single-invoice" },
-      { name: "Create Invoice", path: "/create-invoice" },
-      { name: "Transactions", path: "/transactions" },
-      { name: "Single Transaction", path: "/single-transaction" },
-    ],
-  },
+  // Note: "AI Assistant", "Knowledge Base", and "E-commerce" are already included in mainNavItems
+  // so they don't need to be added again here
   {
     name: "Billing & Plans",
     icon: <CartIcon />,
@@ -272,11 +227,7 @@ const navItems: NavItem[] = [
       },
     ],
   },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
+  // Note: "Calendar" is already included in mainNavItems, so it doesn't need to be added again here
   {
     icon: <UserCircleIcon />,
     name: "User Profile",
@@ -379,7 +330,7 @@ const AppSidebar: React.FC = () => {
   ) => (
     <ul className="flex flex-col gap-1">
       {navItems.map((nav, index) => (
-        <li key={nav.name}>
+        <li key={`${menuType}-${nav.path || nav.name}-${index}`}>
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
@@ -481,7 +432,7 @@ const AppSidebar: React.FC = () => {
 
                   if (isNestedMenu) {
                     return (
-                      <li key={subItem.name} role="none">
+                      <li key={subItem.path || `${subItem.name}-${subIndex}`} role="none">
                         <button
                           onClick={() => handleSubmenuToggle(index, menuType, subIndex)}
                           className="menu-dropdown-item w-full text-left flex items-center justify-between"
@@ -495,10 +446,10 @@ const AppSidebar: React.FC = () => {
                         </button>
                         {isNestedOpen && (
                           <ul className="mt-1 ml-4 space-y-1" role="menu">
-                            {subItem.subItems?.map((nestedItem) => {
+                            {subItem.subItems?.map((nestedItem, nestedIndex) => {
                               if ('path' in nestedItem && nestedItem.path) {
                                 return (
-                                  <li key={nestedItem.name} role="none">
+                                  <li key={nestedItem.path || `${nestedItem.name}-${nestedIndex}`} role="none">
                                     <Link
                                       href={nestedItem.path}
                                       role="menuitem"
@@ -524,7 +475,7 @@ const AppSidebar: React.FC = () => {
                   // Regular submenu item with path
                   if ('path' in subItem && subItem.path) {
                     return (
-                      <li key={subItem.name} role="none">
+                      <li key={subItem.path || `${subItem.name}-${subIndex}`} role="none">
                         <Link
                           href={subItem.path}
                           role="menuitem"

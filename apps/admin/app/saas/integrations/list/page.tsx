@@ -64,6 +64,11 @@ const integrations: Integration[] = [
   { id: "29", name: "Zendesk", category: "Customer Support", description: "Customer service platform", status: "connected", lastSync: "2025-01-16 09:45 AM" },
   { id: "30", name: "Intercom", category: "Customer Support", description: "Customer messaging platform", status: "disconnected" },
   { id: "31", name: "Freshdesk", category: "Customer Support", description: "Customer support software", status: "disconnected" },
+
+  // Booking
+  { id: "32", name: "Built-in Booking", category: "Booking", description: "Use the built-in booking engine", status: "connected" },
+  { id: "33", name: "GoHighLevel Booking", category: "Booking", description: "Send bookings to GoHighLevel", status: "pending" },
+  { id: "34", name: "Cal.com", category: "Booking", description: "Use Cal.com for scheduling", status: "disconnected" },
 ];
 
 const categories = [
@@ -77,6 +82,7 @@ const categories = [
   "E-commerce",
   "Social Media",
   "Customer Support",
+  "Booking",
 ];
 
 const statusIcons = {

@@ -4,10 +4,11 @@ import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
-import { PlusIcon, PencilIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, MagnifyingGlassIcon, DocumentArrowUpIcon } from "@heroicons/react/24/outline";
 import { TrashBinIcon as TrashIcon } from "@/icons";
 import React, { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { DocumentUploader } from "@/components/knowledge-base/DocumentUploader";
 
 interface KnowledgeDocument {
   id: string;
@@ -16,7 +17,10 @@ interface KnowledgeDocument {
   excerpt?: string;
   category?: string;
   tags?: string[];
-  source_type: "manual" | "listing" | "faq" | "article";
+  source_type: "manual" | "listing" | "faq" | "article" | "upload";
+  source_url?: string | null;
+  source_id?: string | null;
+  metadata?: Record<string, unknown> | null;
   is_active: boolean;
   view_count: number;
   helpful_count: number;
@@ -24,30 +28,14 @@ interface KnowledgeDocument {
   updated_at: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-function getAuthToken(): Promise<string | null> {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  return supabase.auth.getSession().then(({ data: { session } }) => session?.access_token || null);
-}
-
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = await getAuthToken();
-  if (!token) {
-    throw new Error("Not authenticated");
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(endpoint, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -66,7 +54,9 @@ export default function KnowledgeBasePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
@@ -86,11 +76,12 @@ export default function KnowledgeBasePage() {
         page: "1",
         limit: "100",
         ...(search && { search }),
+        ...(sourceTypeFilter && { sourceType: sourceTypeFilter }),
       });
-      const data = await apiRequest<{ data: KnowledgeDocument[] }>(
+      const data = await apiRequest<{ data: KnowledgeDocument[]; pagination?: unknown }>(
         `/api/knowledge-base?${queryParams}`
       );
-      setDocuments(Array.isArray(data) ? data : data.data || []);
+      setDocuments(Array.isArray(data) ? data : data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load documents");
       console.error("Fetch error:", err);
@@ -101,7 +92,7 @@ export default function KnowledgeBasePage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, [search]);
+  }, [search, sourceTypeFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,11 +219,35 @@ export default function KnowledgeBasePage() {
                 sourceType: "manual",
                 isActive: true,
               });
+              setShowUpload(false);
               setShowForm(!showForm);
             }}
           >
             <PlusIcon className="h-4 w-4" />
             Create Article
+          </Button>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            variant={showUpload ? "outline" : "solid"}
+            onClick={() => {
+              setShowUpload(true);
+              setShowForm(false);
+            }}
+          >
+            <DocumentArrowUpIcon className="h-4 w-4" />
+            Upload File
+          </Button>
+          <Button
+            variant={!showUpload ? "outline" : "ghost"}
+            onClick={() => {
+              setShowUpload(false);
+              setShowForm(true);
+            }}
+          >
+            <PlusIcon className="h-4 w-4" />
+            Manual Entry
           </Button>
         </div>
 
@@ -252,9 +267,35 @@ export default function KnowledgeBasePage() {
             placeholder="Search articles..."
             className="h-11 w-full rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:ring-2 focus:ring-brand-500/10 focus:outline-hidden dark:border-gray-700 dark:bg-gray-800 dark:text-white/90"
           />
+          <div className="mt-3 flex gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>Source</span>
+              <select
+                value={sourceTypeFilter}
+                onChange={(e) => setSourceTypeFilter(e.target.value)}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="">All</option>
+                <option value="manual">Manual</option>
+                <option value="upload">Upload</option>
+                <option value="listing">Listing</option>
+                <option value="faq">FAQ</option>
+                <option value="article">Article</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        {showForm && (
+        {showUpload && (
+          <DocumentUploader
+            onUploaded={() => {
+              setShowUpload(false);
+              fetchDocuments();
+            }}
+          />
+        )}
+
+        {showForm && !showUpload && (
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               {editingId ? "Edit Article" : "Create Article"}
@@ -377,6 +418,9 @@ export default function KnowledgeBasePage() {
                       Title
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                      File
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                       Category
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -403,7 +447,29 @@ export default function KnowledgeBasePage() {
                   {filteredDocuments.map((doc) => (
                     <tr key={doc.id}>
                       <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                        {doc.title}
+                        <a
+                          href={`/saas/support/knowledge-base/${doc.id}`}
+                          className="text-brand-600 hover:underline dark:text-brand-400"
+                        >
+                          {doc.title}
+                        </a>
+                        {doc.tags && doc.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {doc.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                        {doc.metadata && typeof doc.metadata === "object" && "source_file_name" in doc.metadata
+                          ? String((doc.metadata as Record<string, unknown>).source_file_name)
+                          : "-"}
                       </td>
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                         {doc.category || "-"}

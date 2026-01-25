@@ -7,6 +7,8 @@
 import type { Metadata } from "next";
 import type { TaxonomyConfig, TaxonomyPath } from "@listing-platform/config";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 // Extend TaxonomyPath to include _segments for internal use
 type TaxonomyPathWithSegments = TaxonomyPath & { _segments?: string[] };
 
@@ -40,7 +42,7 @@ export async function getTaxonomyConfig(): Promise<TaxonomyConfig> {
     // Return a minimal default config
     return {
       taxonomyType: "industry",
-      name: "Listing Platform",
+      name: PLATFORM_NAME,
       primaryTaxonomy: {
         name: "category",
         slug: "category",
@@ -60,7 +62,7 @@ export async function getTaxonomyConfig(): Promise<TaxonomyConfig> {
         comparison: false,
       },
       seoTemplate: {
-        titlePattern: "{title} | Listing Platform",
+        titlePattern: `{title} | ${PLATFORM_NAME}`,
         descriptionPattern: "{description}",
         schemaType: "Thing",
       },

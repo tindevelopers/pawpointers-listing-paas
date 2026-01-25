@@ -33,6 +33,7 @@ export default function NewBookingPage() {
     specialRequests: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     videoProvider: "" as "" | "zoom" | "microsoft_teams",
+    bookingProvider: "builtin" as "builtin" | "gohighlevel" | "calcom",
   });
 
   useEffect(() => {
@@ -78,6 +79,7 @@ export default function NewBookingPage() {
         body: JSON.stringify({
           ...formData,
           video_provider: formData.videoProvider || undefined,
+          provider: formData.bookingProvider,
         }),
       });
 
@@ -117,6 +119,30 @@ export default function NewBookingPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-white rounded-lg shadow dark:bg-gray-900 p-6 space-y-6">
+            {/* Booking Provider */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Booking Provider
+              </h2>
+              <select
+                value={formData.bookingProvider}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    bookingProvider: e.target.value as any,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="builtin">Built-in (local)</option>
+                <option value="gohighlevel">GoHighLevel</option>
+                <option value="calcom">Cal.com</option>
+              </select>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Choose which provider should handle this booking. External providers will store the booking locally and can be synced via the API server.
+              </p>
+            </div>
+
             {/* Event Type Selection */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">

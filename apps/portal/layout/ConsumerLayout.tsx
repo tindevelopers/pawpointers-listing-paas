@@ -2,6 +2,8 @@
 
 import React from "react";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 // CUSTOMIZE: Import brand config for dynamic branding
 // import { brandConfig } from '@/config/brand.config';
 
@@ -30,7 +32,7 @@ export default function ConsumerLayout({
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 {/* CUSTOMIZE: Update platform name from brandConfig */}
-                Listing Platform
+                {PLATFORM_NAME}
               </h1>
             </div>
             <nav className="flex items-center space-x-4">
@@ -50,7 +52,7 @@ export default function ConsumerLayout({
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-gray-600 dark:text-gray-400">
             {/* CUSTOMIZE: Update copyright with your company name */}
-            <p>&copy; {new Date().getFullYear()} Listing Platform. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} {PLATFORM_NAME}. All rights reserved.</p>
           </div>
         </div>
       </footer>

@@ -7,6 +7,8 @@ import { AccountCard } from "@/components/accounts/AccountCard";
 import { getFeaturedListings, getCategories, type Listing } from "@/lib/listings";
 import { getFeaturedAccounts, type FeaturedAccount } from "@/lib/accounts";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 /**
  * Home Page / Landing Page
  *
@@ -18,9 +20,9 @@ import { getFeaturedAccounts, type FeaturedAccount } from "@/lib/accounts";
 
 // CUSTOMIZE: Update metadata for your platform
 export const metadata: Metadata = {
-  title: "Listing Platform - Find What You're Looking For",
+  title: `${PLATFORM_NAME} - Find What You're Looking For`,
   description:
-    "Discover the best listings on our platform. Search, browse, and find exactly what you need.",
+    `Discover the best listings on ${PLATFORM_NAME}. Search, browse, and find exactly what you need.`,
 };
 
 // Force dynamic rendering to avoid build-time API failures

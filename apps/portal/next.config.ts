@@ -17,38 +17,33 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
-    // CUSTOMIZE: Add your CDN domain for remote image optimization
+    /**
+     * CUSTOMIZE: Allowlist remote image hosts.
+     * - NEXT_PUBLIC_CDN_URL: single CDN base URL (e.g., https://cdn.example.com)
+     * - NEXT_PUBLIC_IMAGE_HOSTS: comma-separated hostnames (e.g., img1.example.com,img2.example.com)
+     */
     remotePatterns: [
+      // Allow Unsplash images (commonly used in templates)
       {
-        protocol: 'https',
-        hostname: '**.wasabisys.com',
+        protocol: "https" as const,
+        hostname: "images.unsplash.com",
       },
-      {
-        protocol: 'https',
-        hostname: 'cdn.yourplatform.com',
-      },
-      // Builder.io images
-      {
-        protocol: 'https',
-        hostname: 'cdn.builder.io',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.builder.io',
-      },
-      // Unsplash images (for sample/placeholder images)
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      // Add more patterns as needed for your CDN
       ...(process.env.NEXT_PUBLIC_CDN_URL
         ? [
             {
-              protocol: 'https' as const,
+              protocol: "https" as const,
               hostname: new URL(process.env.NEXT_PUBLIC_CDN_URL).hostname,
             },
           ]
+        : []),
+      ...(process.env.NEXT_PUBLIC_IMAGE_HOSTS
+        ? process.env.NEXT_PUBLIC_IMAGE_HOSTS.split(",")
+            .map((host) => host.trim())
+            .filter(Boolean)
+            .map((hostname) => ({
+              protocol: "https" as const,
+              hostname,
+            }))
         : []),
     ],
   },

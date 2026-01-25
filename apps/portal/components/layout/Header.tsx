@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { Navbar } from "./Navbar";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
+
 /**
  * Header - Main site header component
  *
@@ -27,11 +30,11 @@ export function Header({ className = "" }: HeaderProps) {
           <Link href="/" className="flex items-center gap-2">
             {/* CUSTOMIZE: Update logo */}
             <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">P</span>
+              <span className="text-white font-bold text-lg">{PLATFORM_INITIAL}</span>
             </div>
             <span className="font-bold text-xl text-gray-900 dark:text-white">
               {/* CUSTOMIZE: Platform name from config */}
-              Paw Pointers
+              {PLATFORM_NAME}
             </span>
           </Link>
 

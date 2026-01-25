@@ -31,7 +31,11 @@ const RESERVED_PATHS = [
 ];
 
 // Valid country subdomains for geographic routing
-const COUNTRY_SUBDOMAINS = ['us', 'uk', 'ca', 'au', 'de', 'fr', 'es', 'it', 'mx', 'br'];
+const DEFAULT_COUNTRY_SUBDOMAINS = ['us', 'uk', 'ca', 'au', 'de', 'fr', 'es', 'it', 'mx', 'br'];
+const COUNTRY_SUBDOMAINS =
+  process.env.NEXT_PUBLIC_COUNTRY_SUBDOMAINS?.split(',')
+    .map((v) => v.trim().toLowerCase())
+    .filter(Boolean) || DEFAULT_COUNTRY_SUBDOMAINS;
 
 export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);

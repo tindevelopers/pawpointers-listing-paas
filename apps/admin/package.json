@@ -44,6 +44,8 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.2.3",
     "react-dropzone": "^14.3.5",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0",
     "server-only": "^0.0.1",
     "simplebar-react": "^3.3.0",
     "stripe": "^20.0.0",

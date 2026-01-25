@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
+
 /**
  * Footer - Site footer component
  *
@@ -48,11 +51,11 @@ export function Footer({ className = "" }: FooterProps) {
             <Link href="/" className="flex items-center gap-2 mb-4">
               {/* CUSTOMIZE: Update logo */}
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">L</span>
+                <span className="text-white font-bold text-lg">{PLATFORM_INITIAL}</span>
               </div>
               <span className="font-bold text-xl text-white">
                 {/* CUSTOMIZE: Platform name */}
-                Listing Platform
+                {PLATFORM_NAME}
               </span>
             </Link>
             <p className="text-sm text-gray-400">
@@ -117,7 +120,7 @@ export function Footer({ className = "" }: FooterProps) {
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">
             {/* CUSTOMIZE: Company name */}
-            &copy; {currentYear} Listing Platform. All rights reserved.
+            &copy; {currentYear} {PLATFORM_NAME}. All rights reserved.
           </p>
 
           {/* Social Links */}

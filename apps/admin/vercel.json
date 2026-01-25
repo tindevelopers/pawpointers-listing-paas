@@ -4,12 +4,7 @@
   "buildCommand": "cd ../.. && pnpm turbo build --filter=@tinadmin/admin",
   "installCommand": "cd ../.. && pnpm install",
   "outputDirectory": ".next",
-  "rewrites": [
-    {
-      "source": "/api/v1/:path*",
-      "destination": "https://api.yourplatform.com/api/:path*"
-    }
-  ],
+  "rewrites": [],
   "headers": [
     {
       "source": "/(.*)",

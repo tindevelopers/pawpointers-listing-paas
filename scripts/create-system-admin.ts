@@ -128,7 +128,12 @@ async function createSystemAdmin() {
     console.log(`   Full Name: ${userData.full_name}`);
     console.log(`   Role: Platform Admin`);
     console.log(`   Tenant ID: NULL (system-level)\n`);
-    console.log(`🎉 You can now sign in at: http://localhost:3001/signin\n`);
+    // Determine sign-in URL based on environment
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3001';
+    
+    console.log(`🎉 You can now sign in at: ${siteUrl}/signin\n`);
   } catch (error: any) {
     console.error("❌ Unexpected error:", error.message);
     console.error(error);

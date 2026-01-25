@@ -14,6 +14,7 @@ import Link from "next/link";
 
 export default function AvailabilityCalendarPage() {
   const [selectedListingId, setSelectedListingId] = useState<string>("");
+  const [bookingProvider, setBookingProvider] = useState<"builtin" | "gohighlevel" | "calcom">("builtin");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [showAddSlotModal, setShowAddSlotModal] = useState(false);
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
@@ -206,6 +207,20 @@ export default function AvailabilityCalendarPage() {
                     {listing.name}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Booking Provider
+              </label>
+              <select
+                value={bookingProvider}
+                onChange={(e) => setBookingProvider(e.target.value as any)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              >
+                <option value="builtin">Built-in</option>
+                <option value="gohighlevel">GoHighLevel</option>
+                <option value="calcom">Cal.com</option>
               </select>
             </div>
             <div>

@@ -10,13 +10,8 @@
  * - Knowledge base management
  */
 
-export {
-  openaiClient,
-  getOpenAIConfig,
-  generateEmbedding,
-  generateEmbeddings,
-  createOpenAIEmbeddingProvider,
-} from './embeddings';
+export { getOpenAIConfig, generateEmbedding, generateEmbeddings, createOpenAIEmbeddingProvider } from './embeddings';
+export { getAIClient, resetAIClientCache } from './gateway';
 export { chat, streamChat, createSession, getSessionHistory } from './chatbot';
 export type { ChatMessage, ChatOptions, ChatResponse } from './chatbot';
 

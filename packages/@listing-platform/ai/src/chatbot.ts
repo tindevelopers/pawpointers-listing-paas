@@ -1,8 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { openaiClient, getOpenAIConfig, createOpenAIEmbeddingProvider } from './embeddings';
+import { generateText, streamText } from 'ai';
+import { createOpenAIEmbeddingProvider } from './embeddings';
 import { searchDocuments } from '@listing-platform/knowledge-base';
 import { SYSTEM_PROMPT } from './types';
 import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
+import { getAIClient } from './gateway';
 
 /**
  * RAG Chatbot
@@ -86,21 +88,19 @@ export async function chat(
     },
   ];
 
-  // Call OpenAI
-  const client = openaiClient();
-  const config = getOpenAIConfig();
+  const { chatModel, resolvedConfig } = getAIClient();
 
-  const completion = await client.chat.completions.create({
-    model: config.model,
+  const completion = await generateText({
+    model: chatModel,
     messages: messages.map((m) => ({
       role: m.role,
       content: m.content,
     })),
-    max_tokens: config.maxTokens,
-    temperature: config.temperature,
+    maxTokens: resolvedConfig.maxTokens,
+    temperature: resolvedConfig.temperature,
   });
 
-  const responseMessage = completion.choices[0]?.message?.content || '';
+  const responseMessage = completion.text || '';
 
   // Store conversation in database if sessionId provided
   if (sessionId) {
@@ -188,29 +188,23 @@ export async function* streamChat(
     },
   ];
 
-  // Stream from OpenAI
-  const client = openaiClient();
-  const config = getOpenAIConfig();
+  const { chatModel, resolvedConfig } = getAIClient();
 
-  const stream = await client.chat.completions.create({
-    model: config.model,
+  const streamResult = await streamText({
+    model: chatModel,
     messages: messages.map((m) => ({
       role: m.role,
       content: m.content,
     })),
-    max_tokens: config.maxTokens,
-    temperature: config.temperature,
-    stream: true,
+    maxTokens: resolvedConfig.maxTokens,
+    temperature: resolvedConfig.temperature,
   });
 
   let fullResponse = '';
 
-  for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content || '';
-    if (token) {
-      fullResponse += token;
-      yield { type: 'token', data: token };
-    }
+  for await (const textPart of streamResult.textStream) {
+    fullResponse += textPart;
+    yield { type: 'token', data: textPart };
   }
 
   yield { type: 'done', data: { message: fullResponse, contextDocuments } };

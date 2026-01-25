@@ -10,7 +10,6 @@ This monorepo provides a production-ready foundation for creating vertical-speci
 - **Multi-tenant Ready** - Row Level Security (RLS) for data isolation
 - **SEO Optimized** - SSG/ISR with dynamic sitemaps
 - **Payment Ready** - Stripe subscriptions and invoicing
-- **Reviews & Ratings** - Platform-agnostic SDK with entity-based architecture
 - **AI Powered** - RAG chatbot with knowledge base (optional)
 - **Fast Search** - Typesense integration (optional)
 
@@ -47,7 +46,7 @@ See [FORKING.md](FORKING.md) for the complete customization guide.
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │    Portal    │  │    Admin     │  │     API      │          │
-│  │  (Next.js)   │  │  (Next.js)   │  │   (Hono)     │          │
+│  │  (Next.js)   │  │  (Next.js)   │  │              │          │
 │  │              │  │              │  │              │          │
 │  │ yoursite.com │  │ admin.your   │  │ api.your     │          │
 │  │              │  │ site.com     │  │ site.com     │          │
@@ -95,17 +94,6 @@ See [FORKING.md](FORKING.md) for the complete customization guide.
 - Invoice generation
 - Webhook handling
 
-### Ratings & Reviews System
-- **Platform-agnostic SDK** (`@listing-platform/reviews`) - Reusable across industries
-- **Entity-based architecture** - Reviews attach to canonical entities (businesses, places, services)
-- **Hybrid review sources** - First-party reviews + external sources (Google, Outscraper, DataForSEO, associations)
-- **OpenStreetMap integration** - Entity resolution with geo + address verification
-- **Provenance tracking** - Every review includes source attribution and metadata
-- **React components** - Styled and headless components for flexible UI integration
-- **TypeScript SDK** - Full type safety with hooks, API client, and utilities
-
-See [docs/reviews-entity-database.md](docs/reviews-entity-database.md) and [docs/REVIEWS_RATINGS_SDK_ARCHITECTURE.md](docs/REVIEWS_RATINGS_SDK_ARCHITECTURE.md) for architecture details.
-
 ### Developer Experience
 - **Turborepo** for fast builds
 - **TypeScript** throughout
@@ -133,10 +121,8 @@ listing-platform-as-a-service/
 │   │   ├── search/         # Typesense integration
 │   │   ├── media/          # Wasabi image storage
 │   │   ├── payments/       # Stripe integration
-│   │   ├── reviews/        # Ratings & reviews SDK
 │   │   └── ...             # More feature packages
 │   │
-│   └── api-server/         # Hono API server
 │
 ├── config/                 # Platform configuration
 │   ├── listing.config.ts   # Listing type definition
@@ -174,17 +160,8 @@ Best for small platforms, associations, directories.
 |---------|---------------|-----|
 | Portal | `apps/portal` | yoursite.com |
 | Admin | `apps/admin` | admin.yoursite.com |
-| API | `packages/api-server` | api.yoursite.com |
 
-### Option B: Enterprise (Cloud Run API)
-
-Best for tourism, real estate, high-traffic platforms.
-
-| Project | Platform | URL |
-|---------|----------|-----|
-| Portal | Vercel | yoursite.com |
-| Admin | Vercel | admin.yoursite.com |
-| API | Cloud Run | api.yoursite.com |
+All API functionality is handled via Next.js API routes in Portal and Admin apps, connecting directly to Supabase.
 
 See [FORKING.md](FORKING.md) for detailed deployment instructions.
 
@@ -207,7 +184,13 @@ NEXT_PUBLIC_SITE_URL=
 # Optional - Enable as needed
 STRIPE_SECRET_KEY=           # Payments
 TYPESENSE_API_KEY=           # Fast search
-OPENAI_API_KEY=              # AI chatbot
+
+# AI (gateway preferred)
+AI_GATEWAY_URL=              # Vercel AI Gateway URL
+AI_GATEWAY_API_KEY=          # Vercel AI Gateway key
+AI_MODEL=openai/gpt-4.1
+EMBEDDING_MODEL=openai/text-embedding-3-small
+OPENAI_API_KEY=              # Fallback if gateway not set
 WASABI_ACCESS_KEY=           # Image storage
 ```
 
@@ -263,8 +246,6 @@ pnpm type-check       # TypeScript check
 | [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) | Detailed customization guide |
 | [docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Development workflow |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deployment instructions |
-| [docs/reviews-entity-database.md](docs/reviews-entity-database.md) | Reviews & ratings database architecture |
-| [docs/REVIEWS_RATINGS_SDK_ARCHITECTURE.md](docs/REVIEWS_RATINGS_SDK_ARCHITECTURE.md) | Reviews SDK architecture |
 | [README_STRIPE.md](README_STRIPE.md) | Stripe integration |
 
 ---
@@ -274,10 +255,9 @@ pnpm type-check       # TypeScript check
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js 15, React 19, Tailwind CSS |
-| **Backend** | Hono (API), Supabase (Database + Auth) |
-| **Database** | PostgreSQL + pgvector + PostGIS |
+| **Backend** | Next.js API Routes, Supabase (Database + Auth) |
+| **Database** | PostgreSQL + pgvector |
 | **Payments** | Stripe |
-| **Reviews** | `@listing-platform/reviews` SDK (TypeScript) |
 | **Search** | Typesense (optional) |
 | **AI** | OpenAI + pgvector RAG (optional) |
 | **Storage** | Wasabi S3-compatible (optional) |
@@ -298,13 +278,6 @@ Initial V1 release:
 - Typesense fast search (optional)
 - Wasabi image storage (optional)
 - Comprehensive fork documentation
-
-### Recent Updates - January 2025
-
-- **Ratings & Reviews SDK** - Platform-agnostic reviews system with entity-based architecture
-- **OpenStreetMap integration** - Entity resolution with geo verification
-- **Hybrid review sources** - Support for first-party and external reviews (Google, Outscraper, DataForSEO)
-- **SDK architecture** - Reusable React components, hooks, and API client
 
 ---
 

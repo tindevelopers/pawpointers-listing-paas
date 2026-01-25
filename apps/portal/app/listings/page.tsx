@@ -5,6 +5,8 @@ import { Header, Footer } from "@/components/layout";
 import { SearchBar, SearchResults } from "@/components/search";
 import { searchListings, getCategories } from "@/lib/listings";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 /**
  * Listings Browse Page
  *
@@ -13,7 +15,7 @@ import { searchListings, getCategories } from "@/lib/listings";
 
 // CUSTOMIZE: Update metadata for your listing type
 export const metadata: Metadata = {
-  title: "Browse Listings | Listing Platform",
+  title: `Browse Listings | ${PLATFORM_NAME}`,
   description: "Browse all available listings. Find exactly what you're looking for.",
 };
 

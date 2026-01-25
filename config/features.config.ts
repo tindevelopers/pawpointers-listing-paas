@@ -255,6 +255,33 @@ export const featuresConfig = {
     compressImages: true,
     watermark: false,
   },
+
+  // AI Image Generation
+  imageGeneration: {
+    enabled: true,
+    providers: {
+      stabilityAi: {
+        enabled: true,
+        apiKey: process.env.STABILITY_AI_API_KEY,
+        defaultModel: 'sd3.5-large',
+      },
+      openai: {
+        enabled: true,
+        apiKey: process.env.OPENAI_API_KEY,
+        defaultModel: 'dall-e-3',
+      },
+    },
+    defaults: {
+      aspectRatio: '16:9',
+      style: 'photographic',
+      quality: 'standard',
+      size: '1024x1024',
+    },
+    limits: {
+      maxImagesPerRequest: 5,
+      maxImagesPerListing: 20,
+    },
+  },
   
   // SEO
   seo: {

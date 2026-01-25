@@ -1,18 +1,14 @@
 /**
  * @listing-platform/reviews
- * Reviews and Ratings SDK
+ * Compatibility wrapper for @listing-platform/reviews-sdk
  * 
- * Features:
- * - Review display components (styled and headless)
- * - Review form with rating
- * - Review statistics
- * - Voting (helpful/not helpful)
- * - API client with adapter pattern
- * - External review support (Google, Outscraper, etc.)
- * - SDK initialization and React Context
+ * This package now re-exports everything from @listing-platform/reviews-sdk
+ * to maintain backward compatibility. New projects should use @listing-platform/reviews-sdk directly.
+ * 
+ * @deprecated Use @listing-platform/reviews-sdk instead
  */
 
-// Export SDK initialization and context
+// Re-export SDK initialization and context
 export {
   initReviewsSDK,
   getReviewsClient,
@@ -24,9 +20,9 @@ export {
   ReviewsSDK,
   type ReviewsSDKConfig,
   type ReviewsProviderProps,
-} from './sdk';
+} from '@listing-platform/reviews-sdk/sdk';
 
-// Export types (explicit to avoid conflicts)
+// Re-export types
 export type {
   ApiError,
   ApiResponse,
@@ -41,20 +37,20 @@ export type {
   ReviewStats,
   VoteType,
   VoteResponse,
-} from './types';
-export { normalizeEntityId } from './types';
+} from '@listing-platform/reviews-sdk/types';
+export { normalizeEntityId } from '@listing-platform/reviews-sdk/types';
 
-// Export hooks
-export * from './hooks';
+// Re-export hooks
+export * from '@listing-platform/reviews-sdk/hooks';
 
-// Export styled components
-export * from './components';
+// Re-export styled components
+export * from '@listing-platform/reviews-sdk/components';
 
-// Export headless components
-export * from './headless';
+// Re-export headless components
+export * from '@listing-platform/reviews-sdk/headless';
 
-// Export API client
-export * from './api';
+// Re-export API client
+export * from '@listing-platform/reviews-sdk/api';
 
-// Export utilities
-export { cn } from './utils/cn';
+// Re-export utilities
+export { cn } from '@listing-platform/reviews-sdk/utils/cn';

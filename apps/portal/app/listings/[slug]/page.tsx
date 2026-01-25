@@ -5,6 +5,8 @@ import { Header, Footer } from "@/components/layout";
 import { ListingDetail } from "@/components/listings";
 import { getListingBySlug, getPopularListingSlugs } from "@/lib/listings";
 
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+
 /**
  * Listing Detail Page
  *
@@ -34,7 +36,7 @@ export async function generateMetadata({
     `View details for ${listing.title}`;
 
   return {
-    title: `${listing.title} | Paw Pointers`,
+    title: `${listing.title} | ${PLATFORM_NAME}`,
     description,
     openGraph: {
       title: listing.title,
