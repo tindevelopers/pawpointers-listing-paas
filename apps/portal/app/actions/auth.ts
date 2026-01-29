@@ -2,9 +2,11 @@
 
 // Portal auth actions
 // These functions create users in the platform tenant
+import { createClient } from "@/core/database/server";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getPlatformTenantId } from "@/core/multi-tenancy/resolver";
 import type { Database } from "@/core/database";
+import { redirect } from "next/navigation";
 
 type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
 
@@ -273,4 +275,85 @@ export async function signUpMember(data: SignUpMemberData) {
   }
 
   return { success: true, userId: authData.user.id, tenantId };
+}
+
+/**
+ * Sign in existing user (portal)
+ * Accepts FormData and returns { error?: string } or redirects on success
+ */
+export async function signIn(formData: FormData): Promise<{ error?: string } | void> {
+  // Helper function to convert auth errors to user-friendly messages
+  const getAuthErrorMessage = (error: any): string => {
+    if (!error) {
+      return "Failed to sign in. Please check your credentials.";
+    }
+
+    const errorMessage = error.message?.toLowerCase() || "";
+    const errorStatus = error.status;
+
+    // Check for invalid credentials
+    if (
+      errorMessage.includes("invalid login credentials") ||
+      errorMessage.includes("invalid_grant") ||
+      errorMessage.includes("invalid credentials") ||
+      errorMessage.includes("wrong password") ||
+      errorMessage.includes("incorrect password") ||
+      errorStatus === 400
+    ) {
+      return "Wrong username and password. Please try again or reset your password.";
+    }
+
+    // Check for email not confirmed
+    if (
+      errorMessage.includes("email not confirmed") ||
+      errorMessage.includes("email_not_confirmed")
+    ) {
+      return "Please confirm your email address before signing in.";
+    }
+
+    // Check for user not found
+    if (
+      errorMessage.includes("user not found") ||
+      errorMessage.includes("user_not_found")
+    ) {
+      return "No account found with this email address. Please check your email or sign up.";
+    }
+
+    // Generic fallback
+    return "Wrong username and password. Please try again or reset your password.";
+  };
+
+  try {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const returnUrl = (formData.get("returnUrl") as string) || "/";
+
+    if (!email || !password) {
+      return { error: "Email and password are required." };
+    }
+
+    const supabase = await createClient();
+
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !authData.user) {
+      const friendlyMessage = getAuthErrorMessage(error);
+      return { error: friendlyMessage };
+    }
+
+    // Redirect on success
+    redirect(returnUrl);
+  } catch (err) {
+    // If redirect throws (Next.js redirect), re-throw it
+    if (err && typeof err === "object" && "digest" in err) {
+      throw err;
+    }
+    
+    // Handle other errors
+    const friendlyMessage = getAuthErrorMessage(err);
+    return { error: friendlyMessage };
+  }
 }
