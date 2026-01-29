@@ -74,6 +74,22 @@ export * from './multi-tenancy';
 export * from './billing';
 
 // ============================================================================
+// 🔌 PROVIDERS (ROUTING/POLICY)
+// ============================================================================
+/**
+ * Provider routing/policy helpers (routing only, no secrets).
+ *
+ * Runtime apps (portal/dashboard) keep provider API keys in Vercel env and can
+ * read non-secret routing decisions from Staff Supabase.
+ */
+export * from './providers';
+
+// ============================================================================
+// 🧰 SUPPORT (IMPERSONATION, TOOLING)
+// ============================================================================
+export * from './support';
+
+// ============================================================================
 // 🔒 PERMISSIONS DOMAIN
 // ============================================================================
 /**

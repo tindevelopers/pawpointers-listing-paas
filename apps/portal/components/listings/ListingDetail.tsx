@@ -4,6 +4,7 @@ import { useState } from "react";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { ListingMap } from "./ListingMap";
+import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -322,6 +323,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                     </p>
                   </div>
                 ))}
+              </div>
+
+              {/* Review Form */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Write a Review</h3>
+                <AuthenticatedReviewForm 
+                  entityId={listing.id}
+                  listingId={listing.id}
+                  onSubmit={async (reviewId) => {
+                    console.log('[ListingDetail] Review submitted:', reviewId);
+                    // Show success message and refresh reviews after a short delay
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 2000);
+                  }}
+                />
               </div>
             </div>
           )}

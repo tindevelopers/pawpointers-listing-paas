@@ -137,6 +137,7 @@ export const mainNavItems: NavItem[] = [
       { name: "Organization Admins", path: "/saas/admin/system-admin/organization-admins" },
       { name: "API Configuration", path: "/saas/admin/system-admin/api-configuration" },
       { name: "AI Integration", path: "/saas/admin/system-admin/ai-integration" },
+      { name: "Review Moderation", path: "/saas/admin/reviews/moderation" },
       { name: "Multi-Tenant", path: "/multi-tenant", new: true },
       {
         name: "Subscriptions",

@@ -242,6 +242,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reviews
 export async function POST(request: NextRequest) {
+  console.log('[API /api/reviews POST] Request received');
   try {
     // Create Supabase client
     const cookieStore = await cookies();
@@ -260,9 +261,12 @@ export async function POST(request: NextRequest) {
     );
 
     // Get current user
+    console.log('[API /api/reviews POST] Checking authentication...');
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('[API /api/reviews POST] Auth result:', { user: user?.id, error: authError });
     
     if (authError || !user) {
+      console.error('[API /api/reviews POST] Unauthorized:', authError);
       return NextResponse.json<ApiResponse<Review>>(
         {
           data: null as unknown as Review,
@@ -277,16 +281,20 @@ export async function POST(request: NextRequest) {
 
     // Check if request is FormData (for photo uploads) or JSON
     const contentType = request.headers.get('content-type') || '';
+    console.log('[API /api/reviews POST] Content-Type:', contentType);
     let reviewData: ReviewFormData;
 
     if (contentType.includes('multipart/form-data')) {
+      console.log('[API /api/reviews POST] Parsing FormData...');
       const formData = await request.formData();
       const entityId = formData.get('entityId') || formData.get('listingId');
       const rating = formData.get('rating');
       const comment = formData.get('comment') || formData.get('content');
       const photos = formData.getAll('photos[]') as File[];
+      console.log('[API /api/reviews POST] FormData parsed:', { entityId, rating, comment, photoCount: photos.length });
 
       if (!entityId || !rating) {
+        console.error('[API /api/reviews POST] Validation failed: missing entityId or rating');
         return NextResponse.json<ApiResponse<Review>>(
           {
             data: null as unknown as Review,
@@ -307,12 +315,16 @@ export async function POST(request: NextRequest) {
         photos: photos.length > 0 ? photos : undefined,
       };
     } else {
+      console.log('[API /api/reviews POST] Parsing JSON...');
       const body = await request.json();
+      console.log('[API /api/reviews POST] JSON body:', body);
       reviewData = body;
     }
 
     const entityId = reviewData.entityId || reviewData.listingId;
+    console.log('[API /api/reviews POST] Review data:', { entityId, rating: reviewData.rating, hasComment: !!reviewData.comment });
     if (!entityId || !reviewData.rating) {
+      console.error('[API /api/reviews POST] Validation failed: missing entityId or rating in reviewData');
       return NextResponse.json<ApiResponse<Review>>(
         {
           data: null as unknown as Review,
@@ -326,14 +338,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already reviewed this listing
-    const { data: existingReview } = await supabase
+    console.log('[API /api/reviews POST] Checking for existing review...');
+    const { data: existingReview, error: existingError } = await supabase
       .from('reviews')
       .select('id')
       .eq('listing_id', entityId)
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
+
+    console.log('[API /api/reviews POST] Existing review check:', { existingReview, error: existingError });
 
     if (existingReview) {
+      console.warn('[API /api/reviews POST] Duplicate review detected');
       return NextResponse.json<ApiResponse<Review>>(
         {
           data: null as unknown as Review,
@@ -385,26 +401,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Create review
+    const insertData = {
+      listing_id: entityId,
+      user_id: user.id,
+      rating: reviewData.rating,
+      content: reviewData.comment,
+      title: reviewData.comment?.substring(0, 100), // Use first 100 chars as title
+      images: imageUrls,
+      status: 'pending', // Require moderation
+      reviewer_type: requestedReviewerType,
+      expert_domain: requestedReviewerType === 'expert' ? (reviewData.expertDomain || null) : null,
+      expert_profile_id: expertProfileId,
+      is_mystery_shopper: requestedReviewerType === 'expert' ? !!reviewData.isMysteryShopper : false,
+      expert_rubric: requestedReviewerType === 'expert' ? (reviewData.expertRubric || null) : null,
+    };
+    console.log('[API /api/reviews POST] Inserting review:', insertData);
     const { data: review, error: insertError } = await supabase
       .from('reviews')
-      .insert({
-        listing_id: entityId,
-        user_id: user.id,
-        rating: reviewData.rating,
-        content: reviewData.comment,
-        title: reviewData.comment?.substring(0, 100), // Use first 100 chars as title
-        images: imageUrls,
-        status: 'pending', // Require moderation
-        reviewer_type: requestedReviewerType,
-        expert_domain: requestedReviewerType === 'expert' ? (reviewData.expertDomain || null) : null,
-        expert_profile_id: expertProfileId,
-        is_mystery_shopper: requestedReviewerType === 'expert' ? !!reviewData.isMysteryShopper : false,
-        expert_rubric: requestedReviewerType === 'expert' ? (reviewData.expertRubric || null) : null,
-      })
+      .insert(insertData)
       .select()
       .single();
 
+    console.log('[API /api/reviews POST] Insert result:', { review, error: insertError });
+
     if (insertError) {
+      console.error('[API /api/reviews POST] Database error:', insertError);
       return NextResponse.json<ApiResponse<Review>>(
         {
           data: null as unknown as Review,
@@ -446,10 +467,47 @@ export async function POST(request: NextRequest) {
       status: review.status,
     };
 
+    console.log('[API /api/reviews POST] Review created successfully:', transformedReview.id);
+
+    // Trigger AI moderation asynchronously (don't wait for response)
+    // The database trigger has already created the moderation queue entry
+    if (process.env.MODERATION_ENABLED !== 'false') {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const edgeFunctionUrl = supabaseUrl 
+        ? `${supabaseUrl}/functions/v1/moderate-review`
+        : null;
+      
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (edgeFunctionUrl && serviceRoleKey) {
+        // Invoke Edge Function asynchronously (fire and forget)
+        fetch(edgeFunctionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({
+            review_id: review.id,
+            review_content: review.content,
+            review_rating: review.rating,
+            user_id: review.user_id,
+            listing_id: review.listing_id,
+          }),
+        }).catch((error) => {
+          console.error('[API /api/reviews POST] Failed to invoke moderation function:', error);
+          // Don't fail the request if moderation fails
+        });
+      } else {
+        console.warn('[API /api/reviews POST] Moderation enabled but Edge Function URL or Service Role Key not configured');
+      }
+    }
+
     return NextResponse.json<ApiResponse<Review>>({
       data: transformedReview,
     }, { status: 201 });
   } catch (error: any) {
+    console.error('[API /api/reviews POST] Exception caught:', error);
     return NextResponse.json<ApiResponse<Review>>(
       {
         data: null as unknown as Review,

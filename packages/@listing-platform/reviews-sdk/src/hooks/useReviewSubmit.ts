@@ -61,29 +61,38 @@ export function useReviewSubmit(
   }, []);
 
   const submitReview = useCallback(async (data: ReviewFormData): Promise<Review | null> => {
+    console.log('[useReviewSubmit] Starting review submission', { data });
     setIsSubmitting(true);
     setError(null);
 
     try {
       // Ensure we have an entityId
       const entityId = normalizeEntityId(data.entityId, data.listingId);
+      console.log('[useReviewSubmit] Normalized entityId:', entityId);
       
-      const response = await client.createReview({
+      const reviewData = {
         ...data,
         entityId,
-      });
+      };
+      console.log('[useReviewSubmit] Calling client.createReview with:', reviewData);
+      
+      const response = await client.createReview(reviewData);
+      console.log('[useReviewSubmit] Client response:', response);
 
       if (response.error) {
+        console.error('[useReviewSubmit] Error in response:', response.error);
         setError(response.error);
         options.onError?.(response.error);
         return null;
       }
 
       const review = response.data;
+      console.log('[useReviewSubmit] Review submitted successfully:', review);
       setSubmittedReview(review);
       options.onSuccess?.(review);
       return review;
     } catch (err) {
+      console.error('[useReviewSubmit] Exception caught:', err);
       const apiError: ApiError = {
         code: 'SUBMIT_ERROR',
         message: err instanceof Error ? err.message : 'Failed to submit review',
@@ -93,6 +102,7 @@ export function useReviewSubmit(
       return null;
     } finally {
       setIsSubmitting(false);
+      console.log('[useReviewSubmit] Submission finished');
     }
   }, [client, options]);
 

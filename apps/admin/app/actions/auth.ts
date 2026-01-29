@@ -298,6 +298,70 @@ export async function signUp(data: SignUpData) {
  * Sign in existing user
  */
 export async function signIn(data: SignInData) {
+  // Helper function to convert auth errors to user-friendly messages
+  const getAuthErrorMessage = (error: any): string => {
+    if (!error) {
+      return "Failed to sign in. Please check your credentials.";
+    }
+
+    const errorMessage = error.message?.toLowerCase() || "";
+    const errorStatus = error.status;
+
+    // Check for invalid credentials
+    if (
+      errorMessage.includes("invalid login credentials") ||
+      errorMessage.includes("invalid_grant") ||
+      errorMessage.includes("invalid credentials") ||
+      errorMessage.includes("wrong password") ||
+      errorMessage.includes("incorrect password") ||
+      errorStatus === 400
+    ) {
+      return "Wrong username and password. Please try again or reset your password.";
+    }
+
+    // Check for email not confirmed
+    if (
+      errorMessage.includes("email not confirmed") ||
+      errorMessage.includes("email_not_confirmed")
+    ) {
+      return "Please confirm your email address before signing in.";
+    }
+
+    // Check for user not found
+    if (
+      errorMessage.includes("user not found") ||
+      errorMessage.includes("user_not_found")
+    ) {
+      return "No account found with this email address. Please check your email or sign up.";
+    }
+
+    // Generic fallback
+    return "Wrong username and password. Please try again or reset your password.";
+  };
+
+  // If Staff Supabase is configured, prefer staff-only auth for the admin portal
+  if (process.env.NEXT_PUBLIC_STAFF_SUPABASE_URL && process.env.NEXT_PUBLIC_STAFF_SUPABASE_ANON_KEY) {
+    const { createStaffClient } = await import("./staff-auth");
+    const staff = await createStaffClient();
+
+    const { data: authData, error } = await staff.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error || !authData.user) {
+      const friendlyMessage = getAuthErrorMessage(error);
+      throw new Error(friendlyMessage);
+    }
+
+    await staff.auth.getUser();
+
+    return {
+      user: authData.user,
+      session: authData.session,
+    };
+  }
+
   const supabase = await createClient();
   const adminClient = createAdminClient();
 
@@ -310,7 +374,8 @@ export async function signIn(data: SignInData) {
 
   if (error || !authData.user) {
     console.error("[signIn] Auth error:", error);
-    throw error || new Error("Failed to sign in");
+    const friendlyMessage = getAuthErrorMessage(error);
+    throw new Error(friendlyMessage);
   }
 
   console.log("[signIn] Auth successful, user ID:", authData.user.id);
@@ -503,6 +568,15 @@ export async function signUpMember(data: SignUpMemberData) {
  * Sign out current user
  */
 export async function signOut() {
+  // Staff Supabase sign-out (preferred when configured)
+  if (process.env.NEXT_PUBLIC_STAFF_SUPABASE_URL && process.env.NEXT_PUBLIC_STAFF_SUPABASE_ANON_KEY) {
+    const { createStaffClient } = await import("./staff-auth");
+    const staff = await createStaffClient();
+    const { error } = await staff.auth.signOut({ scope: "global" });
+    if (error) throw error;
+    return;
+  }
+
   const supabase = await createClient();
   
   console.log("[signOut] Signing out user...");

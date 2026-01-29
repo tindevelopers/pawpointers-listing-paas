@@ -33,7 +33,27 @@ async function getContext() {
       ? { data: [] }
       : await supabase
           .from("reviews")
-          .select("id, listing_id, rating, title, content, status, owner_response, created_at, reviewer_type, expert_domain, is_mystery_shopper")
+          .select(`
+            id, 
+            listing_id, 
+            rating, 
+            title, 
+            content, 
+            status, 
+            owner_response, 
+            created_at, 
+            reviewer_type, 
+            expert_domain, 
+            is_mystery_shopper,
+            review_moderation_queue (
+              moderation_status,
+              ai_moderation_status,
+              ai_moderation_score,
+              bot_detection_score,
+              flagged_reason,
+              priority
+            )
+          `)
           .in("listing_id", listingIds)
           .order("created_at", { ascending: false });
 
@@ -150,9 +170,44 @@ export default async function ReviewsPage() {
                   <p className="text-xs text-gray-500">Rating: {review.rating} / 5</p>
                   <p className="mt-2 text-sm text-gray-700">{review.content}</p>
                 </div>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                  {review.status}
-                </span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    review.status === 'approved' 
+                      ? 'bg-green-100 text-green-700' 
+                      : review.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : review.status === 'rejected'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {review.status}
+                  </span>
+                  {review.review_moderation_queue && review.review_moderation_queue.length > 0 && (
+                    <div className="flex flex-col gap-1 text-xs">
+                      {review.review_moderation_queue[0].ai_moderation_status && (
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${
+                          review.review_moderation_queue[0].ai_moderation_status === 'approved'
+                            ? 'bg-blue-100 text-blue-700'
+                            : review.review_moderation_queue[0].ai_moderation_status === 'rejected'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          AI: {review.review_moderation_queue[0].ai_moderation_status}
+                        </span>
+                      )}
+                      {review.review_moderation_queue[0].moderation_status === 'pending' && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                          Awaiting Moderation
+                        </span>
+                      )}
+                      {review.review_moderation_queue[0].flagged_reason && (
+                        <span className="text-xs text-gray-500">
+                          Flagged: {review.review_moderation_queue[0].flagged_reason}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-4 space-y-2">

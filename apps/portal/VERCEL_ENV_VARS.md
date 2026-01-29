@@ -17,6 +17,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 ```
 
+### Staff Supabase Routing/Policy Store (server-only, non-secret config)
+
+Portal reads **provider routing/policies** (non-secret) from the Staff Supabase control plane.
+
+```
+STAFF_SUPABASE_URL=<your-staff-supabase-url>
+STAFF_SUPABASE_SERVICE_ROLE_KEY=<your-staff-supabase-service-role-key>
+```
+
 ### Builder.io Configuration (Optional)
 
 ```
@@ -45,6 +54,14 @@ OPENAI_API_KEY=<optional-fallback>
 ```
 NEXT_PUBLIC_SITE_URL=https://your-portal-domain.com
 REVALIDATION_SECRET=<your-revalidation-secret>
+```
+
+### Impersonation (verification; server-only)
+
+Used to verify admin-issued impersonation tokens in `/impersonate`:
+
+```
+IMPERSONATION_JWT_SECRET=<shared-with-admin>
 ```
 
 ## How to Set Environment Variables in Vercel

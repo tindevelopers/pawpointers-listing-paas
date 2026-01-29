@@ -35,7 +35,7 @@ export default function RootLayout({
     !!process.env.OPENAI_API_KEY;
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className={inter.className}>
         <ReviewsProviderWrapper>
           {children}

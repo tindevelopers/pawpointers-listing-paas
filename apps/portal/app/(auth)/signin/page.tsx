@@ -1,22 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "@/app/actions/auth";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
 const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
-/**
- * Sign In Page
- *
- * CUSTOMIZE: Integrate with your authentication provider
- * - Supabase Auth
- * - NextAuth.js
- * - Auth0
- * - Clerk
- */
-
-export default function SignInPage() {
+function SignInForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl") || "/";
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,17 +23,22 @@ export default function SignInPage() {
     setIsLoading(true);
     setError("");
 
-    // CUSTOMIZE: Implement your authentication logic here
-    // Example with Supabase:
-    // const { error } = await supabase.auth.signInWithPassword({ email, password });
-    // if (error) setError(error.message);
-    // else router.push('/dashboard');
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    if (returnUrl) {
+      formData.append("returnUrl", returnUrl);
+    }
 
-    // Placeholder for demo
-    setTimeout(() => {
+    const result = await signIn(formData);
+
+    if (result?.error) {
+      setError(result.error);
       setIsLoading(false);
-      setError("Authentication not configured. See CUSTOMIZE comments.");
-    }, 1000);
+    } else {
+      // Redirect is handled by the server action
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -179,7 +180,7 @@ export default function SignInPage() {
           <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
             Don&apos;t have an account?{" "}
             <Link
-              href="/signup"
+              href={returnUrl ? `/signup?returnUrl=${encodeURIComponent(returnUrl)}` : "/signup"}
               className="text-blue-600 hover:text-blue-500 font-medium"
             >
               Sign up
@@ -188,5 +189,17 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <SignInForm />
+    </Suspense>
   );
 }

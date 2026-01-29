@@ -86,7 +86,8 @@ export class ReviewsApiClient implements IReviewsApiClient {
 
   constructor(config: ReviewsApiConfig) {
     this.config = config;
-    this.fetchFn = config.fetchFn || fetch;
+    // Bind fetch to window to avoid "Illegal invocation" error
+    this.fetchFn = config.fetchFn || (typeof window !== 'undefined' ? window.fetch.bind(window) : fetch);
   }
 
   /**
@@ -227,11 +228,14 @@ export class ReviewsApiClient implements IReviewsApiClient {
    * Create a new review
    */
   async createReview(data: ReviewFormData): Promise<ApiResponse<Review>> {
+    console.log('[ReviewsApiClient] createReview called with:', data);
     // Use entityId, fall back to listingId for legacy compatibility
     const entityId = normalizeId(data.entityId, data.listingId);
+    console.log('[ReviewsApiClient] Normalized entityId:', entityId);
 
     // Handle file uploads with FormData
     if (data.photos && data.photos.length > 0) {
+      console.log('[ReviewsApiClient] Using FormData for photo uploads');
       const formData = new FormData();
       formData.append('entityId', entityId);
       formData.append('listingId', entityId); // Legacy support
@@ -242,6 +246,7 @@ export class ReviewsApiClient implements IReviewsApiClient {
       });
 
       const url = `${this.config.baseUrl}/api/reviews`;
+      console.log('[ReviewsApiClient] POSTing to:', url);
       const response = await this.fetchFn(url, {
         method: 'POST',
         headers: {
@@ -251,7 +256,9 @@ export class ReviewsApiClient implements IReviewsApiClient {
         body: formData,
       });
 
+      console.log('[ReviewsApiClient] Response status:', response.status, response.statusText);
       const json = await response.json();
+      console.log('[ReviewsApiClient] Response JSON:', json);
 
       if ('data' in json || 'error' in json) {
         return json as ApiResponse<Review>;
@@ -271,14 +278,16 @@ export class ReviewsApiClient implements IReviewsApiClient {
     }
 
     // JSON request for reviews without photos
+    const requestBody = {
+      entityId,
+      listingId: entityId, // Legacy support
+      rating: data.rating,
+      comment: data.comment,
+    };
+    console.log('[ReviewsApiClient] Using JSON request:', requestBody);
     return this.request<Review>('/api/reviews', {
       method: 'POST',
-      body: JSON.stringify({
-        entityId,
-        listingId: entityId, // Legacy support
-        rating: data.rating,
-        comment: data.comment,
-      }),
+      body: JSON.stringify(requestBody),
     });
   }
 

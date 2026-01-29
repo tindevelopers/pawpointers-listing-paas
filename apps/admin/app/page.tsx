@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/core/database/server";
+import { isStaffAuthEnabled, createStaffClient } from "@/app/actions/staff-auth";
 
 export default async function RootPage() {
   try {
-    const supabase = await createClient();
+    const supabase = isStaffAuthEnabled() ? await createStaffClient() : await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {

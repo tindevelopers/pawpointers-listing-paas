@@ -8,6 +8,7 @@ import { isFeatureEnabled } from "@/lib/taxonomy-config";
 // Conditional SDK imports
 import { ReviewsList, RatingDisplay } from "@listing-platform/reviews";
 import { Map, Marker } from "@listing-platform/maps";
+import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 
 interface TaxonomyListingProps {
   listing: Listing;
@@ -170,17 +171,37 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
           
           {/* Reviews Section */}
           {showReviews && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Reviews
-                </h2>
-                <RatingDisplay 
-                  rating={(listing as unknown as { rating_average?: number }).rating_average || 0} 
-                  showNumber
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Reviews
+                  </h2>
+                  <RatingDisplay 
+                    rating={(listing as unknown as { rating_average?: number }).rating_average || 0} 
+                    showNumber
+                  />
+                </div>
+                <ReviewsList entityId={listing.id} variant="default" />
+              </div>
+              
+              {/* Review Form */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Write a Review
+                </h3>
+                <AuthenticatedReviewForm 
+                  entityId={listing.id}
+                  listingId={listing.id}
+                  onSubmit={async (reviewId) => {
+                    console.log('[TaxonomyListing] Review submitted:', reviewId);
+                    // Show success message and refresh reviews after a short delay
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 2000);
+                  }}
                 />
               </div>
-              <ReviewsList entityId={listing.id} variant="default" />
             </div>
           )}
         </div>
