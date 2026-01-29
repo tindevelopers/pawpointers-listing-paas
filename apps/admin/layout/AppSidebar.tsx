@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -29,15 +29,9 @@ import {
   UserCircleIcon,
 } from "../icons";
 import SidebarWidget from "./SidebarWidget";
-
-type NavItem = {
-  name: string;
-  icon?: React.ReactNode;
-  path?: string;
-  new?: boolean;
-  pro?: boolean;
-  subItems?: (NavItem | { name: string; path: string; pro?: boolean; new?: boolean })[];
-};
+import type { NavItem } from "../config/navigation";
+import { getCurrentUserPermissions } from "@/app/actions/permissions";
+import type { Permission } from "@/core/permissions/permissions";
 
 // Use filtered navigation items based on program configuration
 // This allows forked repos to enable/disable programs via config/programs.config.ts
@@ -80,6 +74,7 @@ const navItems: NavItem[] = [
   {
     name: "Admin",
     icon: <UserCircleIcon />,
+    requiredRole: ["Platform Admin", "Organization Admin"],
     subItems: [
       { name: "User Management", path: "/saas/admin/entity/user-management" },
       { name: "Tenant Management", path: "/saas/admin/entity/tenant-management" },
@@ -99,6 +94,7 @@ const navItems: NavItem[] = [
   {
     name: "System Admin",
     icon: <LockIcon />,
+    requiredRole: ["Platform Admin"],
     subItems: [
       { name: "Organization Admins", path: "/saas/admin/system-admin/organization-admins" },
       { name: "API Configuration", path: "/saas/admin/system-admin/api-configuration" },
@@ -285,24 +281,36 @@ const navItems: NavItem[] = [
 const othersItems: NavItem[] = othersNavItems;
 const supportItems: NavItem[] = supportNavItems;
 
-const platformOnlySections = new Set([
-  "Admin",
-  "System Admin",
-  "SaaS",
-  "Billing & Plans",
-]);
-
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
   const { tenant, isLoading: isTenantLoading } = useTenant();
   const { branding } = useWhiteLabel();
   const [isMounted, setIsMounted] = useState(false);
-  const isPlatformAdmin = !isTenantLoading && !tenant;
   
   // Prevent hydration mismatch by only rendering dynamic content after mount
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  const [roleName, setRoleName] = useState<string | null>(null);
+  const [userPermissions, setUserPermissions] = useState<Permission[]>([]);
+
+  useEffect(() => {
+    let isActive = true;
+    (async () => {
+      try {
+        const result = await getCurrentUserPermissions();
+        if (!isActive) return;
+        setRoleName(result.role);
+        setUserPermissions(result.permissions ?? []);
+      } catch (error) {
+        console.error("[AppSidebar] Failed to load user permissions:", error);
+      }
+    })();
+    return () => {
+      isActive = false;
+    };
   }, []);
   
   // Use stable initial values during SSR to prevent hydration mismatch
@@ -312,16 +320,65 @@ const AppSidebar: React.FC = () => {
   const logoDarkUrl = branding.logo || "/images/logo/logo-dark.svg";
   const logoIconUrl = branding.favicon || "/images/logo/logo-icon.svg";
 
-  const filteredNavItems = navItems.filter(
-    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  const hasRoleAccess = (item: NavItem) => {
+    if (!item.requiredRole?.length) {
+      return true;
+    }
+    if (!roleName) {
+      return false;
+    }
+    return item.requiredRole.some((requiredRole) => {
+      if (requiredRole === roleName) {
+        return true;
+      }
+      if (roleName === "Platform Admin" && requiredRole === "Organization Admin") {
+        return true;
+      }
+      return false;
+    });
+  };
+
+  const hasPermissionAccess = (item: NavItem) => {
+    if (!item.requiredPermission?.length) {
+      return true;
+    }
+    if (!userPermissions.length) {
+      return false;
+    }
+    return item.requiredPermission.every((permission) =>
+      userPermissions.includes(permission as Permission)
+    );
+  };
+
+  const filterNavItemsByAccess = (items: NavItem[]): NavItem[] => {
+    return items.reduce<NavItem[]>((acc, item) => {
+      const filteredSubItems = item.subItems
+        ? filterNavItemsByAccess(item.subItems)
+        : undefined;
+      const canShow = hasRoleAccess(item) && hasPermissionAccess(item);
+      if (canShow || (filteredSubItems && filteredSubItems.length > 0)) {
+        acc.push({
+          ...item,
+          subItems: filteredSubItems,
+        });
+      }
+      return acc;
+    }, []);
+  };
+
+  const filteredNavItems = useMemo(
+    () => filterNavItemsByAccess(navItems),
+    [roleName, userPermissions]
   );
 
-  const filteredSupportItems = supportItems.filter(
-    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  const filteredSupportItems = useMemo(
+    () => filterNavItemsByAccess(supportItems),
+    [roleName, userPermissions]
   );
 
-  const filteredOtherItems = othersItems.filter(
-    (item) => isPlatformAdmin || !platformOnlySections.has(item.name)
+  const filteredOtherItems = useMemo(
+    () => filterNavItemsByAccess(othersItems),
+    [roleName, userPermissions]
   );
 
   const renderMenuItems = (
@@ -547,10 +604,10 @@ const AppSidebar: React.FC = () => {
     outerLoop: for (const menuType of ["main", "support", "others"] as const) {
       const items =
         menuType === "main"
-          ? navItems
+          ? filteredNavItems
           : menuType === "support"
-          ? supportItems
-          : othersItems;
+          ? filteredSupportItems
+          : filteredOtherItems;
       for (let index = 0; index < items.length; index++) {
         const nav = items[index];
         if (nav.subItems) {

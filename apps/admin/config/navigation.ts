@@ -35,9 +35,8 @@ export type NavItem = {
   new?: boolean;
   pro?: boolean;
   subItems?: NavItem[];
-  // Future: Add permission/role requirements
-  // requiredRole?: string[];
-  // requiredPermission?: string[];
+  requiredRole?: string[];
+  requiredPermission?: string[];
 };
 
 // Helper function to create icon components
@@ -123,6 +122,7 @@ export const mainNavItems: NavItem[] = [
   {
     name: "Admin",
     icon: createIcon(UserCircleIcon),
+    requiredRole: ["Platform Admin", "Organization Admin"],
     subItems: [
       { name: "User Management", path: "/saas/admin/entity/user-management" },
       { name: "Tenant Management", path: "/saas/admin/entity/tenant-management" },
@@ -133,6 +133,7 @@ export const mainNavItems: NavItem[] = [
   {
     name: "System Admin",
     icon: createIcon(LockIcon),
+    requiredRole: ["Platform Admin"],
     subItems: [
       { name: "Organization Admins", path: "/saas/admin/system-admin/organization-admins" },
       { name: "API Configuration", path: "/saas/admin/system-admin/api-configuration" },

@@ -19,6 +19,7 @@ const DEFAULT_PROFESSIONS = [
 ];
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3031";
 
 export default function MemberSignupForm() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function MemberSignupForm() {
           businessName: businessName || undefined,
           phoneNumber: phoneNumber || undefined,
         });
-        router.push("/bookings");
+        router.push(`${ADMIN_URL}/saas/dashboard`);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to sign up";
         setError(message);
