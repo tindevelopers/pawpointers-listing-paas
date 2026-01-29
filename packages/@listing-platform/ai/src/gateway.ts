@@ -98,9 +98,6 @@ export function getAIClient(): AIClientConfig {
   return _cached;
 }
 
-  _cached = null;
-}
-
 export function getEmbeddingConfig(): OpenAIConfig {
   const provider = process.env.AI_EMBEDDING_PROVIDER || process.env.AI_PROVIDER;
   return resolveConfig(provider);
