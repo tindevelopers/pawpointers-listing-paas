@@ -18,12 +18,12 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.11",
-    "ai": "^4.1.42",
-    "@listing-platform/knowledge-base": "workspace:*"
+    "@listing-platform/knowledge-base": "workspace:*",
+    "ai": "^5.0.52"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "@types/node": "^20"
+    "@types/node": "^20",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "@supabase/supabase-js": "^2.x"

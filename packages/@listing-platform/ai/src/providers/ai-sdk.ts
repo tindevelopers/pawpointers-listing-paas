@@ -8,14 +8,14 @@ export function createAiSdkProvider(): ChatProvider {
       const { chatModel, resolvedConfig } = getAIClient();
 
       const completion = await generateText({
-        model: chatModel,
+        model: chatModel as any,
         system: systemPrompt,
         messages: messages.map((message) => ({
           role: message.role,
           content: message.content,
         })),
         temperature: temperature ?? resolvedConfig.temperature,
-        maxTokens: maxTokens ?? resolvedConfig.maxTokens,
+        maxOutputTokens: maxTokens ?? resolvedConfig.maxTokens,
       });
 
       return {
@@ -27,14 +27,14 @@ export function createAiSdkProvider(): ChatProvider {
       const { chatModel, resolvedConfig } = getAIClient();
 
       const streamResult = await streamText({
-        model: chatModel,
+        model: chatModel as any,
         system: systemPrompt,
         messages: messages.map((message) => ({
           role: message.role,
           content: message.content,
         })),
         temperature: temperature ?? resolvedConfig.temperature,
-        maxTokens: maxTokens ?? resolvedConfig.maxTokens,
+        maxOutputTokens: maxTokens ?? resolvedConfig.maxTokens,
       });
 
       for await (const chunk of streamResult.textStream) {

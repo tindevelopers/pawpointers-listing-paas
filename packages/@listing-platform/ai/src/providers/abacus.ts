@@ -64,7 +64,7 @@ export function createAbacusProvider(): ChatProvider {
         );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as any;
 
       if (!data.success) {
         throw new Error(data.error || 'Abacus AI reported an error');

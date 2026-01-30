@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+
+  // Explicitly configure Turbopack to avoid webpack config conflict
+  turbopack: {},
   
   // TypeScript configuration - temporarily allow build errors for deployment
   typescript: {

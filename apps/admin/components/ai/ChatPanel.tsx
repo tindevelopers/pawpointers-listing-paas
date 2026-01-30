@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent } from "react";
-import { Message, useChat } from "ai/react";
+import { Message, useChat } from "@ai-sdk/react";
 import clsx from "clsx";
 
 type ToolInvocation = {

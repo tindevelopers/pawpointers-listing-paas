@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@tinadmin/core/database";
 import type {
   AvailabilitySlot,
   Booking,
@@ -15,13 +14,13 @@ import type {
   SyncResult,
 } from "./booking-provider-interface";
 
-type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
-type AvailabilityRow = Database["public"]["Tables"]["availability_slots"]["Row"];
+type BookingRow = Record<string, any>;
+type AvailabilityRow = Record<string, any>;
 
 export class LocalBookingProvider implements BookingProvider {
   constructor(
     private providerType: BookingProviderType,
-    private supabase: SupabaseClient<Database>
+    private supabase: SupabaseClient<any>
   ) {}
 
   get type(): BookingProviderType {
@@ -211,13 +210,13 @@ export class LocalBookingProvider implements BookingProvider {
 }
 
 export class GoHighLevelProvider extends LocalBookingProvider {
-  constructor(supabase: SupabaseClient<Database>) {
+  constructor(supabase: SupabaseClient<any>) {
     super("gohighlevel", supabase);
   }
 }
 
 export class CalComProvider extends LocalBookingProvider {
-  constructor(supabase: SupabaseClient<Database>) {
+  constructor(supabase: SupabaseClient<any>) {
     super("calcom", supabase);
   }
 }

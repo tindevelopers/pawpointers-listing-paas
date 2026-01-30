@@ -3,6 +3,11 @@ import { embed, embedMany } from 'ai';
 import type { OpenAIConfig } from './types';
 import { getAIClient, getEmbeddingConfig, resetAIClientCache } from './gateway';
 
+type EmbeddingProvider = {
+  embed: (text: string) => Promise<number[]>;
+  embedMany: (texts: string[]) => Promise<number[][]>;
+};
+
 /**
  * OpenAI Embeddings
  */
@@ -20,7 +25,7 @@ export function getOpenAIConfig(): OpenAIConfig {
 export async function generateEmbedding(text: string): Promise<number[]> {
   const { embeddingModel } = getAIClient();
   const result = await embed({
-    model: embeddingModel,
+    model: embeddingModel as any,
     value: text,
   });
   return result.embedding;
@@ -34,7 +39,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 
   const { embeddingModel } = getAIClient();
   const result = await embedMany({
-    model: embeddingModel,
+    model: embeddingModel as any,
     values: texts,
   });
 
@@ -51,7 +56,9 @@ export function resetClient(): void {
 /**
  * Adapter: create an embedding provider compatible with @listing-platform/knowledge-base
  */
-export function createOpenAIEmbeddingProvider(configOverride?: Partial<OpenAIConfig>) {
+export function createOpenAIEmbeddingProvider(
+  configOverride?: Partial<OpenAIConfig>
+): EmbeddingProvider {
   return {
     embed: async (text: string) => {
       if (!configOverride) return generateEmbedding(text);
@@ -60,7 +67,7 @@ export function createOpenAIEmbeddingProvider(configOverride?: Partial<OpenAICon
       const merged: OpenAIConfig = { ...baseConfig, ...configOverride };
       const client = createOverrideClient(merged);
       const result = await embed({
-        model: client.embeddingModel,
+        model: client.embeddingModel as any,
         value: text,
       });
       return result.embedding;
@@ -73,7 +80,7 @@ export function createOpenAIEmbeddingProvider(configOverride?: Partial<OpenAICon
       const merged: OpenAIConfig = { ...baseConfig, ...configOverride };
       const client = createOverrideClient(merged);
       const result = await embedMany({
-        model: client.embeddingModel,
+        model: client.embeddingModel as any,
         values: texts,
       });
       return result.embeddings;
