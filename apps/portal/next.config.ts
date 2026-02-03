@@ -45,11 +45,11 @@ const nextConfig: NextConfig = {
   
   // Enable compression
   compress: true,
-  
+
   // Output configuration for static export (optional)
   // Note: 'standalone' is for production builds only, not dev mode
   // output: 'standalone',
-  
+
   // Bundle optimization for consumer portal
   // Temporarily disabled due to Next.js 15.5.9 bug: expandNextJsTemplate is not a function
   // experimental: {
@@ -60,7 +60,17 @@ const nextConfig: NextConfig = {
   //     "@builder.io/react",
   //   ],
   // },
-  
+
+  // Turbopack configuration for Next.js 16+
+  turbopack: {
+    resolveAlias: {
+      '@tinadmin/core': '../../packages/@tinadmin/core/src',
+      '@tinadmin/ui-consumer': '../../packages/@tinadmin/ui-consumer/src',
+      '@tinadmin/config': '../../packages/@tinadmin/config/src',
+      '@/core': '../../packages/@tinadmin/core/src',
+    },
+  },
+
   // Webpack configuration
   webpack(config, { isServer }) {
     config.module.rules.push({
