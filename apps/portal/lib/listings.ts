@@ -133,18 +133,33 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
       return null;
     }
 
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
     return {
-      id: data.id,
-      slug: data.slug,
-      title: data.title,
-      description: data.description,
-      price: data.price,
-      images: normalizeImageUrls(data.images),
-      category: data.category,
-      location: data.location,
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: normalizeImageUrls(listingData.images),
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
     };
   } catch (error) {
     console.error('Error fetching listing:', error);
@@ -177,18 +192,33 @@ export async function getListingById(id: string): Promise<Listing | null> {
       return null;
     }
 
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
     return {
-      id: data.id,
-      slug: data.slug,
-      title: data.title,
-      description: data.description,
-      price: data.price,
-      images: data.images || [],
-      category: data.category,
-      location: data.location,
-      status: data.status,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: listingData.images || [],
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
     };
   } catch (error) {
     console.error('Error fetching listing:', error);
