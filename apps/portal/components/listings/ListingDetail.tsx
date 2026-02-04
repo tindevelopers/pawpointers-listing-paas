@@ -577,6 +577,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         listingTitle={listing.title}
+        isLoggedIn={true}
       />
     </div>
   );
