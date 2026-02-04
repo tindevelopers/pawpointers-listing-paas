@@ -373,8 +373,16 @@ export default async function HomePage() {
         </section>
 
         {/* CTA Section - Service Booking Focus */}
-        <section className="py-16 lg:py-24 bg-gradient-to-r from-orange-500 to-cyan-500">
-          <div className="container mx-auto px-4 text-center">
+        <section
+          className="py-16 lg:py-24 relative bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1587300411207-02f3e37f6f40?w=1200&h=600&fit=crop')`,
+          }}
+        >
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black/50 z-0"></div>
+
+          <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
               Ready to Find Your Perfect Service Provider?
             </h2>
