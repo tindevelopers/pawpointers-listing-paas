@@ -27,6 +27,8 @@ export interface Listing {
     lat?: number;
     lng?: number;
   };
+  phone?: string;
+  services?: string[];
   status: 'active' | 'pending' | 'sold' | 'archived';
   createdAt: string;
   updatedAt: string;
