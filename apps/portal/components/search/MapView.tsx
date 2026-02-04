@@ -206,28 +206,13 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
                       {listing.title}
                     </h3>
 
-                    {/* Location and Rating */}
+                    {/* Location */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
                         <span>📍</span>
                         <span className="text-sm">{listing.location?.city || 'Location'}</span>
                       </div>
-                      {listing.rating && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {listing.rating.toFixed(1)}
-                          </span>
-                          <span className="text-yellow-400">★</span>
-                        </div>
-                      )}
                     </div>
-
-                    {/* Reviews */}
-                    {listing.reviewCount && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                        {listing.reviewCount} {listing.reviewCount === 1 ? 'review' : 'reviews'}
-                      </p>
-                    )}
 
                     {/* Description Preview */}
                     {listing.description && (
