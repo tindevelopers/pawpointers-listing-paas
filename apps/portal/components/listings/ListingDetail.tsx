@@ -5,6 +5,7 @@ import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { ListingMap } from "./ListingMap";
 import { BookingModal } from "./BookingModal";
+import { ChatModal } from "./ChatModal";
 
 interface ListingDetailProps {
   listing: Listing;
