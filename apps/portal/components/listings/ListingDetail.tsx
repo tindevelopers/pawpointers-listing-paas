@@ -16,6 +16,7 @@ type TabType = "overview" | "reviews" | "location" | "pricing";
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   // Generate consistent mock data based on listing ID
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
