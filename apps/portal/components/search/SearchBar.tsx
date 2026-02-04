@@ -30,6 +30,7 @@ export function SearchBar({
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [serviceType, setServiceType] = useState(searchParams.get("type") || "all");
+  const [location, setLocation] = useState(searchParams.get("location") || "");
   const [selectedDate, setSelectedDate] = useState(searchParams.get("date") || "");
 
   const handleSubmit = useCallback(
