@@ -341,16 +341,16 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
       updated_at: string;
     }>;
 
-    return (data || []).map((item) => ({
+    return listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
