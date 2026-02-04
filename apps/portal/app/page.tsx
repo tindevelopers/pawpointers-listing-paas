@@ -185,36 +185,65 @@ export default async function HomePage() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {[
-                { slug: 'pet-care-services', name: 'Pet Care Services' },
-                { slug: 'health-wellness', name: 'Health and Wellness' },
-                { slug: 'training-behavior', name: 'Training and Behavior' },
-                { slug: 'pet-retail', name: 'Pet Retail' },
-                { slug: 'specialist-services', name: 'Specialist Pet Services' },
-                { slug: 'rescue-community', name: 'Rescue & Community' },
-                { slug: 'events-experiences', name: 'Events & Experiences' },
+                {
+                  slug: 'pet-care-services',
+                  name: 'Pet Care Services',
+                  bgColor: 'bg-orange-100 dark:bg-orange-900',
+                  iconColor: 'text-orange-600 dark:text-orange-400',
+                  emoji: '🐾'
+                },
+                {
+                  slug: 'health-wellness',
+                  name: 'Health and Wellness',
+                  bgColor: 'bg-green-100 dark:bg-green-900',
+                  iconColor: 'text-green-600 dark:text-green-400',
+                  emoji: '❤️'
+                },
+                {
+                  slug: 'training-behavior',
+                  name: 'Training and Behavior',
+                  bgColor: 'bg-purple-100 dark:bg-purple-900',
+                  iconColor: 'text-purple-600 dark:text-purple-400',
+                  emoji: '🎯'
+                },
+                {
+                  slug: 'pet-retail',
+                  name: 'Pet Retail',
+                  bgColor: 'bg-pink-100 dark:bg-pink-900',
+                  iconColor: 'text-pink-600 dark:text-pink-400',
+                  emoji: '🛍️'
+                },
+                {
+                  slug: 'specialist-services',
+                  name: 'Specialist Pet Services',
+                  bgColor: 'bg-blue-100 dark:bg-blue-900',
+                  iconColor: 'text-blue-600 dark:text-blue-400',
+                  emoji: '⭐'
+                },
+                {
+                  slug: 'rescue-community',
+                  name: 'Rescue & Community',
+                  bgColor: 'bg-teal-100 dark:bg-teal-900',
+                  iconColor: 'text-teal-600 dark:text-teal-400',
+                  emoji: '🤝'
+                },
+                {
+                  slug: 'events-experiences',
+                  name: 'Events & Experiences',
+                  bgColor: 'bg-amber-100 dark:bg-amber-900',
+                  iconColor: 'text-amber-600 dark:text-amber-400',
+                  emoji: '🎉'
+                },
               ].map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/categories/${cat.slug}`}
-                  className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700"
+                  className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg hover:scale-105 transition-all border border-gray-100 dark:border-gray-700"
                 >
-                  {/* CUSTOMIZE: Add category icons */}
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-6 h-6 text-blue-600 dark:text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                      />
-                    </svg>
+                  <div className={`w-16 h-16 ${cat.bgColor} rounded-xl flex items-center justify-center mx-auto mb-4 text-3xl`}>
+                    {cat.emoji}
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
                     {cat.name}
                   </h3>
                 </Link>
