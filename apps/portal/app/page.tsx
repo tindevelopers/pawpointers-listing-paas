@@ -286,9 +286,9 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 max-w-5xl mx-auto">
               {/* Step 1: Search */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -303,12 +303,12 @@ export default async function HomePage() {
               </div>
 
               {/* Arrow - Desktop Only */}
-              <div className="hidden md:flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center flex-shrink-0">
                 <div className="text-orange-400 text-3xl">→</div>
               </div>
 
               {/* Step 2: Compare */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -323,12 +323,12 @@ export default async function HomePage() {
               </div>
 
               {/* Arrow - Desktop Only */}
-              <div className="hidden md:flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center flex-shrink-0">
                 <div className="text-cyan-400 text-3xl">→</div>
               </div>
 
               {/* Step 3: Book */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
