@@ -66,19 +66,28 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
-  const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
-  
-  throw new Error(
-    `Missing Supabase environment variables in apps/portal. ` +
-    `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
-    `Please create apps/portal/.env.local with these variables and restart the dev server.`
-  );
-}
+// Lazy initialization to avoid build-time errors when env vars are missing
+let supabaseClient: ReturnType<typeof createClient> | null = null;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function getSupabaseClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
+    const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
+    
+    throw new Error(
+      `Missing Supabase environment variables in apps/portal. ` +
+      `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
+      `Please create apps/portal/.env.local with these variables and restart the dev server.`
+    );
+  }
+  
+  if (!supabaseClient) {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  
+  return supabaseClient;
+}
 
 function normalizeImageUrls(images: string[] | null | undefined): string[] {
   if (!images || images.length === 0) return [];
@@ -105,7 +114,7 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
  */
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('slug', slug)
@@ -144,7 +153,7 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
  */
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('id', id)
@@ -188,7 +197,7 @@ export async function searchListings(
   const limit = params.limit ?? 12;
 
   try {
-    const query = supabase
+    const query = getSupabaseClient()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at', { count: 'exact' })
       .eq('status', 'active')
@@ -247,7 +256,7 @@ export async function getListingsByCategory(
  */
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('status', 'active')
@@ -285,7 +294,7 @@ export async function getCategories(): Promise<
   Array<{ slug: string; name: string; count: number }>
 > {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('categories_view')
       .select('slug, name, count')
       .order('name', { ascending: true });
@@ -323,7 +332,7 @@ export function formatPrice(price: number | undefined): string {
  */
 export async function getAllListingSlugs(): Promise<string[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
@@ -342,7 +351,7 @@ export async function getAllListingSlugs(): Promise<string[]> {
  */
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
