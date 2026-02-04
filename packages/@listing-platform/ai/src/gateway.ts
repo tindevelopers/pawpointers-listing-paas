@@ -65,7 +65,7 @@ function resolveConfig(providerEnv?: string): OpenAIConfig {
   };
 }
 
-  let _cached: AIClientConfig | null = null;
+let _cached: AIClientConfig | null = null;
 
 export function getAIClient(): AIClientConfig {
   if (_cached) return _cached;
@@ -96,9 +96,6 @@ export function getAIClient(): AIClientConfig {
   };
 
   return _cached;
-}
-
-  _cached = null;
 }
 
 export function getEmbeddingConfig(): OpenAIConfig {
