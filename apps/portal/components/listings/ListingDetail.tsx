@@ -19,6 +19,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   const rating = 3.5 + ((idHash % 20) / 10);
   const reviewCount = 10 + ((idHash * 7) % 150);
 
+  // Fallback mock data for phone and services if not provided
+  const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
+  const mockServicesByCategory: Record<string, string[]> = {
+    "pet-care-services": ["Dog Walking", "Pet Sitting", "Daycare"],
+    "health-wellness": ["Veterinary Care", "Vaccinations", "Wellness Exams"],
+    "training-behavior": ["Dog Training", "Behavior Consulting", "Obedience Classes"],
+    "pet-grooming": ["Full Grooming", "Bath & Wash", "Nail Trimming"],
+    "pet-retail": ["Pet Supplies", "Toys & Accessories", "Pet Food"],
+    "specialist-services": ["Pet Photography", "Pet Transportation", "Training Facility"],
+    "rescue-community": ["Rescue Services", "Adoption Services", "Foster Network"],
+    "events-experiences": ["Pet Classes", "Workshops", "Social Events"],
+  };
+
+  const phone = listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length];
+  const services = listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"];
+
   // Mock reviews data
   const mockReviews = [
     {
