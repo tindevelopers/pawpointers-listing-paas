@@ -89,46 +89,46 @@ const CATEGORIES = [
 ];
 
 // Placeholder listings data - in production, this would come from your database
-const SAMPLE_LISTINGS: Record<string, Array<{id: string; title: string; image: string; location: string}>> = {
+const SAMPLE_LISTINGS: Record<string, Array<{id: string; title: string; image: string; location: string; price: number; rating: number; reviewCount: number; type: string}>> = {
   "pet-care-services": [
-    { id: "1", title: "Professional Dog Walking", image: "https://images.unsplash.com/photo-1601758228606-3b12019ef328?w=400&h=300&fit=crop", location: "Downtown" },
-    { id: "2", title: "Trusted Pet Sitting Service", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Midtown" },
-    { id: "3", title: "Premium Pet Boarding", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Westside" },
+    { id: "1", title: "Professional Dog Walking", image: "https://images.unsplash.com/photo-1601758228606-3b12019ef328?w=400&h=300&fit=crop", location: "Downtown", price: 35, rating: 4.8, reviewCount: 145, type: "Pet Services" },
+    { id: "2", title: "Trusted Pet Sitting Service", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Midtown", price: 50, rating: 5.0, reviewCount: 89, type: "Pet Services" },
+    { id: "3", title: "Premium Pet Boarding", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Westside", price: 75, rating: 4.7, reviewCount: 212, type: "Pet Services" },
   ],
   "health-wellness": [
-    { id: "4", title: "Veterinary Clinic", image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop", location: "Medical District" },
-    { id: "5", title: "Pet Spa & Wellness", image: "https://images.unsplash.com/photo-1628840042765-356cda07f4ee?w=400&h=300&fit=crop", location: "Uptown" },
-    { id: "6", title: "Nutritionist Consultation", image: "https://images.unsplash.com/photo-1568705846914-96b305d2aaeb?w=400&h=300&fit=crop", location: "Downtown" },
+    { id: "4", title: "Veterinary Clinic", image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop", location: "Medical District", price: 150, rating: 5.0, reviewCount: 324, type: "Pet Services" },
+    { id: "5", title: "Pet Spa & Wellness", image: "https://images.unsplash.com/photo-1628840042765-356cda07f4ee?w=400&h=300&fit=crop", location: "Uptown", price: 85, rating: 4.9, reviewCount: 178, type: "Pet Services" },
+    { id: "6", title: "Nutritionist Consultation", image: "https://images.unsplash.com/photo-1568705846914-96b305d2aaeb?w=400&h=300&fit=crop", location: "Downtown", price: 100, rating: 4.6, reviewCount: 92, type: "Pet Services" },
   ],
   "training-behavior": [
-    { id: "7", title: "Professional Dog Training", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Central" },
-    { id: "8", title: "Behavior Specialist", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Northside" },
-    { id: "9", title: "Obedience Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Southside" },
+    { id: "7", title: "Professional Dog Training", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Central", price: 120, rating: 4.9, reviewCount: 267, type: "Pet Services" },
+    { id: "8", title: "Behavior Specialist", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Northside", price: 95, rating: 4.8, reviewCount: 156, type: "Pet Services" },
+    { id: "9", title: "Obedience Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Southside", price: 60, rating: 4.7, reviewCount: 203, type: "Pet Services" },
   ],
   "pet-grooming": [
-    { id: "10", title: "Luxury Pet Grooming Salon", image: "https://images.pexels.com/photos/6816837/pexels-photo-6816837.jpeg?w=400&h=300&fit=crop", location: "Uptown" },
-    { id: "11", title: "Express Grooming", image: "https://images.unsplash.com/photo-1530281700549-f282e0e62d16?w=400&h=300&fit=crop", location: "Downtown" },
-    { id: "12", title: "Mobile Grooming Service", image: "https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=400&h=300&fit=crop", location: "Citywide" },
+    { id: "10", title: "Premium Pet Grooming Salon", image: "https://images.pexels.com/photos/6816837/pexels-photo-6816837.jpeg?w=400&h=300&fit=crop", location: "Uptown", price: 75, rating: 4.9, reviewCount: 341, type: "Pet Services" },
+    { id: "11", title: "Express Grooming", image: "https://images.unsplash.com/photo-1530281700549-f282e0e62d16?w=400&h=300&fit=crop", location: "Downtown", price: 55, rating: 4.6, reviewCount: 198, type: "Pet Services" },
+    { id: "12", title: "Mobile Grooming Service", image: "https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=400&h=300&fit=crop", location: "Citywide", price: 85, rating: 4.8, reviewCount: 127, type: "Pet Services" },
   ],
   "pet-retail": [
-    { id: "13", title: "Pet Supply Store", image: "https://images.unsplash.com/photo-1623807917579-a6fca89f5f0d?w=400&h=300&fit=crop", location: "Shopping District" },
-    { id: "14", title: "Premium Pet Boutique", image: "https://images.unsplash.com/photo-1608848461950-0fed8e7a9b60?w=400&h=300&fit=crop", location: "Westside" },
-    { id: "15", title: "Organic Pet Food Store", image: "https://images.unsplash.com/photo-1585110396000-c9ffd4d4b3f4?w=400&h=300&fit=crop", location: "Eastside" },
+    { id: "13", title: "Pet Supply Store", image: "https://images.unsplash.com/photo-1623807917579-a6fca89f5f0d?w=400&h=300&fit=crop", location: "Shopping District", price: 0, rating: 4.7, reviewCount: 276, type: "Retail" },
+    { id: "14", title: "Premium Pet Boutique", image: "https://images.unsplash.com/photo-1608848461950-0fed8e7a9b60?w=400&h=300&fit=crop", location: "Westside", price: 0, rating: 4.9, reviewCount: 189, type: "Retail" },
+    { id: "15", title: "Organic Pet Food Store", image: "https://images.unsplash.com/photo-1585110396000-c9ffd4d4b3f4?w=400&h=300&fit=crop", location: "Eastside", price: 0, rating: 5.0, reviewCount: 156, type: "Retail" },
   ],
   "specialist-services": [
-    { id: "16", title: "Pet Photography Studio", image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=400&h=300&fit=crop", location: "Arts District" },
-    { id: "17", title: "Pet Transportation", image: "https://images.unsplash.com/photo-1602488113235-8a0b3fa23eb1?w=400&h=300&fit=crop", location: "Citywide" },
-    { id: "18", title: "Training Academy", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Industrial Area" },
+    { id: "16", title: "Pet Photography Studio", image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=400&h=300&fit=crop", location: "Arts District", price: 200, rating: 5.0, reviewCount: 94, type: "Pet Services" },
+    { id: "17", title: "Pet Transportation", image: "https://images.unsplash.com/photo-1602488113235-8a0b3fa23eb1?w=400&h=300&fit=crop", location: "Citywide", price: 65, rating: 4.7, reviewCount: 112, type: "Pet Services" },
+    { id: "18", title: "Training Academy", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Industrial Area", price: 150, rating: 4.9, reviewCount: 187, type: "Pet Services" },
   ],
   "rescue-community": [
-    { id: "19", title: "City Rescue Organization", image: "https://images.unsplash.com/photo-1541364537049-40949d8aced1?w=400&h=300&fit=crop", location: "Downtown" },
-    { id: "20", title: "Foster Care Network", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Community Center" },
-    { id: "21", title: "Adoption Sanctuary", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Southside" },
+    { id: "19", title: "City Rescue Organization", image: "https://images.unsplash.com/photo-1541364537049-40949d8aced1?w=400&h=300&fit=crop", location: "Downtown", price: 0, rating: 4.8, reviewCount: 421, type: "Non-profit" },
+    { id: "20", title: "Foster Care Network", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Community Center", price: 0, rating: 4.9, reviewCount: 238, type: "Non-profit" },
+    { id: "21", title: "Adoption Sanctuary", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Southside", price: 0, rating: 5.0, reviewCount: 356, type: "Non-profit" },
   ],
   "events-experiences": [
-    { id: "22", title: "Dog Training Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Community Center" },
-    { id: "23", title: "Pet Expo Organizer", image: "https://images.unsplash.com/photo-1634036055306-bac2a50f4500?w=400&h=300&fit=crop", location: "Convention Center" },
-    { id: "24", title: "Pet Social Meetups", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Park" },
+    { id: "22", title: "Dog Training Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Community Center", price: 45, rating: 4.8, reviewCount: 167, type: "Pet Services" },
+    { id: "23", title: "Pet Expo Organizer", image: "https://images.unsplash.com/photo-1634036055306-bac2a50f4500?w=400&h=300&fit=crop", location: "Convention Center", price: 25, rating: 4.6, reviewCount: 98, type: "Events" },
+    { id: "24", title: "Pet Social Meetups", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Park", price: 0, rating: 4.7, reviewCount: 134, type: "Community" },
   ],
 };
 
