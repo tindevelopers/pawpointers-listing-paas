@@ -408,14 +408,19 @@ export function formatPrice(price: number | undefined): string {
 export async function getAllListingSlugs(): Promise<string[]> {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const result = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
       .limit(10000);
 
+    const { data, error } = result;
+
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }
@@ -428,15 +433,20 @@ export async function getAllListingSlugs(): Promise<string[]> {
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const result = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    const { data, error } = result;
+
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }
