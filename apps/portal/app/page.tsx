@@ -403,6 +403,110 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Blog & Articles Section */}
+        <section className="py-16 lg:py-24 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Pet Care Tips & Resources
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Learn from pet care experts and stay updated with the latest tips, guides, and trends in pet services.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {/* Blog Card 1 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🐶</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-2">PET CARE</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    5 Essential Grooming Tips for Healthy Pets
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Discover the professional grooming techniques that keep your pets looking and feeling their best.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+
+              {/* Blog Card 2 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🏃</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 mb-2">TRAINING</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    How to Train Your Pet: Behavior Tips
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Expert training methods to help your pet develop good behavior and obedience skills.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+
+              {/* Blog Card 3 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-green-400 to-green-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🥗</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">NUTRITION</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    Pet Nutrition 101: What Your Pet Needs
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Learn about balanced diets and nutritional requirements for different types of pets.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+            </div>
+
+            <div className="text-center mt-10">
+              <a
+                href="/blog"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                View All Articles
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
       <Footer />
