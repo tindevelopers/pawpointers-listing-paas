@@ -199,45 +199,13 @@ export function AIChat({
 
         {/* Content Area */}
         {mode === 'search' ? (
-          // Search Mode
-          <div className="p-6 space-y-4">
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
-              Find services by searching for what you need
-            </p>
-            <form onSubmit={handleSearch} className="space-y-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={placeholder}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
-                autoFocus
-              />
-              <button
-                type="submit"
-                disabled={!input.trim()}
-                className="w-full bg-gradient-to-r from-orange-500 to-cyan-500 hover:from-orange-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-200"
-              >
-                Search Services
-              </button>
-            </form>
-            <div className="pt-4">
-              <p className="text-xs text-gray-500 dark:text-gray-500 mb-3 font-medium">Popular searches:</p>
-              <div className="flex flex-wrap gap-2">
-                {['Dog Walking', 'House Cleaning', 'Tutoring', 'Personal Training'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => {
-                      setInput(tag);
-                    }}
-                    className="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded-full transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+          // Search Mode - Full SearchBar
+          <div className="p-6">
+            <SearchBar
+              placeholder="Search services, professions, or providers..."
+              showFiltersButton={false}
+              className="bg-transparent"
+            />
           </div>
         ) : (
           // Chat Mode
