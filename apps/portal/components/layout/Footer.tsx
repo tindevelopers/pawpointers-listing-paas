@@ -27,6 +27,7 @@ export function Footer({ className = "" }: FooterProps) {
       { href: "/listings", label: "Browse Listings" },
       { href: "/search", label: "Search" },
       { href: "/categories", label: "Categories" },
+      { href: "/blog", label: "Blog" },
       { href: "/pricing", label: "Pricing" },
     ],
     company: [
