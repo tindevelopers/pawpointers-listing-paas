@@ -544,6 +544,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               <button
                 type="button"
+                onClick={() => setIsChatModalOpen(true)}
                 className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
