@@ -19,8 +19,11 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   const rating = 3.5 + ((idHash % 20) / 10);
   const reviewCount = 10 + ((idHash * 7) % 150);
 
-  // Fallback mock data for phone and services if not provided
+  // Fallback mock data for contact info and services if not provided
   const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
+  const mockEmails = ["contact@pawpointers.local", "info@pawpointers.local", "hello@pawpointers.local", "support@pawpointers.local"];
+  const mockWebsites = ["pawpointers.local", "services.pawpointers.local", "bookings.pawpointers.local"];
+
   const mockServicesByCategory: Record<string, string[]> = {
     "pet-care-services": ["Dog Walking", "Pet Sitting", "Daycare"],
     "health-wellness": ["Veterinary Care", "Vaccinations", "Wellness Exams"],
@@ -33,6 +36,8 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   };
 
   const phone = listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length];
+  const email = listing.email || mockEmails[idHash % mockEmails.length];
+  const website = listing.website || mockWebsites[idHash % mockWebsites.length];
   const services = listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"];
 
   // Mock reviews data
