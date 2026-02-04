@@ -184,7 +184,7 @@ export function AIChat({
             }}
             className={`flex-1 py-4 px-6 font-medium transition-colors text-center ${
               mode === 'chat'
-                ? 'bg-gradient-to-r from-orange-500 to-cyan-500 text-white'
+                ? 'bg-blue-600 text-white'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
             }`}
           >
