@@ -149,7 +149,7 @@ export function AIChat({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4">
+    <div className="w-full max-w-4xl mx-auto px-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
         {/* Mode Selector */}
         <div className="flex border-b dark:border-gray-700">
