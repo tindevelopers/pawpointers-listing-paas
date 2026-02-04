@@ -583,6 +583,14 @@ export function ListingDetail({ listing }: ListingDetailProps) {
         listingTitle={listing.title}
         isLoggedIn={true}
       />
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+        providerName={listing.title}
+        providerImage={listing.images?.[0]}
+      />
     </div>
   );
 }
