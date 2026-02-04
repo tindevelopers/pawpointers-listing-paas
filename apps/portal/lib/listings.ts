@@ -69,7 +69,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 // Lazy initialization to avoid build-time errors when env vars are missing
 let supabaseClient: ReturnType<typeof createClient> | null = null;
 
-function getSupabaseClient() {
+function getSupabaseClient(): ReturnType<typeof createClient> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
     const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
