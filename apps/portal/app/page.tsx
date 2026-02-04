@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar } from "@/components/search";
+import { AIChat } from "@/components/chat";
 import { ListingCard } from "@/components/listings";
 import { AccountCard } from "@/components/accounts/AccountCard";
 import { getFeaturedListings, getCategories, type Listing } from "@/lib/listings";
