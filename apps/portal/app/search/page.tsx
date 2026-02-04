@@ -25,6 +25,8 @@ function SearchContent() {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
 
   // Perform search when params change
   const performSearch = async () => {
