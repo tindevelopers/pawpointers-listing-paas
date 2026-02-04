@@ -78,7 +78,7 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
                   isSelected || isHovered ? 'scale-125' : 'scale-100'
                 }`}
               >
-                {/* Pin Icon - Paw */}
+                {/* Pin Icon - Location Pin with Paw */}
                 <div
                   className={`relative transition-all duration-200 ${
                     isSelected
@@ -88,23 +88,30 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
                       : 'text-orange-400 drop-shadow'
                   }`}
                 >
-                  {/* SVG Paw Icon */}
+                  {/* SVG Location Pin with Paw Icon Inside */}
                   <svg
                     className="w-10 h-10"
-                    viewBox="0 0 24 24"
+                    viewBox="0 0 32 40"
                     fill="currentColor"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    {/* Main pad */}
-                    <ellipse cx="12" cy="18" rx="4" ry="5" />
-                    {/* Top left toe */}
-                    <ellipse cx="5.5" cy="10" rx="2.5" ry="3.5" />
-                    {/* Top center-left toe */}
-                    <ellipse cx="9" cy="6" rx="2.5" ry="3.5" />
-                    {/* Top center-right toe */}
-                    <ellipse cx="15" cy="6" rx="2.5" ry="3.5" />
-                    {/* Top right toe */}
-                    <ellipse cx="18.5" cy="10" rx="2.5" ry="3.5" />
+                    {/* Location pin shape */}
+                    <path d="M16 0C8.26801 0 2 6.268 2 14C2 22.8359 16 40 16 40C16 40 30 22.8359 30 14C30 6.268 23.732 0 16 0Z" fill="currentColor" />
+                    {/* White background for paw */}
+                    <circle cx="16" cy="13" r="6" fill="white" />
+                    {/* Paw icon inside pin */}
+                    <g transform="translate(16, 13) scale(0.6)">
+                      {/* Main pad */}
+                      <ellipse cx="0" cy="3" rx="2.5" ry="3" fill="currentColor" />
+                      {/* Top left toe */}
+                      <ellipse cx="-4" cy="-3" rx="1.5" ry="2.2" fill="currentColor" />
+                      {/* Top center-left toe */}
+                      <ellipse cx="-1.5" cy="-6" rx="1.5" ry="2.2" fill="currentColor" />
+                      {/* Top center-right toe */}
+                      <ellipse cx="1.5" cy="-6" rx="1.5" ry="2.2" fill="currentColor" />
+                      {/* Top right toe */}
+                      <ellipse cx="4" cy="-3" rx="1.5" ry="2.2" fill="currentColor" />
+                    </g>
                   </svg>
                 </div>
 
