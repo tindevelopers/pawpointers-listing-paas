@@ -5,7 +5,6 @@ import { Header, Footer } from "@/components/layout";
 import UserSignupForm from "@/components/auth/UserSignupForm";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
-const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
 export default function UserSignUpPage() {
   return (
