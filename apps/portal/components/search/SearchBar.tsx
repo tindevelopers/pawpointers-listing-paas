@@ -74,12 +74,13 @@ export function SearchBar({
           className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         >
           <option value="all">All Services</option>
-          <option value="pet-care">Pet Care</option>
-          <option value="tutoring">Tutoring</option>
-          <option value="cleaning">Cleaning</option>
-          <option value="repair">Repair & Maintenance</option>
-          <option value="consulting">Consulting</option>
-          <option value="health">Health & Wellness</option>
+          <option value="pet-care-services">Pet Care Services</option>
+          <option value="health-wellness">Health and Wellness</option>
+          <option value="training-behavior">Training and Behavior</option>
+          <option value="pet-retail">Pet Retail</option>
+          <option value="specialist-services">Specialist Pet Services</option>
+          <option value="rescue-community">Rescue & Community</option>
+          <option value="events-experiences">Events & Experiences</option>
         </select>
 
         {/* Search Input */}
