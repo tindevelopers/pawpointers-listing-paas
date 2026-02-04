@@ -251,34 +251,32 @@ function CategorySection({
 
   return (
     <section className="mb-16">
-      {/* Category Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-4xl">{category.emoji}</span>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {category.name}
-          </h2>
+      {/* Category Header with View All Button */}
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-4xl">{category.emoji}</span>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+              {category.name}
+            </h2>
+          </div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Browse {listings.length} featured service providers in this category
+          </p>
         </div>
-        <p className="text-gray-600 dark:text-gray-400">
-          Browse {listings.length} featured service providers in this category
-        </p>
+        <Link
+          href={`/categories/${category.id}`}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors whitespace-nowrap flex-shrink-0 mt-2"
+        >
+          View All
+        </Link>
       </div>
 
       {/* Listings Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.slice(0, 3).map((listing) => (
           <ListingCard key={listing.id} listing={listing} />
         ))}
-      </div>
-
-      {/* View All Button */}
-      <div className="text-center">
-        <Link
-          href={`/categories/${category.id}`}
-          className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          View All {category.name} Services
-        </Link>
       </div>
     </section>
   );
