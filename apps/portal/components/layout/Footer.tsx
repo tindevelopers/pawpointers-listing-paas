@@ -53,10 +53,9 @@ export function Footer({ className = "" }: FooterProps) {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">{PLATFORM_INITIAL}</span>
               </div>
-              <span className="font-bold text-xl text-white">
-                {/* CUSTOMIZE: Platform name */}
+              <p className="font-bold text-xl text-white">
                 {PLATFORM_NAME}
-              </span>
+              </p>
             </Link>
             <p className="text-sm text-gray-400">
               {/* CUSTOMIZE: Platform tagline */}
