@@ -337,11 +337,11 @@ export default function BlogPage() {
               <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
                 Many of our articles are written in collaboration with groomers, trainers,
                 vets, and pet care specialists listed on {PLATFORM_NAME}. That means
-                you're getting practical advice from people who work hands-on with animals every
+                you&apos;re getting practical advice from people who work hands-on with animals every
                 day.
               </p>
               <p className="text-lg text-gray-600 dark:text-gray-400">
-                We believe informed pet owners make happier pets — and we're here to help every
+                We believe informed pet owners make happier pets — and we&apos;re here to help every
                 step of the way.
               </p>
             </div>
@@ -393,7 +393,7 @@ export default function BlogPage() {
                 🐾 More Than a Blog
               </h2>
               <p className="text-lg lg:text-xl text-white/90 drop-shadow-md mb-8 max-w-2xl mx-auto">
-                Looking for a service for your pet? {PLATFORM_NAME} doesn't just give advice
+                Looking for a service for your pet? {PLATFORM_NAME} doesn&apos;t just give advice
                 — we help you find trusted professionals near you.
               </p>
               <Link href="/search">

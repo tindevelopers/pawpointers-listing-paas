@@ -369,7 +369,7 @@ export default function BlogPostPage() {
               Post Not Found
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-8">
-              The blog post you're looking for doesn't exist.
+              The blog post you&apos;re looking for doesn&apos;t exist.
             </p>
             <Link href="/blog">
               <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-all">
@@ -500,7 +500,7 @@ export default function BlogPostPage() {
               {relatedListings.length > 0 && (
                 <section className="mb-12">
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-                    🐾 Recommended Services for "{post.title}"
+                    🐾 Recommended Services for &quot;{post.title}&quot;
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 mb-8">
                     Found a topic that interests you? Here are trusted{" "}

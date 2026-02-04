@@ -61,13 +61,13 @@ export default function AboutPage() {
                     At {PLATFORM_NAME}, We Believe
                   </h3>
                   <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                    Pets aren't just animals — they're family. And just like any family member, they deserve the very best care, support, and services.
+                    Pets aren&apos;t just animals — they&apos;re family. And just like any family member, they deserve the very best care, support, and services.
                   </p>
                   <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
                     {PLATFORM_NAME} was created to make life easier for pet owners and more visible for the incredible professionals who dedicate their lives to animal wellbeing.
                   </p>
                   <p className="text-lg text-gray-600 dark:text-gray-400">
-                    We're building a trusted space where loving pet parents can quickly find reliable, high-quality services — and where passionate pet businesses can grow and connect with the community they serve.
+                    We&apos;re building a trusted space where loving pet parents can quickly find reliable, high-quality services — and where passionate pet businesses can grow and connect with the community they serve.
                   </p>
                 </div>
                 <div className="relative h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl">
@@ -184,10 +184,10 @@ export default function AboutPage() {
                   <div className="w-24 h-1 bg-gradient-to-r from-orange-500 to-cyan-500 mb-6"></div>
 
                   <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                    Whether you're looking for a gentle groomer, a reliable dog walker, a skilled trainer, or a specialist therapist, {PLATFORM_NAME} helps you find the right person for your pet's unique needs.
+                    Whether you&apos;re looking for a gentle groomer, a reliable dog walker, a skilled trainer, or a specialist therapist, {PLATFORM_NAME} helps you find the right person for your pet&apos;s unique needs.
                   </p>
                   <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                    We're here to make pet care simpler, safer, and more accessible — so you can spend less time searching and more time enjoying life with your furry (or feathered, or scaled!) companion.
+                    We&apos;re here to make pet care simpler, safer, and more accessible — so you can spend less time searching and more time enjoying life with your furry (or feathered, or scaled!) companion.
                   </p>
 
                   <Link
@@ -200,7 +200,7 @@ export default function AboutPage() {
                 <div className="relative h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl">
                   <Image
                     src="https://images.pexels.com/photos/6235021/pexels-photo-6235021.jpeg"
-                    alt="A veterinarian gently holds a dog's paw during a medical check-up"
+                    alt="A veterinarian gently holds a dog&apos;s paw during a medical check-up"
                     fill
                     className="object-cover"
                   />
@@ -218,7 +218,7 @@ export default function AboutPage() {
                 <div className="relative h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl">
                   <Image
                     src="https://images.pexels.com/photos/6816837/pexels-photo-6816837.jpeg"
-                    alt="A groomer trims a small dog's fur at a modern pet salon"
+                    alt="A groomer trims a small dog&apos;s fur at a modern pet salon"
                     fill
                     className="object-cover"
                   />
@@ -254,7 +254,7 @@ export default function AboutPage() {
                   </ul>
 
                   <p className="text-gray-600 dark:text-gray-400 mb-6 italic">
-                    When pet professionals thrive, pets receive better care — and that's a win for everyone.
+                    When pet professionals thrive, pets receive better care — and that&apos;s a win for everyone.
                   </p>
 
                   <Link
@@ -280,7 +280,7 @@ export default function AboutPage() {
                 We envision a world where every pet owner can easily access trusted care, and every dedicated pet professional gets the recognition they deserve.
               </p>
               <p className="text-lg lg:text-xl text-white/95 drop-shadow-md">
-                {PLATFORM_NAME} isn't just a directory — it's a growing community built on love for animals, respect for professionals, and a shared goal of better lives for pets everywhere.
+                {PLATFORM_NAME} isn&apos;t just a directory — it&apos;s a growing community built on love for animals, respect for professionals, and a shared goal of better lives for pets everywhere.
               </p>
             </div>
           </div>
@@ -294,7 +294,7 @@ export default function AboutPage() {
                 Join the {PLATFORM_NAME} Community
               </h2>
               <p className="text-xl text-gray-600 dark:text-gray-400 mb-12">
-                Whether you're a pet owner looking for trusted services or a professional ready to grow your business, we're here for you.
+                Whether you&apos;re a pet owner looking for trusted services or a professional ready to grow your business, we&apos;re here for you.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

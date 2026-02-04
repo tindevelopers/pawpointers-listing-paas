@@ -100,7 +100,7 @@ export default function PricingPage() {
                 Pricing for Pet Professionals
               </h1>
               <p className="text-lg lg:text-xl text-white/90 drop-shadow-md max-w-2xl mx-auto">
-                At <strong>{PLATFORM_NAME}</strong>, we're here to help your pet
+                At <strong>{PLATFORM_NAME}</strong>, we&apos;re here to help your pet
                 business get discovered, build trust, and grow — without
                 complicated contracts or hidden fees.
               </p>
@@ -113,7 +113,7 @@ export default function PricingPage() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <p className="text-lg lg:text-xl text-gray-700 dark:text-gray-300">
-                Whether you're just starting out or already fully booked, we have
+                Whether you&apos;re just starting out or already fully booked, we have
                 a plan that fits your stage.
               </p>
             </div>

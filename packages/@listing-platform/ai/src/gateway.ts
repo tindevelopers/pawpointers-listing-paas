@@ -103,3 +103,7 @@ export function getEmbeddingConfig(): OpenAIConfig {
   return resolveConfig(provider);
 }
 
+export function resetAIClientCache(): void {
+  _cached = null;
+}
+
