@@ -7,12 +7,33 @@ interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   listingTitle: string;
+  isLoggedIn?: boolean;
 }
 
-export function BookingModal({ isOpen, onClose, listingTitle }: BookingModalProps) {
-  const [isRegistering] = useState(false);
+export function BookingModal({ isOpen, onClose, listingTitle, isLoggedIn = true }: BookingModalProps) {
+  const [bookingStep, setBookingStep] = useState<"date" | "service" | "confirmation">("date");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [selectedService, setSelectedService] = useState("");
+  const [petName, setPetName] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
 
   if (!isOpen) return null;
+
+  // Services available for booking
+  const services = [
+    { id: "full-grooming", name: "Full Grooming", duration: "2 hours", price: "$85" },
+    { id: "bath-wash", name: "Bath & Wash", duration: "1 hour", price: "$45" },
+    { id: "nail-trim", name: "Nail Trimming", duration: "30 minutes", price: "$25" },
+    { id: "de-shedding", name: "De-shedding", duration: "1.5 hours", price: "$55" },
+  ];
+
+  // Available time slots
+  const timeSlots = [
+    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+    "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+    "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM"
+  ];
 
   return (
     <>
