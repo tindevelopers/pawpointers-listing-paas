@@ -12,6 +12,9 @@ const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
  * CUSTOMIZE: Add category-specific layouts, featured listings, or subcategories
  */
 
+// Force dynamic rendering to avoid build-time Supabase dependency
+export const dynamic = 'force-dynamic';
+
 interface CategoryPageProps {
   params: Promise<{ category: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -29,18 +32,6 @@ export async function generateMetadata({
     title: `${categoryName.charAt(0).toUpperCase() + categoryName.slice(1)} Listings | ${PLATFORM_NAME}`,
     description: `Browse all ${categoryName} listings. Find the best ${categoryName} options available.`,
   };
-}
-
-// Generate static paths for common categories
-export async function generateStaticParams() {
-  try {
-    const categories = await getCategories();
-    return categories.map((cat) => ({ category: cat.slug }));
-  } catch (error) {
-    console.error('Error generating static params for categories:', error);
-    // Return empty array - pages will be generated on-demand
-    return [];
-  }
 }
 
 export default async function CategoryPage({
