@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Header, Footer } from "@/components/layout";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
 const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
