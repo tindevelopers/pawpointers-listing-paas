@@ -114,7 +114,8 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
  */
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('slug', slug)
@@ -126,21 +127,23 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: normalizeImageUrls(data.images),
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      slug: data.slug,
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      images: normalizeImageUrls(data.images),
+      category: data.category,
+      location: data.location,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -153,7 +156,8 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
  */
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('id', id)
@@ -165,21 +169,23 @@ export async function getListingById(id: string): Promise<Listing | null> {
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: data.images || [],
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      slug: data.slug,
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      images: data.images || [],
+      category: data.category,
+      location: data.location,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -256,7 +262,8 @@ export async function getListingsByCategory(
  */
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('status', 'active')
@@ -294,7 +301,8 @@ export async function getCategories(): Promise<
   Array<{ slug: string; name: string; count: number }>
 > {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('categories_view')
       .select('slug, name, count')
       .order('name', { ascending: true });
@@ -332,7 +340,8 @@ export function formatPrice(price: number | undefined): string {
  */
 export async function getAllListingSlugs(): Promise<string[]> {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
@@ -351,7 +360,8 @@ export async function getAllListingSlugs(): Promise<string[]> {
  */
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
