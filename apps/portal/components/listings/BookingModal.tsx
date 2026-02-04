@@ -152,7 +152,7 @@ export function BookingModal({ isOpen, onClose, listingTitle, isLoggedIn = true 
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Select Service</h3>
 
-                    <div className="mb-6 space-y-3 max-h-48 overflow-y-auto pr-2">
+                    <div className="mb-6 space-y-3">
                       {services.map((service) => (
                         <div
                           key={service.id}
