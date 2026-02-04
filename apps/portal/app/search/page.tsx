@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar, FilterPanel, SearchResults } from "@/components/search";
+import { MapView } from "@/components/search/MapView";
 import { searchListings, type Listing, type ListingSearchParams } from "@/lib/listings";
 
 /**
