@@ -377,10 +377,22 @@ export default async function HomePage() {
           className="py-16 lg:py-24 relative bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url('https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2Fca43733afbef4fe48b924e8c765bbd96?format=webp&width=1200')`,
+            backgroundPosition: '50% 50%',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
           }}
         >
           {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-black/20 z-0"></div>
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              backgroundImage: 'url(https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2Fbded4c5ac5e24e1ea372e691e78572e4)',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'cover',
+            }}
+          ></div>
 
           <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
