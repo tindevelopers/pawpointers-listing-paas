@@ -318,8 +318,18 @@ export default function CategoriesPage() {
           </p>
         </div>
 
-        {/* Browse Category Cards */}
+        {/* Featured Listings by Category */}
         <div className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-12">
+            Featured Listings
+          </h2>
+          {CATEGORIES.map((category) => (
+            <CategorySection key={category.id} category={category} />
+          ))}
+        </div>
+
+        {/* Browse Category Cards */}
+        <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             All Categories
           </h2>
@@ -328,16 +338,6 @@ export default function CategoriesPage() {
               <CategoryCard key={category.id} category={category} />
             ))}
           </div>
-        </div>
-
-        {/* Featured Listings by Category */}
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-12">
-            Featured Listings
-          </h2>
-          {CATEGORIES.map((category) => (
-            <CategorySection key={category.id} category={category} />
-          ))}
         </div>
 
         {/* Bottom CTA */}
