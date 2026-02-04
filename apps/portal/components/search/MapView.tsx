@@ -1,0 +1,217 @@
+'use client';
+
+import { Listing } from '@/lib/listings';
+import { useState } from 'react';
+
+interface MapViewProps {
+  listings: Listing[];
+  selectedListingId?: string;
+  onListingSelect?: (listing: Listing) => void;
+}
+
+export function MapView({ listings, selectedListingId, onListingSelect }: MapViewProps) {
+  const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
+
+  // Generate mock coordinates for pins (in a real app, these would come from data)
+  const getCoordinatesForListing = (index: number) => {
+    // Create a scattered pattern of pins across the map
+    const baseLatitude = 40.7128;
+    const baseLongitude = -74.006;
+    const latOffset = (index % 5) * 0.01;
+    const lngOffset = Math.floor(index / 5) * 0.015;
+    
+    return {
+      lat: baseLatitude + latOffset - 0.02,
+      lng: baseLongitude + lngOffset - 0.05,
+      x: `${20 + (index % 5) * 15}%`,
+      y: `${15 + Math.floor(index / 5) * 20}%`,
+    };
+  };
+
+  return (
+    <div className="w-full h-[600px] rounded-2xl overflow-hidden shadow-lg bg-gray-100 dark:bg-gray-800 relative">
+      {/* Map Container - Placeholder for actual map integration */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-cyan-50 to-blue-50 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700">
+        {/* Map background with subtle grid */}
+        <div className="absolute inset-0 opacity-10">
+          <svg width="100%" height="100%" className="text-gray-400">
+            <defs>
+              <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="currentColor" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
+
+        {/* Map Center Marker */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="flex flex-col items-center gap-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded">
+              Center
+            </div>
+          </div>
+        </div>
+
+        {/* Paw Icon Pins */}
+        {listings.map((listing, index) => {
+          const coords = getCoordinatesForListing(index);
+          const isSelected = selectedListingId === listing.id;
+          const isHovered = hoveredListingId === listing.id;
+
+          return (
+            <div
+              key={listing.id}
+              className="absolute transform -translate-x-1/2 -translate-y-full cursor-pointer group"
+              style={{
+                left: coords.x,
+                top: coords.y,
+              }}
+              onMouseEnter={() => setHoveredListingId(listing.id)}
+              onMouseLeave={() => setHoveredListingId(null)}
+              onClick={() => onListingSelect?.(listing)}
+            >
+              {/* Paw Icon Pin */}
+              <div
+                className={`flex flex-col items-center transition-all duration-200 ${
+                  isSelected || isHovered ? 'scale-125' : 'scale-100'
+                }`}
+              >
+                {/* Pin Icon - Paw */}
+                <div
+                  className={`relative transition-all duration-200 ${
+                    isSelected
+                      ? 'text-orange-600 drop-shadow-lg'
+                      : isHovered
+                      ? 'text-orange-500 drop-shadow-md'
+                      : 'text-orange-400 drop-shadow'
+                  }`}
+                >
+                  {/* SVG Paw Icon */}
+                  <svg
+                    className="w-10 h-10"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    {/* Main pad */}
+                    <ellipse cx="12" cy="18" rx="4" ry="5" />
+                    {/* Top left toe */}
+                    <ellipse cx="5.5" cy="10" rx="2.5" ry="3.5" />
+                    {/* Top center-left toe */}
+                    <ellipse cx="9" cy="6" rx="2.5" ry="3.5" />
+                    {/* Top center-right toe */}
+                    <ellipse cx="15" cy="6" rx="2.5" ry="3.5" />
+                    {/* Top right toe */}
+                    <ellipse cx="18.5" cy="10" rx="2.5" ry="3.5" />
+                  </svg>
+                </div>
+
+                {/* Label on hover */}
+                {isHovered && (
+                  <div className="mt-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-lg whitespace-nowrap z-10 border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1">
+                      {listing.title}
+                    </p>
+                    {listing.price && (
+                      <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                        From £{listing.price}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-200 dark:border-gray-700 z-20">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Legend</h3>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <svg className="w-6 h-6 text-orange-400" viewBox="0 0 24 24" fill="currentColor">
+              <ellipse cx="12" cy="18" rx="4" ry="5" />
+              <ellipse cx="5.5" cy="10" rx="2.5" ry="3.5" />
+              <ellipse cx="9" cy="6" rx="2.5" ry="3.5" />
+              <ellipse cx="15" cy="6" rx="2.5" ry="3.5" />
+              <ellipse cx="18.5" cy="10" rx="2.5" ry="3.5" />
+            </svg>
+            <span className="text-xs text-gray-600 dark:text-gray-400">Service Provider</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span className="text-xs text-gray-600 dark:text-gray-400">You</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Selected Listing Preview */}
+      {selectedListingId && (
+        <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700 z-20">
+          {listings
+            .filter((l) => l.id === selectedListingId)
+            .map((listing) => (
+              <div key={listing.id}>
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2">
+                  {listing.title}
+                </h4>
+                <div className="flex gap-2">
+                  {listing.images && listing.images[0] && (
+                    <img
+                      src={listing.images[0]}
+                      alt={listing.title}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                      📍 {listing.location?.city || 'City'}
+                    </p>
+                    {listing.price && (
+                      <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                        From £{listing.price}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {listings.length === 0 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <svg
+            className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 20l-5.447-2.724A1 1 0 003 16.382V5.618a1 1 0 011.553-.894L9 7.711v12.289z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 20l5.447-2.724A1 1 0 0021 16.382V5.618a1 1 0 00-1.553-.894L15 7.711v12.289z"
+            />
+          </svg>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">No listings found</p>
+        </div>
+      )}
+
+      {/* Integration Notice */}
+      <div className="absolute top-4 left-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded text-xs font-medium">
+        Map integration pending (Mapbox/Google Maps)
+      </div>
+    </div>
+  );
+}
