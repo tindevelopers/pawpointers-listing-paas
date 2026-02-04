@@ -28,6 +28,8 @@ export interface Listing {
     lng?: number;
   };
   phone?: string;
+  email?: string;
+  website?: string;
   services?: string[];
   status: 'active' | 'pending' | 'sold' | 'archived';
   createdAt: string;
