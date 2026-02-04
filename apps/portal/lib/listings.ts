@@ -249,22 +249,38 @@ export async function searchListings(
     if (params.maxPrice) query.lte('price', params.maxPrice);
     if (params.sortBy) query.order(params.sortBy === 'date' ? 'created_at' : params.sortBy, { ascending: params.sortOrder === 'asc' });
 
-    const { data, error, count } = await query;
+    const result = await query;
+    const { data, error, count } = result;
 
     if (error) {
       throw new Error(`Failed to search listings: ${error.message}`);
     }
 
-    const listings = (data || []).map((item) => ({
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    const listings = listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -297,16 +313,33 @@ export async function getListingsByCategory(
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    const { data, error } = result;
+
     if (error) {
       throw new Error(`Failed to fetch featured listings: ${error.message}`);
     }
+
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
 
     return (data || []).map((item) => ({
       id: item.id,
