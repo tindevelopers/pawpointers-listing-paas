@@ -530,6 +530,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               <button
                 type="button"
+                onClick={() => setIsBookingModalOpen(true)}
                 className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2 hover:shadow-lg"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
