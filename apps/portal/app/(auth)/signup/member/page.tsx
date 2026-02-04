@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Header } from "@/components/layout/Header";
+import { Header, Footer } from "@/components/layout";
 import MemberSignupForm from "@/components/auth/MemberSignupForm";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Paw Pointers";
@@ -44,6 +44,9 @@ export default function MemberSignUpPage() {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
