@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Header, Footer } from "@/components/layout";
 import UserSignupForm from "@/components/auth/UserSignupForm";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
@@ -8,7 +9,9 @@ const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
 export default function UserSignUpPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -47,7 +50,8 @@ export default function UserSignUpPage() {
           </div>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }
-
