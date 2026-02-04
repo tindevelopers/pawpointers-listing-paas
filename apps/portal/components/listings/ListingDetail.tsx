@@ -247,7 +247,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                       </svg>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
-                    <p className="font-bold text-gray-900 dark:text-white">12 types</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{services.length} types</p>
                   </div>
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2">
