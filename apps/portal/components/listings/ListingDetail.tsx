@@ -196,6 +196,23 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   {listing.description}
                 </p>
 
+                {/* Services Provided */}
+                {listing.services && listing.services.length > 0 && (
+                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Services Provided</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {listing.services.map((service) => (
+                        <span
+                          key={service}
+                          className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium px-3 py-1.5 rounded-full"
+                        >
+                          {service}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quick Facts Grid */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
