@@ -130,6 +130,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           <div className="flex flex-col gap-2 md:flex-row md:gap-3">
             <button
               type="button"
+              onClick={() => setIsBookingModalOpen(true)}
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
