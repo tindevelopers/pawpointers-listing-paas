@@ -4,9 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 
-const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "PawPointers";
-const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
-
 /**
  * Sign Up Selection Page
  * Allows users to choose between consumer signup and service provider signup
@@ -19,18 +16,6 @@ export default function SignUpPage() {
       <Header />
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-2xl">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">{PLATFORM_INITIAL}</span>
-            </div>
-            <span className="font-bold text-2xl text-gray-900 dark:text-white">
-              {PLATFORM_NAME}
-            </span>
-          </Link>
-        </div>
-
         {/* Selection Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Consumer Signup Card */}
