@@ -169,15 +169,17 @@ export default function PricingPage() {
                       </div>
 
                       {/* CTA Button */}
-                      <button
-                        className={`w-full py-3 px-6 rounded-lg font-semibold mb-8 transition-all duration-300 ${
-                          tier.highlighted
-                            ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600"
-                        }`}
-                      >
-                        {tier.cta}
-                      </button>
+                      <Link href="/signup/member">
+                        <button
+                          className={`w-full py-3 px-6 rounded-lg font-semibold mb-8 transition-all duration-300 ${
+                            tier.highlighted
+                              ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600"
+                          }`}
+                        >
+                          {tier.cta}
+                        </button>
+                      </Link>
 
                       {/* Features */}
                       <div className="space-y-4">
