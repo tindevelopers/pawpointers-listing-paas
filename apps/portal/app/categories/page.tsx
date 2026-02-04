@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { Header, Footer } from "@/components/layout";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Paw Pointers";
 
 /**
- * Categories Index Page with Subcategories
- * Lists all available categories and their subcategories
+ * Categories Index Page with Sample Listings
+ * Lists all available categories, their subcategories, and sample listings
  */
 
 // PawPointers Categories with subcategories
@@ -88,6 +88,50 @@ const CATEGORIES = [
   },
 ];
 
+// Placeholder listings data - in production, this would come from your database
+const SAMPLE_LISTINGS: Record<string, Array<{id: string; title: string; image: string; location: string}>> = {
+  "pet-care-services": [
+    { id: "1", title: "Professional Dog Walking", image: "https://images.unsplash.com/photo-1601758228606-3b12019ef328?w=400&h=300&fit=crop", location: "Downtown" },
+    { id: "2", title: "Trusted Pet Sitting Service", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Midtown" },
+    { id: "3", title: "Premium Pet Boarding", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Westside" },
+  ],
+  "health-wellness": [
+    { id: "4", title: "Veterinary Clinic", image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop", location: "Medical District" },
+    { id: "5", title: "Pet Spa & Wellness", image: "https://images.unsplash.com/photo-1628840042765-356cda07f4ee?w=400&h=300&fit=crop", location: "Uptown" },
+    { id: "6", title: "Nutritionist Consultation", image: "https://images.unsplash.com/photo-1568705846914-96b305d2aaeb?w=400&h=300&fit=crop", location: "Downtown" },
+  ],
+  "training-behavior": [
+    { id: "7", title: "Professional Dog Training", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Central" },
+    { id: "8", title: "Behavior Specialist", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Northside" },
+    { id: "9", title: "Obedience Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Southside" },
+  ],
+  "pet-grooming": [
+    { id: "10", title: "Luxury Pet Grooming Salon", image: "https://images.pexels.com/photos/6816837/pexels-photo-6816837.jpeg?w=400&h=300&fit=crop", location: "Uptown" },
+    { id: "11", title: "Express Grooming", image: "https://images.unsplash.com/photo-1530281700549-f282e0e62d16?w=400&h=300&fit=crop", location: "Downtown" },
+    { id: "12", title: "Mobile Grooming Service", image: "https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=400&h=300&fit=crop", location: "Citywide" },
+  ],
+  "pet-retail": [
+    { id: "13", title: "Pet Supply Store", image: "https://images.unsplash.com/photo-1623807917579-a6fca89f5f0d?w=400&h=300&fit=crop", location: "Shopping District" },
+    { id: "14", title: "Premium Pet Boutique", image: "https://images.unsplash.com/photo-1608848461950-0fed8e7a9b60?w=400&h=300&fit=crop", location: "Westside" },
+    { id: "15", title: "Organic Pet Food Store", image: "https://images.unsplash.com/photo-1585110396000-c9ffd4d4b3f4?w=400&h=300&fit=crop", location: "Eastside" },
+  ],
+  "specialist-services": [
+    { id: "16", title: "Pet Photography Studio", image: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=400&h=300&fit=crop", location: "Arts District" },
+    { id: "17", title: "Pet Transportation", image: "https://images.unsplash.com/photo-1602488113235-8a0b3fa23eb1?w=400&h=300&fit=crop", location: "Citywide" },
+    { id: "18", title: "Training Academy", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Industrial Area" },
+  ],
+  "rescue-community": [
+    { id: "19", title: "City Rescue Organization", image: "https://images.unsplash.com/photo-1541364537049-40949d8aced1?w=400&h=300&fit=crop", location: "Downtown" },
+    { id: "20", title: "Foster Care Network", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Community Center" },
+    { id: "21", title: "Adoption Sanctuary", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Southside" },
+  ],
+  "events-experiences": [
+    { id: "22", title: "Dog Training Classes", image: "https://images.unsplash.com/photo-1633722715463-d30628cbc4c1?w=400&h=300&fit=crop", location: "Community Center" },
+    { id: "23", title: "Pet Expo Organizer", image: "https://images.unsplash.com/photo-1634036055306-bac2a50f4500?w=400&h=300&fit=crop", location: "Convention Center" },
+    { id: "24", title: "Pet Social Meetups", image: "https://images.unsplash.com/photo-1552053831-71594a27c62d?w=400&h=300&fit=crop", location: "Park" },
+  ],
+};
+
 // CategoryCard Component with expandable subcategories
 function CategoryCard({
   category,
@@ -160,6 +204,86 @@ function CategoryCard({
   );
 }
 
+// ListingCard Component
+function ListingCard({
+  listing,
+}: {
+  listing: (typeof SAMPLE_LISTINGS)[string][0];
+}) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700">
+      {/* Image */}
+      <div className="relative h-40 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+        <Image
+          src={listing.image}
+          alt={listing.title}
+          fill
+          className="object-cover"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="p-4">
+        <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 line-clamp-2">
+          {listing.title}
+        </h4>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          📍 {listing.location}
+        </p>
+        <Link
+          href={`/listings/${listing.id}`}
+          className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          View Details →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Category Section with Listings
+function CategorySection({
+  category,
+}: {
+  category: (typeof CATEGORIES)[0];
+}) {
+  const listings = SAMPLE_LISTINGS[category.id] || [];
+
+  return (
+    <section className="mb-16">
+      {/* Category Header */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-4xl">{category.emoji}</span>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            {category.name}
+          </h2>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400">
+          Browse {listings.length} featured service providers in this category
+        </p>
+      </div>
+
+      {/* Listings Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        {listings.slice(0, 3).map((listing) => (
+          <ListingCard key={listing.id} listing={listing} />
+        ))}
+      </div>
+
+      {/* View All Button */}
+      <div className="text-center">
+        <Link
+          href={`/categories/${category.id}`}
+          className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+        >
+          View All {category.name} Services
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function CategoriesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -190,68 +314,54 @@ export default function CategoriesPage() {
         </div>
 
         {/* Info Box */}
-        <div className="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="mb-12 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
           <p className="text-blue-900 dark:text-blue-200 text-sm">
-            <strong>💡 Tip:</strong> Click "Show Specialties" to see the specific services available in each category,
-            then click "Browse Services" to find local providers.
+            <strong>💡 Tip:</strong> Click "Show Specialties" to see specific services, or scroll down to see featured listings from each category.
           </p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {CATEGORIES.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </div>
-
-        {/* Alternative Display Options Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Other Ways to Browse
+        {/* Browse Category Cards */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            All Categories
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link
-              href="/search"
-              className="p-4 border-2 border-blue-200 dark:border-blue-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            >
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">🔍 Search by Keywords</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Search for specific services or pet professionals by name or specialty.
-              </p>
-            </Link>
-            <Link
-              href="/listings"
-              className="p-4 border-2 border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-            >
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">📋 View All Listings</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Browse all service providers and businesses in one comprehensive list.
-              </p>
-            </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {CATEGORIES.map((category) => (
+              <CategoryCard key={category.id} category={category} />
+            ))}
           </div>
         </div>
 
-        {/* Info Section */}
-        <div className="bg-gradient-to-r from-orange-50 to-cyan-50 dark:from-orange-900/20 dark:to-cyan-900/20 rounded-xl p-8 border border-orange-200 dark:border-orange-800">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-            🐾 Didn't find what you need?
+        {/* Featured Listings by Category */}
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-12">
+            Featured Listings
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {PLATFORM_NAME} is constantly growing! If you can't find a specific service, try using our search feature
-            or contact us to suggest a new category.
+          {CATEGORIES.map((category) => (
+            <CategorySection key={category.id} category={category} />
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="bg-gradient-to-r from-orange-50 to-cyan-50 dark:from-orange-900/20 dark:to-cyan-900/20 rounded-xl p-8 border border-orange-200 dark:border-orange-800 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            🐾 Looking for something specific?
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
+            Use our search feature to find exactly what you need, or browse all listings to discover more {PLATFORM_NAME} partners.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 justify-center">
             <Link
-              href="/"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              href="/search"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             >
-              Go to Home
+              Search Services
             </Link>
             <Link
-              href="/contact"
-              className="px-6 py-2 border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium rounded-lg transition-colors"
+              href="/listings"
+              className="px-6 py-3 border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium rounded-lg transition-colors"
             >
-              Contact Us
+              View All Listings
             </Link>
           </div>
         </div>
