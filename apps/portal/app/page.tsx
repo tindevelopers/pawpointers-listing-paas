@@ -147,6 +147,13 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* AI Chat & Search Interface */}
+        <section className="py-16 lg:py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <AIChat />
+          </div>
+        </section>
+
         {/* Featured Listings */}
         {featuredListings.length > 0 && (
           <section className="py-16 lg:py-24">
