@@ -63,37 +63,34 @@ export default async function HomePage() {
 
       <main className="flex-1">
         {/* Hero Section - Warm & Friendly */}
-        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-20 lg:py-32 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-16 lg:py-24 overflow-hidden">
           {/* Decorative background circles */}
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="mb-4 inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold">
-                ✨ Find Your Perfect Service Provider
+            <div className="max-w-4xl mx-auto">
+              {/* Header Content */}
+              <div className="text-center mb-12">
+                <div className="mb-4 inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold">
+                  ✨ Find Your Perfect Service Provider
+                </div>
+
+                <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-white drop-shadow-lg">
+                  Discover Amazing Services Near You
+                </h1>
+                <p className="text-lg lg:text-xl text-white/90 drop-shadow-md max-w-2xl mx-auto">
+                  Connect with trusted professionals and get the help you need. Browse, compare, and book with confidence.
+                </p>
               </div>
 
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-white drop-shadow-lg">
-                Discover Amazing Services Near You
-              </h1>
-              <p className="text-lg lg:text-xl text-white/90 mb-10 drop-shadow-md">
-                Connect with trusted professionals and get the help you need. Browse, compare, and book with confidence.
-              </p>
-
-              {/* Hero Search */}
-              <div className="max-w-2xl mx-auto mb-8">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-2 shadow-2xl">
-                  <SearchBar
-                    placeholder="Search services, professions, or providers..."
-                    showFiltersButton={false}
-                    className="bg-transparent"
-                  />
-                </div>
+              {/* AI Chat - Center Stage */}
+              <div className="mb-12">
+                <AIChat />
               </div>
 
               {/* Trust Signals */}
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-white/90 mb-8">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-white/90">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">⭐</span>
                   <span><strong>4.8/5</strong> avg rating</span>
@@ -109,25 +106,6 @@ export default async function HomePage() {
                   <span><strong>Verified & Trusted</strong></span>
                 </div>
               </div>
-
-              {/* Quick Category Links */}
-              {categories.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2">
-                  <span className="text-white/80 text-sm font-medium w-full mb-2">Popular services:</span>
-                  {categories.slice(0, 6).map((cat) => (
-                    <Link
-                      key={cat.slug}
-                      href={`/categories/${cat.slug}`}
-                      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:scale-105"
-                    >
-                      {cat.name}
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
