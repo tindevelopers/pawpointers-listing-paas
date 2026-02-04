@@ -172,55 +172,56 @@ export default async function HomePage() {
         )}
 
         {/* Categories Section */}
-        {categories.length > 0 && (
-          <section className="py-16 lg:py-24 bg-gray-50 dark:bg-gray-800">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  {/* CUSTOMIZE: Update section title */}
-                  Browse by Category
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  {/* CUSTOMIZE: Update section description */}
-                  Find listings organized by category.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/categories/${cat.slug}`}
-                    className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700"
-                  >
-                    {/* CUSTOMIZE: Add category icons */}
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <svg
-                        className="w-6 h-6 text-blue-600 dark:text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                      {cat.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {cat.count} listings
-                    </p>
-                  </Link>
-                ))}
-              </div>
+        <section className="py-16 lg:py-24 bg-gray-50 dark:bg-gray-800">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Browse by Category
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Find listings organized by category.
+              </p>
             </div>
-          </section>
-        )}
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[
+                { slug: 'pet-care-services', name: 'Pet Care Services' },
+                { slug: 'health-wellness', name: 'Health and Wellness' },
+                { slug: 'training-behavior', name: 'Training and Behavior' },
+                { slug: 'pet-retail', name: 'Pet Retail' },
+                { slug: 'specialist-services', name: 'Specialist Pet Services' },
+                { slug: 'rescue-community', name: 'Rescue & Community' },
+                { slug: 'events-experiences', name: 'Events & Experiences' },
+              ].map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/categories/${cat.slug}`}
+                  className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700"
+                >
+                  {/* CUSTOMIZE: Add category icons */}
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg
+                      className="w-6 h-6 text-blue-600 dark:text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    {cat.name}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Featured Accounts Showcase */}
         {featuredAccounts.length > 0 && (
