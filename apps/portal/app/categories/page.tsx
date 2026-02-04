@@ -326,6 +326,14 @@ export default function CategoriesPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             All Categories
           </h2>
+
+          {/* Info Box */}
+          <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-blue-900 dark:text-blue-200 text-sm">
+              <strong>💡 Tip:</strong> Click "Show Specialties" to see specific services in each category.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {CATEGORIES.map((category) => (
               <CategoryCard key={category.id} category={category} />
