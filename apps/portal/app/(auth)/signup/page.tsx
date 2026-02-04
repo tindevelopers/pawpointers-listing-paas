@@ -14,7 +14,7 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="w-full max-w-2xl">
         {/* Selection Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
