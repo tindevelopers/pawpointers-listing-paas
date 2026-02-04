@@ -35,6 +35,12 @@ export function BookingModal({ isOpen, onClose, listingTitle, isLoggedIn = true 
     "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM"
   ];
 
+  const handleBookingConfirm = () => {
+    // In a real app, this would submit the booking to the backend
+    alert(`Booking confirmed!\nService: ${selectedService}\nDate: ${selectedDate}\nTime: ${selectedTime}\nPet: ${petName}`);
+    onClose();
+  };
+
   return (
     <>
       {/* Backdrop */}
@@ -46,7 +52,7 @@ export function BookingModal({ isOpen, onClose, listingTitle, isLoggedIn = true 
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ${isLoggedIn ? "max-w-2xl" : "max-w-md"} w-full overflow-hidden`}>
           {/* Header */}
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-8 text-white">
             <button
