@@ -10,7 +10,7 @@ export default function UserSignUpPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="w-full max-w-md">
         {/* Form Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
