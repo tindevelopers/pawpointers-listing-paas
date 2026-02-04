@@ -571,6 +571,13 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        listingTitle={listing.title}
+      />
     </div>
   );
 }
