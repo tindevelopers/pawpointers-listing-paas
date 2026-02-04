@@ -51,6 +51,12 @@ export function SearchBar({
         params.delete("type");
       }
 
+      if (location.trim()) {
+        params.set("location", location.trim());
+      } else {
+        params.delete("location");
+      }
+
       if (selectedDate) {
         params.set("date", selectedDate);
       } else {
@@ -61,7 +67,7 @@ export function SearchBar({
 
       router.push(`/search?${params.toString()}`);
     },
-    [query, serviceType, selectedDate, router, searchParams]
+    [query, serviceType, location, selectedDate, router, searchParams]
   );
 
   return (
