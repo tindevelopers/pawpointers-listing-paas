@@ -89,11 +89,11 @@ const CATEGORIES = [
 ];
 
 // Placeholder listings data - in production, this would come from your database
-const SAMPLE_LISTINGS: Record<string, Array<{id: string; title: string; image: string; location: string; price: number; rating: number; reviewCount: number; type: string; phone: string; services: string[]}>> = {
+const SAMPLE_LISTINGS: Record<string, Array<{id: string; title: string; image: string; location: string; price: number; rating: number; reviewCount: number; type: string; phone: string; email: string; website: string; services: string[]}>> = {
   "pet-care-services": [
-    { id: "1", title: "Professional Dog Walking", image: "https://images.unsplash.com/photo-1601758228606-3b12019ef328?w=400&h=300&fit=crop", location: "Downtown", price: 35, rating: 4.8, reviewCount: 145, type: "Pet Services", phone: "(555) 123-4567", services: ["Dog Walking", "Pet Sitting", "Daycare"] },
-    { id: "2", title: "Trusted Pet Sitting Service", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Midtown", price: 50, rating: 5.0, reviewCount: 89, type: "Pet Services", phone: "(555) 234-5678", services: ["Pet Sitting", "Dog Walking", "Pet Feeding"] },
-    { id: "3", title: "Premium Pet Boarding", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Westside", price: 75, rating: 4.7, reviewCount: 212, type: "Pet Services", phone: "(555) 345-6789", services: ["Pet Boarding", "Daycare", "Grooming"] },
+    { id: "1", title: "Professional Dog Walking", image: "https://images.unsplash.com/photo-1601758228606-3b12019ef328?w=400&h=300&fit=crop", location: "Downtown", price: 35, rating: 4.8, reviewCount: 145, type: "Pet Services", phone: "(555) 123-4567", email: "walks@pawpointers.local", website: "pawwalks.local", services: ["Dog Walking", "Pet Sitting", "Daycare"] },
+    { id: "2", title: "Trusted Pet Sitting Service", image: "https://images.unsplash.com/photo-1587300411107-ec02753dc8b5?w=400&h=300&fit=crop", location: "Midtown", price: 50, rating: 5.0, reviewCount: 89, type: "Pet Services", phone: "(555) 234-5678", email: "sitting@pawpointers.local", website: "petsitting.local", services: ["Pet Sitting", "Dog Walking", "Pet Feeding"] },
+    { id: "3", title: "Premium Pet Boarding", image: "https://images.unsplash.com/photo-1578572994442-48f1cf4b9899?w=400&h=300&fit=crop", location: "Westside", price: 75, rating: 4.7, reviewCount: 212, type: "Pet Services", phone: "(555) 345-6789", email: "boarding@pawpointers.local", website: "petboarding.local", services: ["Pet Boarding", "Daycare", "Grooming"] },
   ],
   "health-wellness": [
     { id: "4", title: "Veterinary Clinic", image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=300&fit=crop", location: "Medical District", price: 150, rating: 5.0, reviewCount: 324, type: "Pet Services", phone: "(555) 456-7890", services: ["Veterinary Care", "Vaccinations", "Surgery", "Wellness Exams"] },
