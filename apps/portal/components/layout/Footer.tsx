@@ -90,7 +90,7 @@ export function Footer({ className = "" }: FooterProps) {
                     href={link.href}
                     className="text-sm hover:text-white transition-colors"
                   >
-                    {link.label}
+                    <p>{link.label}</p>
                   </Link>
                 </li>
               ))}
