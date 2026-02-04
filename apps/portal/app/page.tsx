@@ -380,7 +380,7 @@ export default async function HomePage() {
           }}
         >
           {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-black/50 z-0"></div>
+          <div className="absolute inset-0 bg-black/75 z-0"></div>
 
           <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
