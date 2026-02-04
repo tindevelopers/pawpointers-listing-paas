@@ -139,12 +139,24 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Legend</h3>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <svg className="w-6 h-6 text-orange-400" viewBox="0 0 24 24" fill="currentColor">
-              <ellipse cx="12" cy="18" rx="4" ry="5" />
-              <ellipse cx="5.5" cy="10" rx="2.5" ry="3.5" />
-              <ellipse cx="9" cy="6" rx="2.5" ry="3.5" />
-              <ellipse cx="15" cy="6" rx="2.5" ry="3.5" />
-              <ellipse cx="18.5" cy="10" rx="2.5" ry="3.5" />
+            <svg className="w-6 h-6 text-orange-400" viewBox="0 0 32 40" fill="currentColor">
+              {/* Location pin shape */}
+              <path d="M16 0C8.26801 0 2 6.268 2 14C2 22.8359 16 40 16 40C16 40 30 22.8359 30 14C30 6.268 23.732 0 16 0Z" fill="currentColor" />
+              {/* White background for paw */}
+              <circle cx="16" cy="13" r="6" fill="white" />
+              {/* Paw icon inside pin */}
+              <g transform="translate(16, 13) scale(0.6)">
+                {/* Main pad */}
+                <ellipse cx="0" cy="3" rx="2.5" ry="3" fill="currentColor" />
+                {/* Top left toe */}
+                <ellipse cx="-4" cy="-3" rx="1.5" ry="2.2" fill="currentColor" />
+                {/* Top center-left toe */}
+                <ellipse cx="-1.5" cy="-6" rx="1.5" ry="2.2" fill="currentColor" />
+                {/* Top center-right toe */}
+                <ellipse cx="1.5" cy="-6" rx="1.5" ry="2.2" fill="currentColor" />
+                {/* Top right toe */}
+                <ellipse cx="4" cy="-3" rx="1.5" ry="2.2" fill="currentColor" />
+              </g>
             </svg>
             <span className="text-xs text-gray-600 dark:text-gray-400">Service Provider</span>
           </div>
