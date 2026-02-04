@@ -115,12 +115,14 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('slug', slug)
       .eq('status', 'active')
       .maybeSingle();
+
+    const { data, error } = result;
 
     if (error) {
       console.error('Failed to fetch listing by slug:', error.message);
@@ -157,12 +159,14 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('id', id)
       .eq('status', 'active')
       .maybeSingle();
+
+    const { data, error } = result;
 
     if (error) {
       console.error('Failed to fetch listing by id:', error.message);
