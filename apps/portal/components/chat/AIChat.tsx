@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { SearchBar } from '@/components/search';
 
 /**
  * AI Chat Interface
