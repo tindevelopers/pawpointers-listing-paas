@@ -376,7 +376,7 @@ export default async function HomePage() {
         <section
           className="py-16 lg:py-24 relative bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1587300411207-02f3e37f6f40?w=1200&h=600&fit=crop')`,
+            backgroundImage: `url('https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2Fca43733afbef4fe48b924e8c765bbd96?format=webp&width=1200')`,
           }}
         >
           {/* Dark overlay for text readability */}
