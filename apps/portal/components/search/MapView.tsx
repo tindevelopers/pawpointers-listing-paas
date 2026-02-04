@@ -170,34 +170,82 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
 
       {/* Selected Listing Preview */}
       {selectedListingId && (
-        <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 max-w-xs border border-gray-200 dark:border-gray-700 z-20">
+        <div className="absolute top-4 right-4 max-w-sm z-20">
           {listings
             .filter((l) => l.id === selectedListingId)
             .map((listing) => (
-              <div key={listing.id}>
-                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2">
-                  {listing.title}
-                </h4>
-                <div className="flex gap-2">
-                  {listing.images && listing.images[0] && (
-                    <img
-                      src={listing.images[0]}
-                      alt={listing.title}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                      📍 {listing.location?.city || 'City'}
-                    </p>
+              <Link key={listing.id} href={`/listings/${listing.id}`}>
+                <div className="group bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1">
+                  {/* Image Section */}
+                  <div className="relative overflow-hidden bg-gray-200 dark:bg-gray-700 h-40">
+                    {listing.images && listing.images[0] ? (
+                      <img
+                        src={listing.images[0]}
+                        alt={listing.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <svg className="w-12 h-12 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6m0 0l-1.5-1.5A2 2 0 0017 2H7a2 2 0 00-1.5.5L4 6z" />
+                        </svg>
+                      </div>
+                    )}
+                    {/* Price Badge */}
                     {listing.price && (
-                      <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                      <div className="absolute top-3 right-3 bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                         From £{listing.price}
-                      </p>
+                      </div>
                     )}
                   </div>
+
+                  {/* Content Section */}
+                  <div className="p-4">
+                    {/* Title */}
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+                      {listing.title}
+                    </h3>
+
+                    {/* Location and Rating */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                        <span>📍</span>
+                        <span className="text-sm">{listing.location?.city || 'Location'}</span>
+                      </div>
+                      {listing.rating && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {listing.rating.toFixed(1)}
+                          </span>
+                          <span className="text-yellow-400">★</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reviews */}
+                    {listing.reviewCount && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        {listing.reviewCount} {listing.reviewCount === 1 ? 'review' : 'reviews'}
+                      </p>
+                    )}
+
+                    {/* Description Preview */}
+                    {listing.description && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                        {listing.description}
+                      </p>
+                    )}
+
+                    {/* View Details Button */}
+                    <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group/btn">
+                      <span>View Details</span>
+                      <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
         </div>
       )}
