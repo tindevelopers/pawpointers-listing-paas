@@ -30,7 +30,7 @@ export function Footer({ className = "" }: FooterProps) {
     ],
     company: [
       { href: "/about", label: "About Us" },
-      { href: "/contact", label: "Contact" },
+      { href: "/contact", label: "Contact Us" },
       { href: "/careers", label: "Careers" },
     ],
     legal: [
