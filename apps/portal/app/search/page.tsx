@@ -163,15 +163,61 @@ function SearchContent() {
           </div>
         )}
 
+        {/* View Toggle */}
+        {hasSearched && listings.length > 0 && (
+          <div className="mb-6 flex justify-end">
+            <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+              <button
+                onClick={() => {
+                  setViewMode('list');
+                  setSelectedListingId(null);
+                }}
+                className={`px-4 py-2 font-medium transition-all duration-200 flex items-center gap-2 ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                List
+              </button>
+              <div className="border-l border-gray-300 dark:border-gray-600"></div>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-4 py-2 font-medium transition-all duration-200 flex items-center gap-2 ${
+                  viewMode === 'map'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5z" />
+                </svg>
+                Map
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         {hasSearched ? (
-          <SearchResults
-            listings={listings}
-            total={total}
-            page={page}
-            totalPages={totalPages}
-            isLoading={isLoading}
-          />
+          viewMode === 'list' ? (
+            <SearchResults
+              listings={listings}
+              total={total}
+              page={page}
+              totalPages={totalPages}
+              isLoading={isLoading}
+            />
+          ) : (
+            <MapView
+              listings={listings}
+              selectedListingId={selectedListingId}
+              onListingSelect={(listing) => setSelectedListingId(listing.id)}
+            />
+          )
         ) : (
           <div className="text-center py-16">
             <div className="inline-block p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
