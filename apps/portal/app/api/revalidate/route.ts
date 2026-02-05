@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       
       for (const tag of tags) {
         try {
-          revalidateTag(tag);
+          revalidateTag(tag, 'max');
           revalidated.push(`tag:${tag}`);
         } catch (error) {
           console.error(`Failed to revalidate tag ${tag}:`, error);

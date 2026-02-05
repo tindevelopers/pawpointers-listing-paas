@@ -1,3 +1,4 @@
 .vercel
 # Builder.io env file
 .env.builder
+.env*.local

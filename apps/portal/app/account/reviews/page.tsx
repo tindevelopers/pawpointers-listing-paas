@@ -118,7 +118,7 @@ export default async function UserReviewsPage() {
       {reviews.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
           <p className="text-gray-600 dark:text-gray-400">
-            You haven't submitted any reviews yet.
+            You have not submitted any reviews yet.
           </p>
           <Link
             href="/"
@@ -237,7 +237,7 @@ export default async function UserReviewsPage() {
                     {review.status === "pending" && (
                       <div className="mt-4">
                         <p className="mb-2 text-xs text-gray-600 dark:text-gray-400">
-                          You can edit your review while it's pending moderation.
+                          You can edit your review while it&apos;s pending moderation.
                         </p>
                         <Link
                           href={`/listings/${review.listings?.slug || review.listing_id}#reviews`}

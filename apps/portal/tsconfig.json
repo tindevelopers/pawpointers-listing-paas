@@ -64,6 +64,9 @@
       ],
       "@listing-platform/maps": [
         "../../packages/@listing-platform/maps/src"
+      ],
+      "@listing-platform/knowledge-base": [
+        "../../packages/@listing-platform/knowledge-base/src"
       ]
     }
   },

@@ -57,24 +57,31 @@ export interface ListingSearchResult {
   totalPages: number;
 }
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
-  const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
-  
-  throw new Error(
-    `Missing Supabase environment variables in apps/portal. ` +
-    `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
-    `Please create apps/portal/.env.local with these variables and restart the dev server.`
-  );
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
+    const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
+    throw new Error(
+      `Missing Supabase environment variables in apps/portal. ` +
+      `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
+      `Please create apps/portal/.env.local with these variables and restart the dev server.`
+    );
+  }
+  if (!_supabase) _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _supabase;
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function hasSupabase(): boolean {
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
 
 function normalizeImageUrls(images: string[] | null | undefined): string[] {
   if (!images || images.length === 0) return [];
@@ -100,8 +107,9 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
  * Uses the public API endpoint (no auth required)
  */
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
+  if (!hasSupabase()) return null;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('slug', slug)
@@ -139,8 +147,9 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
  * Uses the public API endpoint (no auth required)
  */
 export async function getListingById(id: string): Promise<Listing | null> {
+  if (!hasSupabase()) return null;
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('id', id)
@@ -183,8 +192,12 @@ export async function searchListings(
   const page = params.page ?? 1;
   const limit = params.limit ?? 12;
 
+  if (!hasSupabase()) {
+    return { listings: [], total: 0, page, limit, totalPages: 0 };
+  }
+
   try {
-    const query = supabase
+    const query = getSupabase()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at', { count: 'exact' })
       .eq('status', 'active')
@@ -242,8 +255,9 @@ export async function getListingsByCategory(
  * Uses the public API endpoint (no auth required)
  */
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
+  if (!hasSupabase()) return [];
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('status', 'active')
@@ -280,8 +294,10 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
 export async function getCategories(): Promise<
   Array<{ slug: string; name: string; count: number }>
 > {
+  if (!hasSupabase()) return [];
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('categories_view')
       .select('slug, name, count')
       .order('name', { ascending: true });
@@ -318,8 +334,9 @@ export function formatPrice(price: number | undefined): string {
  * Used by generateStaticParams in page components
  */
 export async function getAllListingSlugs(): Promise<string[]> {
+  if (!hasSupabase()) return [];
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
@@ -337,8 +354,9 @@ export async function getAllListingSlugs(): Promise<string[]> {
  * Returns the most viewed listings for static generation at build time
  */
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
+  if (!hasSupabase()) return [];
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')

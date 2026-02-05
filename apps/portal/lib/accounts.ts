@@ -14,32 +14,40 @@ export interface FeaturedAccount {
   created_at: string;
 }
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
-  const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
-  
-  throw new Error(
-    `Missing Supabase environment variables in apps/portal. ` +
-    `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
-    `Please create apps/portal/.env.local with these variables and restart the dev server.`
-  );
+let _supabase: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
+    const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
+    throw new Error(
+      `Missing Supabase environment variables in apps/portal. ` +
+      `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
+      `Please create apps/portal/.env.local with these variables and restart the dev server.`
+    );
+  }
+  if (!_supabase) _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _supabase;
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function hasSupabase(): boolean {
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
 
 /**
  * Fetch featured accounts/tenants
  * Uses the public API endpoint (no auth required)
  */
 export async function getFeaturedAccounts(limit: number = 4): Promise<FeaturedAccount[]> {
+  if (!hasSupabase()) return [];
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('tenants')
       .select('id, name, domain, avatar_url, plan, created_at')
       .eq('status', 'active')
