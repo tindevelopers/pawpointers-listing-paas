@@ -384,7 +384,7 @@ export default function CategoriesPage() {
           {/* Info Box */}
           <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <p className="text-blue-900 dark:text-blue-200 text-sm">
-              <strong>💡 Tip:</strong> Click "Show Specialties" to see specific services in each category.
+              <strong>💡 Tip:</strong> Click &quot;Show Specialties&quot; to see specific services in each category.
             </p>
           </div>
 

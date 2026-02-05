@@ -52,7 +52,7 @@ async function getPlatformTenantOrThrow(): Promise<string> {
       }
 
       // Try to create new platform tenant with mode column (if it exists)
-      let tenantData: any = {
+      const tenantData: any = {
         name: "Platform Tenant",
         domain: "platform",
         status: "active",

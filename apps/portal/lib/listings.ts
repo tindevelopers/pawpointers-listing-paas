@@ -66,19 +66,28 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
-  const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
-  
-  throw new Error(
-    `Missing Supabase environment variables in apps/portal. ` +
-    `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
-    `Please create apps/portal/.env.local with these variables and restart the dev server.`
-  );
-}
+// Lazy initialization to avoid build-time errors when env vars are missing
+let supabaseClient: ReturnType<typeof createClient> | null = null;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function getSupabaseClient(): ReturnType<typeof createClient> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    const urlStatus = SUPABASE_URL ? 'SET' : 'MISSING';
+    const keyStatus = SUPABASE_ANON_KEY ? 'SET' : 'MISSING';
+    
+    throw new Error(
+      `Missing Supabase environment variables in apps/portal. ` +
+      `NEXT_PUBLIC_SUPABASE_URL: ${urlStatus}, ` +
+      `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${keyStatus}. ` +
+      `Please create apps/portal/.env.local with these variables and restart the dev server.`
+    );
+  }
+  
+  if (!supabaseClient) {
+    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  
+  return supabaseClient;
+}
 
 function normalizeImageUrls(images: string[] | null | undefined): string[] {
   if (!images || images.length === 0) return [];
@@ -105,33 +114,53 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
  */
 export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabaseClient();
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('slug', slug)
       .eq('status', 'active')
       .maybeSingle();
 
+    const { data, error } = result;
+
     if (error) {
       console.error('Failed to fetch listing by slug:', error.message);
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: normalizeImageUrls(data.images),
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
+    return {
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: normalizeImageUrls(listingData.images),
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -144,33 +173,53 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
  */
 export async function getListingById(id: string): Promise<Listing | null> {
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabaseClient();
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('id', id)
       .eq('status', 'active')
       .maybeSingle();
 
+    const { data, error } = result;
+
     if (error) {
       console.error('Failed to fetch listing by id:', error.message);
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: data.images || [],
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
+    return {
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: listingData.images || [],
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -188,7 +237,7 @@ export async function searchListings(
   const limit = params.limit ?? 12;
 
   try {
-    const query = supabase
+    const query = getSupabaseClient()
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at', { count: 'exact' })
       .eq('status', 'active')
@@ -200,22 +249,38 @@ export async function searchListings(
     if (params.maxPrice) query.lte('price', params.maxPrice);
     if (params.sortBy) query.order(params.sortBy === 'date' ? 'created_at' : params.sortBy, { ascending: params.sortOrder === 'asc' });
 
-    const { data, error, count } = await query;
+    const result = await query;
+    const { data, error, count } = result;
 
     if (error) {
       throw new Error(`Failed to search listings: ${error.message}`);
     }
 
-    const listings = (data || []).map((item) => ({
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    const listings = listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -247,27 +312,45 @@ export async function getListingsByCategory(
  */
 export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabaseClient();
+    const result = await supabase
       .from('public_listings_view')
       .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    const { data, error } = result;
+
     if (error) {
       throw new Error(`Failed to fetch featured listings: ${error.message}`);
     }
 
-    return (data || []).map((item) => ({
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    return listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -285,6 +368,7 @@ export async function getCategories(): Promise<
   Array<{ slug: string; name: string; count: number }>
 > {
   try {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('categories_view')
       .select('slug, name, count')
@@ -323,14 +407,20 @@ export function formatPrice(price: number | undefined): string {
  */
 export async function getAllListingSlugs(): Promise<string[]> {
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabaseClient();
+    const result = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
       .limit(10000);
 
+    const { data, error } = result;
+
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }
@@ -342,15 +432,21 @@ export async function getAllListingSlugs(): Promise<string[]> {
  */
 export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabaseClient();
+    const result = await supabase
       .from('public_listings_view')
       .select('slug')
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
 
+    const { data, error } = result;
+
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }

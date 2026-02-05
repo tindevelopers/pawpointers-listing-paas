@@ -214,7 +214,7 @@ function SearchContent() {
           ) : (
             <MapView
               listings={listings}
-              selectedListingId={selectedListingId}
+              selectedListingId={selectedListingId ?? undefined}
               onListingSelect={(listing) => setSelectedListingId(listing.id)}
             />
           )

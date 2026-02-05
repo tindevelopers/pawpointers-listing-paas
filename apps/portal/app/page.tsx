@@ -505,7 +505,7 @@ export default async function HomePage() {
             </div>
 
             <div className="text-center mt-10">
-              <a
+              <Link
                 href="/blog"
                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
               >
@@ -523,7 +523,7 @@ export default async function HomePage() {
                     d="M17 8l4 4m0 0l-4 4m4-4H3"
                   />
                 </svg>
-              </a>
+              </Link>
             </div>
           </div>
         </section>
