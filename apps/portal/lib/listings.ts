@@ -27,6 +27,10 @@ export interface Listing {
     lat?: number;
     lng?: number;
   };
+  phone?: string;
+  email?: string;
+  website?: string;
+  services?: string[];
   status: 'active' | 'pending' | 'sold' | 'archived';
   createdAt: string;
   updatedAt: string;
@@ -121,21 +125,38 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: normalizeImageUrls(data.images),
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
+    return {
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: normalizeImageUrls(listingData.images),
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -161,21 +182,38 @@ export async function getListingById(id: string): Promise<Listing | null> {
       return null;
     }
 
-    return data
-      ? {
-          id: data.id,
-          slug: data.slug,
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          images: data.images || [],
-          category: data.category,
-          location: data.location,
-          status: data.status,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-        }
-      : null;
+    if (!data) {
+      return null;
+    }
+
+    // Type assertion to help TypeScript understand the data structure
+    const listingData = data as {
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    };
+
+    return {
+      id: listingData.id,
+      slug: listingData.slug,
+      title: listingData.title,
+      description: listingData.description,
+      price: listingData.price ?? undefined,
+      images: listingData.images || [],
+      category: listingData.category ?? undefined,
+      location: listingData.location ?? undefined,
+      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
+      createdAt: listingData.created_at,
+      updatedAt: listingData.updated_at,
+    };
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -209,22 +247,38 @@ export async function searchListings(
     if (params.maxPrice) query.lte('price', params.maxPrice);
     if (params.sortBy) query.order(params.sortBy === 'date' ? 'created_at' : params.sortBy, { ascending: params.sortOrder === 'asc' });
 
-    const { data, error, count } = await query;
+    const result = await query;
+    const { data, error, count } = result;
 
     if (error) {
       throw new Error(`Failed to search listings: ${error.message}`);
     }
 
-    const listings = (data || []).map((item) => ({
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    const listings = listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -268,16 +322,31 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
       throw new Error(`Failed to fetch featured listings: ${error.message}`);
     }
 
-    return (data || []).map((item) => ({
+    // Type assertion to help TypeScript understand the data structure
+    const listingItems = (data || []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      description: string;
+      price: number | null;
+      images: string[] | null;
+      category: string | null;
+      location: Record<string, unknown> | null;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    return listingItems.map((item) => ({
       id: item.id,
       slug: item.slug,
       title: item.title,
       description: item.description,
-      price: item.price,
+      price: item.price ?? undefined,
       images: normalizeImageUrls(item.images),
-      category: item.category,
-      location: item.location,
-      status: item.status,
+      category: item.category ?? undefined,
+      location: item.location ?? undefined,
+      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     }));
@@ -343,7 +412,10 @@ export async function getAllListingSlugs(): Promise<string[]> {
       .limit(10000);
 
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }
@@ -364,7 +436,10 @@ export async function getPopularListingSlugs(limit = 500): Promise<string[]> {
       .limit(limit);
 
     if (error) return [];
-    return data?.map((l) => l.slug) || [];
+    
+    // Type assertion to help TypeScript understand the data structure
+    const slugs = (data || []) as Array<{ slug: string }>;
+    return slugs.map((l) => l.slug);
   } catch {
     return [];
   }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
+const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Paw Pointers";
 const PLATFORM_INITIAL = PLATFORM_NAME.charAt(0).toUpperCase() || "P";
 
 /**
@@ -27,10 +27,12 @@ export function Footer({ className = "" }: FooterProps) {
       { href: "/listings", label: "Browse Listings" },
       { href: "/search", label: "Search" },
       { href: "/categories", label: "Categories" },
+      { href: "/blog", label: "Blog" },
+      { href: "/pricing", label: "Pricing" },
     ],
     company: [
       { href: "/about", label: "About Us" },
-      { href: "/contact", label: "Contact" },
+      { href: "/contact", label: "Contact Us" },
       { href: "/careers", label: "Careers" },
     ],
     legal: [
@@ -53,10 +55,9 @@ export function Footer({ className = "" }: FooterProps) {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">{PLATFORM_INITIAL}</span>
               </div>
-              <span className="font-bold text-xl text-white">
-                {/* CUSTOMIZE: Platform name */}
+              <p className="font-bold text-xl text-white">
                 {PLATFORM_NAME}
-              </span>
+              </p>
             </Link>
             <p className="text-sm text-gray-400">
               {/* CUSTOMIZE: Platform tagline */}
@@ -91,7 +92,7 @@ export function Footer({ className = "" }: FooterProps) {
                     href={link.href}
                     className="text-sm hover:text-white transition-colors"
                   >
-                    {link.label}
+                    <p>{link.label}</p>
                   </Link>
                 </li>
               ))}

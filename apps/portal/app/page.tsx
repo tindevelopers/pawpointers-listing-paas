@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar } from "@/components/search";
+import { AIChat } from "@/components/chat";
 import { ListingCard } from "@/components/listings";
 import { AccountCard } from "@/components/accounts/AccountCard";
 import { getFeaturedListings, getCategories, type Listing } from "@/lib/listings";
@@ -62,37 +63,34 @@ export default async function HomePage() {
 
       <main className="flex-1">
         {/* Hero Section - Warm & Friendly */}
-        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-20 lg:py-32 overflow-hidden">
+        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-16 lg:py-24 overflow-hidden">
           {/* Decorative background circles */}
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
 
           <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="mb-4 inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold">
-                ✨ Find Your Perfect Service Provider
+            <div className="max-w-4xl mx-auto">
+              {/* Header Content */}
+              <div className="text-center mb-12">
+                <div className="mb-4 inline-block bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold">
+                  ✨ Find Your Perfect Service Provider
+                </div>
+
+                <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-white drop-shadow-lg">
+                  Discover Amazing Services Near You
+                </h1>
+                <p className="text-lg lg:text-xl text-white/90 drop-shadow-md max-w-2xl mx-auto">
+                  Connect with trusted professionals and get the help you need. Browse, compare, and book with confidence.
+                </p>
               </div>
 
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-white drop-shadow-lg">
-                Discover Amazing Services Near You
-              </h1>
-              <p className="text-lg lg:text-xl text-white/90 mb-10 drop-shadow-md">
-                Connect with trusted professionals and get the help you need. Browse, compare, and book with confidence.
-              </p>
-
-              {/* Hero Search */}
-              <div className="max-w-2xl mx-auto mb-8">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-2 shadow-2xl">
-                  <SearchBar
-                    placeholder="Search services, professions, or providers..."
-                    showFiltersButton={false}
-                    className="bg-transparent"
-                  />
-                </div>
+              {/* AI Chat - Center Stage */}
+              <div className="mb-12">
+                <AIChat />
               </div>
 
               {/* Trust Signals */}
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-white/90 mb-8">
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-white/90">
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">⭐</span>
                   <span><strong>4.8/5</strong> avg rating</span>
@@ -108,25 +106,6 @@ export default async function HomePage() {
                   <span><strong>Verified & Trusted</strong></span>
                 </div>
               </div>
-
-              {/* Quick Category Links */}
-              {categories.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2">
-                  <span className="text-white/80 text-sm font-medium w-full mb-2">Popular services:</span>
-                  {categories.slice(0, 6).map((cat) => (
-                    <Link
-                      key={cat.slug}
-                      href={`/categories/${cat.slug}`}
-                      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:scale-105"
-                    >
-                      {cat.name}
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -193,55 +172,85 @@ export default async function HomePage() {
         )}
 
         {/* Categories Section */}
-        {categories.length > 0 && (
-          <section className="py-16 lg:py-24 bg-gray-50 dark:bg-gray-800">
-            <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  {/* CUSTOMIZE: Update section title */}
-                  Browse by Category
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  {/* CUSTOMIZE: Update section description */}
-                  Find listings organized by category.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/categories/${cat.slug}`}
-                    className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700"
-                  >
-                    {/* CUSTOMIZE: Add category icons */}
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mx-auto mb-4">
-                      <svg
-                        className="w-6 h-6 text-blue-600 dark:text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                      {cat.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {cat.count} listings
-                    </p>
-                  </Link>
-                ))}
-              </div>
+        <section className="py-16 lg:py-24 bg-gray-50 dark:bg-gray-800">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Browse by Category
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Find listings organized by category.
+              </p>
             </div>
-          </section>
-        )}
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  slug: 'pet-care-services',
+                  name: 'Pet Care Services',
+                  bgColor: 'bg-orange-100 dark:bg-orange-900',
+                  iconColor: 'text-orange-600 dark:text-orange-400',
+                  emoji: '🐾'
+                },
+                {
+                  slug: 'health-wellness',
+                  name: 'Health and Wellness',
+                  bgColor: 'bg-green-100 dark:bg-green-900',
+                  iconColor: 'text-green-600 dark:text-green-400',
+                  emoji: '❤️'
+                },
+                {
+                  slug: 'training-behavior',
+                  name: 'Training and Behavior',
+                  bgColor: 'bg-purple-100 dark:bg-purple-900',
+                  iconColor: 'text-purple-600 dark:text-purple-400',
+                  emoji: '🎯'
+                },
+                {
+                  slug: 'pet-retail',
+                  name: 'Pet Retail',
+                  bgColor: 'bg-pink-100 dark:bg-pink-900',
+                  iconColor: 'text-pink-600 dark:text-pink-400',
+                  emoji: '🛍️'
+                },
+                {
+                  slug: 'specialist-services',
+                  name: 'Specialist Pet Services',
+                  bgColor: 'bg-blue-100 dark:bg-blue-900',
+                  iconColor: 'text-blue-600 dark:text-blue-400',
+                  emoji: '⭐'
+                },
+                {
+                  slug: 'rescue-community',
+                  name: 'Rescue & Community',
+                  bgColor: 'bg-teal-100 dark:bg-teal-900',
+                  iconColor: 'text-teal-600 dark:text-teal-400',
+                  emoji: '🤝'
+                },
+                {
+                  slug: 'events-experiences',
+                  name: 'Events & Experiences',
+                  bgColor: 'bg-amber-100 dark:bg-amber-900',
+                  iconColor: 'text-amber-600 dark:text-amber-400',
+                  emoji: '🎉'
+                },
+              ].map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/categories/${cat.slug}`}
+                  className="bg-white dark:bg-gray-900 rounded-xl p-6 text-center hover:shadow-lg hover:scale-105 transition-all border border-gray-100 dark:border-gray-700"
+                >
+                  <div className={`w-16 h-16 ${cat.bgColor} rounded-xl flex items-center justify-center mx-auto mb-4 text-3xl`}>
+                    {cat.emoji}
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">
+                    {cat.name}
+                  </h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Featured Accounts Showcase */}
         {featuredAccounts.length > 0 && (
@@ -277,9 +286,9 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 max-w-5xl mx-auto">
               {/* Step 1: Search */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -294,12 +303,12 @@ export default async function HomePage() {
               </div>
 
               {/* Arrow - Desktop Only */}
-              <div className="hidden md:flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center flex-shrink-0">
                 <div className="text-orange-400 text-3xl">→</div>
               </div>
 
               {/* Step 2: Compare */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -314,12 +323,12 @@ export default async function HomePage() {
               </div>
 
               {/* Arrow - Desktop Only */}
-              <div className="hidden md:flex items-center justify-center">
+              <div className="hidden md:flex items-center justify-center flex-shrink-0">
                 <div className="text-cyan-400 text-3xl">→</div>
               </div>
 
               {/* Step 3: Book */}
-              <div className="text-center">
+              <div className="flex-1 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                   <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -364,8 +373,28 @@ export default async function HomePage() {
         </section>
 
         {/* CTA Section - Service Booking Focus */}
-        <section className="py-16 lg:py-24 bg-gradient-to-r from-orange-500 to-cyan-500">
-          <div className="container mx-auto px-4 text-center">
+        <section
+          className="py-16 lg:py-24 relative bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url('https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2Fca43733afbef4fe48b924e8c765bbd96?format=webp&width=1200')`,
+            backgroundPosition: '50% 50%',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'cover',
+          }}
+        >
+          {/* Dark overlay for text readability */}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              backgroundImage: 'url(https://cdn.builder.io/api/v1/image/assets%2F5a52d82defcf479eb265bdbda490769e%2Fbded4c5ac5e24e1ea372e691e78572e4)',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'cover',
+            }}
+          ></div>
+
+          <div className="container mx-auto px-4 text-center relative z-10">
             <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
               Ready to Find Your Perfect Service Provider?
             </h2>
@@ -390,6 +419,110 @@ export default async function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 Create Account
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Blog & Articles Section */}
+        <section className="py-16 lg:py-24 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Pet Care Tips & Resources
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Learn from pet care experts and stay updated with the latest tips, guides, and trends in pet services.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {/* Blog Card 1 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-orange-400 to-orange-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🐶</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-orange-600 dark:text-orange-400 mb-2">PET CARE</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    5 Essential Grooming Tips for Healthy Pets
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Discover the professional grooming techniques that keep your pets looking and feeling their best.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+
+              {/* Blog Card 2 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-cyan-400 to-cyan-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🏃</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 mb-2">TRAINING</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    How to Train Your Pet: Behavior Tips
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Expert training methods to help your pet develop good behavior and obedience skills.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+
+              {/* Blog Card 3 */}
+              <article className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-green-400 to-green-500 h-48 flex items-center justify-center">
+                  <div className="text-6xl">🥗</div>
+                </div>
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2">NUTRITION</div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
+                    Pet Nutrition 101: What Your Pet Needs
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Learn about balanced diets and nutritional requirements for different types of pets.
+                  </p>
+                  <a href="#" className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 font-semibold">
+                    Read More
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </a>
+                </div>
+              </article>
+            </div>
+
+            <div className="text-center mt-10">
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+              >
+                View All Articles
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
               </Link>
             </div>
           </div>

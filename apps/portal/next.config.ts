@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         protocol: "https" as const,
         hostname: "images.unsplash.com",
       },
+      // Allow Pexels images
+      {
+        protocol: "https" as const,
+        hostname: "images.pexels.com",
+      },
       ...(process.env.NEXT_PUBLIC_CDN_URL
         ? [
             {

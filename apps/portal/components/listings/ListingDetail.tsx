@@ -5,6 +5,8 @@ import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { ListingMap } from "./ListingMap";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
+import { BookingModal } from "./BookingModal";
+import { ChatModal } from "./ChatModal";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -14,11 +16,34 @@ type TabType = "overview" | "reviews" | "location" | "pricing";
 
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   // Generate consistent mock data based on listing ID
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
   const rating = 3.5 + ((idHash % 20) / 10);
   const reviewCount = 10 + ((idHash * 7) % 150);
+
+  // Fallback mock data for contact info and services if not provided
+  const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
+  const mockEmails = ["contact@pawpointers.local", "info@pawpointers.local", "hello@pawpointers.local", "support@pawpointers.local"];
+  const mockWebsites = ["pawpointers.local", "services.pawpointers.local", "bookings.pawpointers.local"];
+
+  const mockServicesByCategory: Record<string, string[]> = {
+    "pet-care-services": ["Dog Walking", "Pet Sitting", "Daycare"],
+    "health-wellness": ["Veterinary Care", "Vaccinations", "Wellness Exams"],
+    "training-behavior": ["Dog Training", "Behavior Consulting", "Obedience Classes"],
+    "pet-grooming": ["Full Grooming", "Bath & Wash", "Nail Trimming"],
+    "pet-retail": ["Pet Supplies", "Toys & Accessories", "Pet Food"],
+    "specialist-services": ["Pet Photography", "Pet Transportation", "Training Facility"],
+    "rescue-community": ["Rescue Services", "Adoption Services", "Foster Network"],
+    "events-experiences": ["Pet Classes", "Workshops", "Social Events"],
+  };
+
+  const phone = listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length];
+  const email = listing.email || mockEmails[idHash % mockEmails.length];
+  const website = listing.website || mockWebsites[idHash % mockWebsites.length];
+  const services = listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"];
 
   // Mock reviews data
   const mockReviews = [
@@ -108,6 +133,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           <div className="flex flex-col gap-2 md:flex-row md:gap-3">
             <button
               type="button"
+              onClick={() => setIsBookingModalOpen(true)}
               className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,6 +143,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
             </button>
             <button
               type="button"
+              onClick={() => setIsChatModalOpen(true)}
               className="border-2 border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,24 +154,56 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           </div>
         </div>
 
-        {/* Location Info */}
-        {listing.location && (
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-            <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <p>
-              {[
-                listing.location.address,
-                listing.location.city,
-                listing.location.state,
-              ]
-                .filter(Boolean)
-                .join(", ")}
-            </p>
-          </div>
-        )}
+        {/* Contact Info - Single Line with Icons */}
+        <div className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-300 text-sm">
+          {listing.location && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <p>
+                {[
+                  listing.location.address,
+                  listing.location.city,
+                  listing.location.state,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </p>
+            </div>
+          )}
+          {phone && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <a href={`tel:${phone}`} className="hover:text-orange-500 transition-colors">
+                {phone}
+              </a>
+            </div>
+          )}
+          {email && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <a href={`mailto:${email}`} className="hover:text-orange-500 transition-colors">
+                {email}
+              </a>
+            </div>
+          )}
+          {website && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <a href={`https://${website}`} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">
+                {website}
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Gallery */}
@@ -185,6 +244,23 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   {listing.description}
                 </p>
 
+                {/* Services Provided */}
+                {services && services.length > 0 && (
+                  <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Services Provided</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {services.map((service) => (
+                        <span
+                          key={service}
+                          className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium px-3 py-1.5 rounded-full"
+                        >
+                          {service}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quick Facts Grid */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -203,7 +279,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                       </svg>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
-                    <p className="font-bold text-gray-900 dark:text-white">12 types</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{services.length} types</p>
                   </div>
                   <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2">
@@ -474,6 +550,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               <button
                 type="button"
+                onClick={() => setIsBookingModalOpen(true)}
                 className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2 hover:shadow-lg"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -484,6 +561,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               <button
                 type="button"
+                onClick={() => setIsChatModalOpen(true)}
                 className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,6 +592,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        listingTitle={listing.title}
+        isLoggedIn={true}
+      />
+
+      {/* Chat Modal */}
+      <ChatModal
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+        providerName={listing.title}
+        providerImage={listing.images?.[0]}
+      />
     </div>
   );
 }

@@ -59,7 +59,20 @@ export async function getFeaturedAccounts(limit: number = 4): Promise<FeaturedAc
       return [];
     }
 
-    return (data || []).map((account) => ({
+    if (!data) {
+      return [];
+    }
+
+    const accounts = data as Array<{
+      id: string;
+      name: string;
+      domain: string;
+      avatar_url: string | null;
+      plan: string | null;
+      created_at: string;
+    }>;
+
+    return accounts.map((account) => ({
       id: account.id,
       name: account.name,
       domain: account.domain,
@@ -73,4 +86,3 @@ export async function getFeaturedAccounts(limit: number = 4): Promise<FeaturedAc
     return [];
   }
 }
-

@@ -23,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/listings", label: "Browse" },
   { href: "/search", label: "Search" },
   { href: "/categories", label: "Categories" },
+  { href: "/blog", label: "Blog" },
+  { href: "/about", label: "About" },
   // CUSTOMIZE: Add more navigation items
   // { href: '/agents', label: 'Find Agents' },
   // { href: '/pricing', label: 'Pricing' },
