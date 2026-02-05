@@ -78,7 +78,7 @@ export async function getFeaturedAccounts(limit: number = 4): Promise<FeaturedAc
       domain: account.domain,
       description: `${account.name} - Quality services you can trust`,
       plan: account.plan || 'starter',
-      avatar_url: account.avatar_url,
+      avatar_url: account.avatar_url ?? undefined,
       created_at: account.created_at || new Date().toISOString(),
     }));
   } catch (error) {
