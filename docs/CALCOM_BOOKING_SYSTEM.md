@@ -134,6 +134,33 @@ supabase migration up
 psql -f supabase/migrations/20250101000000_add_calcom_booking_features.sql
 ```
 
+## Cal.ai (Optional)
+
+Cal.ai is Cal.com's AI assistant for voice scheduling and follow-ups. It is configured in Cal.com itself.
+
+### Enabling Cal.ai
+
+1. In your self-hosted Cal.com instance, go to **Settings > Cal.ai** (or Team/Org settings).
+2. Enable Cal.ai for the organization or team that corresponds to your tenant.
+3. Configure workflows (e.g. voice scheduling, reschedule via email).
+
+### Integration with Our Platform
+
+- Cal.ai books directly into Cal.com. When it creates or updates a booking, Cal.com sends webhooks.
+- Our webhook receiver (`/api/webhooks/calcom`) handles `BOOKING_CREATED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`, etc.
+- Local `bookings` are kept in sync via `external_provider='calcom'` and `external_booking_id`.
+- No additional code is required: Cal.ai → Cal.com → webhook → local bookings.
+
+### Webhook Configuration
+
+Ensure Cal.com webhooks point to your admin app:
+
+```
+https://your-admin-domain.com/api/webhooks/calcom
+```
+
+Set `CALCOM_WEBHOOK_SECRET` in both Cal.com and your environment for signature verification.
+
 ## Next Steps
 
 - [ ] Implement Google Calendar OAuth flow

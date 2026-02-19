@@ -48,6 +48,7 @@ export async function upsertListing(formData: FormData) {
   const price = priceValue ? Number(priceValue) : null;
   const currency = formData.get("currency")?.toString() || "USD";
   const featuredImage = formData.get("featured_image")?.toString() || null;
+  const addressJson = formData.get("address")?.toString();
 
   if (!title) throw new Error("Title is required");
 
@@ -57,6 +58,25 @@ export async function upsertListing(formData: FormData) {
     .eq("id", user.id)
     .single();
 
+  let address: Record<string, unknown> | null | undefined = undefined;
+  if (addressJson) {
+    try {
+      const parsed = JSON.parse(addressJson) as Record<string, unknown>;
+      if (parsed && (parsed.lat != null || parsed.street)) {
+        address = {
+          street: parsed.street ?? null,
+          city: parsed.city ?? null,
+          region: parsed.region ?? parsed.state ?? null,
+          country: parsed.country ?? null,
+          lat: parsed.lat ?? null,
+          lng: parsed.lng ?? null,
+        };
+      }
+    } catch {
+      /* ignore invalid JSON */
+    }
+  }
+
   const payload = {
     title,
     slug: slugInput ? slugify(slugInput) : slugify(title),
@@ -65,6 +85,7 @@ export async function upsertListing(formData: FormData) {
     price,
     currency,
     featured_image: featuredImage,
+    ...(address !== undefined && { address }),
   };
 
   if (id) {
@@ -321,6 +342,7 @@ export async function createListing(formData: FormData) {
 
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
+  const addressJson = formData.get("address")?.toString();
 
   if (!title) {
     throw new Error("Title is required");
@@ -336,6 +358,25 @@ export async function createListing(formData: FormData) {
   const baseSlug = slugifyInput(title);
   const slug = await ensureUniqueSlug(supabase, tenantId, baseSlug || crypto.randomUUID());
 
+  let address: Record<string, unknown> | null = null;
+  if (addressJson) {
+    try {
+      const parsed = JSON.parse(addressJson) as Record<string, unknown>;
+      if (parsed && (parsed.lat != null || parsed.street)) {
+        address = {
+          street: parsed.street ?? null,
+          city: parsed.city ?? null,
+          region: parsed.region ?? parsed.state ?? null,
+          country: parsed.country ?? null,
+          lat: parsed.lat ?? null,
+          lng: parsed.lng ?? null,
+        };
+      }
+    } catch {
+      /* ignore invalid JSON */
+    }
+  }
+
   const { error } = await (supabase
     .from("listings") as any)
     .insert({
@@ -345,6 +386,7 @@ export async function createListing(formData: FormData) {
       status: "draft",
       owner_id: user!.id,
       tenant_id: tenantId,
+      ...(address && { address }),
     });
 
   if (error) {

@@ -1,6 +1,7 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
 import { createListing } from "@/app/actions/listings";
+import { LocationField } from "./LocationField";
 
 export default async function ListingsPage() {
   const supabase = await createClient();
@@ -31,7 +32,7 @@ export default async function ListingsPage() {
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Create a listing</h2>
-        <form action={createListing} className="mt-4 grid gap-4 md:grid-cols-2">
+        <form id="create-listing-form" action={createListing} className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium text-gray-700" htmlFor="title">
               Title
@@ -48,6 +49,9 @@ export default async function ListingsPage() {
               rows={3}
               placeholder="Short description of your service."
             />
+          </div>
+          <div className="md:col-span-2">
+            <LocationField formId="create-listing-form" />
           </div>
           <div className="md:col-span-2">
             <button

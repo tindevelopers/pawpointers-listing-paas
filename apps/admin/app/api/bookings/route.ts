@@ -3,6 +3,7 @@ import { createClient } from "@/core/database/server";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import { getUserPermissions } from "@/core/permissions/permissions";
+import { createBookingProvider } from "@listing-platform/booking/providers";
 
 /**
  * GET /api/bookings
@@ -164,6 +165,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const adminClient = createAdminClient();
     const body = await req.json();
     const {
       listing_id,
@@ -179,7 +181,10 @@ export async function POST(req: NextRequest) {
       timezone,
       form_responses,
       video_provider,
+      provider: reqProvider,
     } = body;
+
+    const providerType = (reqProvider || body.bookingProvider || "builtin") as "builtin" | "gohighlevel" | "calcom";
 
     // Validation - either listing_id or event_type_id must be provided
     if ((!listing_id && !event_type_id) || !start_date || !end_date) {
@@ -196,36 +201,83 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate confirmation code
-    const confirmationCode = `BK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
     // Get event type if provided to calculate pricing
     let basePrice = 0;
     let currency = "USD";
-    
+
     if (event_type_id) {
       const { data: eventType } = await adminClient
         .from("event_types")
         .select("*")
         .eq("id", event_type_id)
         .single();
-      
+
       if (eventType) {
-        basePrice = eventType.price || 0;
-        currency = eventType.currency || "USD";
-        
-        // Round robin assignment would happen here via API server
-        // For now, we'll let the API server handle it
+        basePrice = (eventType as { price?: number }).price || 0;
+        currency = (eventType as { currency?: string }).currency || "USD";
       }
     }
 
-    // Calculate pricing
-    const serviceFee = basePrice * 0.1; // 10% service fee
-    const taxAmount = (basePrice + serviceFee) * 0.08; // 8% tax
+    const serviceFee = basePrice * 0.1;
+    const taxAmount = (basePrice + serviceFee) * 0.08;
     const totalAmount = basePrice + serviceFee + taxAmount;
 
-    const adminClient = createAdminClient();
-    const bookingData: any = {
+    if (providerType === "calcom") {
+      const listingId = listing_id || undefined;
+      const { data: integrations } = await adminClient
+        .from("booking_provider_integrations")
+        .select("id, credentials, settings, listing_id")
+        .eq("tenant_id", tenantId)
+        .eq("provider", "calcom")
+        .eq("active", true);
+      const integration = (integrations || []).find(
+        (i: { listing_id?: string | null }) => i.listing_id === listingId
+      ) ?? (integrations || []).find(
+        (i: { listing_id?: string | null }) => i.listing_id == null
+      ) ?? (integrations || [])[0];
+
+      if (!integration?.credentials) {
+        return NextResponse.json(
+          { success: false, error: { code: "CONFIG_ERROR", message: "Cal.com integration not configured. Add credentials in Integrations > Booking." } },
+          { status: 400 }
+        );
+      }
+
+      const bookProvider = createBookingProvider("calcom", adminClient as any);
+      const context = {
+        supabase: adminClient as any,
+        tenantId,
+        listingId,
+        userId: user.id,
+        providerCredentials: integration.credentials as Record<string, unknown>,
+        providerSettings: integration.settings as Record<string, unknown>,
+      };
+      const result = await bookProvider.createBooking(context, {
+        listingId,
+        eventTypeId: event_type_id,
+        userId: user.id,
+        tenantId,
+        startDate: start_date,
+        endDate: end_date,
+        startTime: start_time,
+        endTime: end_time,
+        guestCount: guest_count,
+        guestDetails: guest_details,
+        specialRequests: special_requests,
+        basePrice,
+        serviceFee,
+        taxAmount,
+        totalAmount,
+        currency,
+        metadata: { timezone: timezone || "UTC" },
+      });
+
+      const bookingRow = result.booking as Record<string, unknown>;
+      return NextResponse.json(bookingRow, { status: 201 });
+    }
+
+    const confirmationCode = `BK-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const bookingData: Record<string, unknown> = {
       listing_id: listing_id || null,
       event_type_id: event_type_id || null,
       user_id: user.id,
@@ -250,9 +302,6 @@ export async function POST(req: NextRequest) {
       form_responses: form_responses || {},
     };
 
-    // Video meeting and round robin assignment will be handled by the API server
-    // when calling the booking creation endpoint
-    
     const { data: booking, error } = await adminClient
       .from("bookings")
       .insert(bookingData)
@@ -267,7 +316,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Return snake_case format - hooks will transform to camelCase
     return NextResponse.json(booking, { status: 201 });
   } catch (error: any) {
     console.error("[POST /api/bookings] Error:", error);

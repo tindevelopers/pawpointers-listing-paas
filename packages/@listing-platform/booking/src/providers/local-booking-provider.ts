@@ -215,10 +215,4 @@ export class GoHighLevelProvider extends LocalBookingProvider {
   }
 }
 
-export class CalComProvider extends LocalBookingProvider {
-  constructor(supabase: SupabaseClient<any>) {
-    super("calcom", supabase);
-  }
-}
-
 

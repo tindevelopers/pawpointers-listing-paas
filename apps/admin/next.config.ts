@@ -7,7 +7,15 @@ const nextConfig: NextConfig = {
   },
 
   // Explicitly configure Turbopack to avoid webpack config conflict
-  turbopack: {},
+  // SVG as React components (SignInForm and other components use @/icons)
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+  },
   
   // TypeScript configuration - temporarily allow build errors for deployment
   typescript: {

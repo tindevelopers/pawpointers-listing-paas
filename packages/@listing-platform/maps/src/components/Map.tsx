@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, ReactNode } from 'react';
+import React, { useEffect, useRef, useState, ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import type { Coordinates, MapProvider } from '../types';
 
@@ -38,6 +38,7 @@ export function Map({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<unknown>(null);
   const markersRef = useRef<unknown[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -76,6 +77,8 @@ export function Map({
         }
 
         map.on('load', () => {
+          mapRef.current = map;
+          setMapReady(true);
           onLoad?.(map);
         });
 
@@ -88,14 +91,13 @@ export function Map({
         map.on('click', (e: { lngLat: { lat: number; lng: number } }) => {
           onClick?.({ lat: e.lngLat.lat, lng: e.lngLat.lng });
         });
-
-        mapRef.current = map;
       }
     };
 
     initMap();
 
     return () => {
+      setMapReady(false);
       if (mapRef.current && provider === 'mapbox') {
         const map = mapRef.current as { remove?: () => void };
         map.remove?.();
@@ -123,8 +125,8 @@ export function Map({
   return (
     <div className={cn('map-container relative', className)}>
       <div ref={containerRef} className="absolute inset-0" />
-      {/* Pass map reference to children via context or clone */}
-      {React.Children.map(children, (child) => {
+      {/* Pass map reference to children when ready so Marker can add itself */}
+      {mapReady && React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child as React.ReactElement<{ map?: unknown }>, { 
             map: mapRef.current 

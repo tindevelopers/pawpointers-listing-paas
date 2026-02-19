@@ -91,11 +91,20 @@ export default async function DashboardPage() {
 
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 p-4 shadow-sm">
           <h2 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">
-            Coming soon
+            Activity
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Saved items, bookings, and messages will appear here.
-          </p>
+          <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+            <li>
+              <Link href="/account/bookings" className="hover:underline">
+                My Bookings
+              </Link>
+            </li>
+            <li>
+              <Link href="/account/reviews" className="hover:underline">
+                My Reviews
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

@@ -1,69 +1,106 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { NotImplementedBookingProvider } from '@tinadmin/core';
-import { withRateLimit } from '@/middleware/api-rate-limit';
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/core/database/admin-client";
+import { createBookingProvider } from "@listing-platform/booking/providers";
+import { withRateLimit } from "@/middleware/api-rate-limit";
 
-/**
- * Booking Availability API Route
- * 
- * Returns available time slots for a provider/service.
- * Currently returns 501 Not Implemented until a CRM is integrated.
- * 
- * Rate Limiting: 10 requests per minute per IP
- */
-
-// Force dynamic rendering to prevent build-time execution
-export const dynamic = 'force-dynamic';
-
-const bookingProvider = new NotImplementedBookingProvider();
+export const dynamic = "force-dynamic";
 
 async function handler(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  
-  const providerId = searchParams.get('providerId');
-  const serviceId = searchParams.get('serviceId');
-  const dateFrom = searchParams.get('dateFrom');
-  const dateTo = searchParams.get('dateTo');
-  const durationMinutes = searchParams.get('durationMinutes');
 
-  if (!providerId || !dateFrom || !dateTo) {
+  const listingId = searchParams.get("listingId");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
+
+  if (!listingId || !dateFrom || !dateTo) {
     return NextResponse.json(
-      { error: 'Missing required parameters: providerId, dateFrom, dateTo' },
+      { success: false, error: "Missing required parameters: listingId, dateFrom, dateTo" },
       { status: 400 }
     );
   }
 
   try {
-    const slots = await bookingProvider.getAvailability({
-      providerId,
-      serviceId: serviceId || undefined,
-      dateFrom,
-      dateTo,
-      durationMinutes: durationMinutes ? Number(durationMinutes) : undefined,
-    });
+    const adminClient = createAdminClient();
+    const { data: listing } = await adminClient
+      .from("listings")
+      .select("id, tenant_id, booking_provider_id")
+      .eq("id", listingId)
+      .single();
+
+    if (!listing) {
+      return NextResponse.json(
+        { success: false, error: "Listing not found" },
+        { status: 404 }
+      );
+    }
+
+    const tenantId = (listing as { tenant_id?: string }).tenant_id;
+    if (!tenantId) {
+      return NextResponse.json(
+        { success: false, error: "Listing has no tenant" },
+        { status: 400 }
+      );
+    }
+
+    let providerType: "builtin" | "gohighlevel" | "calcom" = "builtin";
+    if ((listing as { booking_provider_id?: string }).booking_provider_id) {
+      const { data: integration } = await adminClient
+        .from("booking_provider_integrations")
+        .select("provider")
+        .eq("id", (listing as { booking_provider_id: string }).booking_provider_id)
+        .single();
+      if (integration?.provider) {
+        providerType = integration.provider as "builtin" | "gohighlevel" | "calcom";
+      }
+    }
+
+    let context: Record<string, unknown> = {
+      supabase: adminClient,
+      tenantId,
+      listingId,
+    };
+
+    if (providerType === "calcom") {
+      const { data: integrations } = await adminClient
+        .from("booking_provider_integrations")
+        .select("id, credentials, settings, listing_id")
+        .eq("tenant_id", tenantId)
+        .eq("provider", "calcom")
+        .eq("active", true);
+      const integration =
+        (integrations || []).find(
+          (i: { listing_id?: string | null }) => i.listing_id === listingId
+        ) ??
+        (integrations || []).find(
+          (i: { listing_id?: string | null }) => i.listing_id == null
+        ) ??
+        (integrations || [])[0];
+
+      if (integration?.credentials) {
+        context.providerCredentials = integration.credentials as Record<string, unknown>;
+        context.providerSettings = integration.settings as Record<string, unknown>;
+      }
+    }
+
+    const provider = createBookingProvider(providerType, adminClient as any);
+    const slots = await provider.getAvailability(
+      context as any,
+      new Date(dateFrom),
+      new Date(dateTo)
+    );
 
     return NextResponse.json({
       success: true,
       data: { slots },
     });
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === 'BOOKING_NOT_IMPLEMENTED') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Booking system not yet implemented',
-          message: 'Booking functionality will be available after CRM integration',
-        },
-        { status: 501 }
-      );
-    }
-    
-    console.error('Availability check error:', error);
+    console.error("Availability check error:", error);
+    const msg = error instanceof Error ? error.message : "Failed to check availability";
     return NextResponse.json(
-      { success: false, error: 'Failed to check availability' },
+      { success: false, error: msg },
       { status: 500 }
     );
   }
 }
 
-export const GET = withRateLimit(handler, '/api/booking');
-
+export const GET = withRateLimit(handler, "/api/booking/availability");

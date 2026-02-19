@@ -13,7 +13,8 @@
     "./hooks": "./dist/hooks/index.js",
     "./types": "./dist/types/index.js",
     "./services": "./dist/services/index.js",
-    "./styles": "./dist/styles/booking.css"
+    "./styles": "./dist/styles/booking.css",
+    "./providers": "./dist/providers/index.js"
   },
   "files": [
     "dist",

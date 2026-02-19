@@ -102,6 +102,72 @@ See [FORKING.md](FORKING.md) for the complete customization guide.
 
 ---
 
+## Add-on: Consumer Booking (Appointment at a Merchant)
+
+Consumers can book appointments directly from a merchant's listing page. The flow supports both a built-in booking provider (database-only) and external providers like Cal.com.
+
+### How It Works
+
+```
+Consumer browses listings ──> Opens listing detail page ──> Clicks "Book Now"
+        │
+        ▼
+  BookingModal opens (3-step wizard)
+        │
+        ├─ Step 1: Select date & time (fetches real availability from provider)
+        ├─ Step 2: Select service, add pet name / special requests
+        └─ Step 3: Review & confirm
+                │
+                ▼
+        POST /api/booking/create
+                │
+                ├─ Auth check (Supabase session required)
+                ├─ Resolve booking provider (builtin or Cal.com)
+                ├─ Create booking via provider
+                └─ Return confirmation
+                        │
+                        ▼
+        Success screen with link to "My Bookings"
+```
+
+### Key Files
+
+| Role | File |
+|------|------|
+| Listing detail page | `apps/portal/app/listings/[slug]/page.tsx` |
+| Listing UI + Book Now CTA | `apps/portal/components/listings/ListingDetail.tsx` |
+| Booking modal (wizard) | `apps/portal/components/listings/BookingModal.tsx` |
+| Create booking API | `apps/portal/app/api/booking/create/route.ts` |
+| Availability API | `apps/portal/app/api/booking/availability/route.ts` |
+| Cancel booking API | `apps/portal/app/api/booking/cancel/route.ts` |
+| List bookings API | `apps/portal/app/api/booking/list/route.ts` |
+| My Bookings page | `apps/portal/app/account/bookings/page.tsx` |
+| Built-in provider | `packages/@listing-platform/booking/src/providers/local-booking-provider.ts` |
+| Cal.com provider | `packages/@listing-platform/booking/src/providers/calcom-provider.ts` |
+| Provider factory | `packages/@listing-platform/booking/src/providers/provider-factory.ts` |
+
+### Consumer-Facing Features
+
+- **Real-time availability** - Time slots are fetched from the booking provider when a date is selected (falls back to default slots if none configured)
+- **Auth-aware modal** - Unauthenticated users see a sign-up prompt; authenticated users see the booking form
+- **Success confirmation** - After booking, a confirmation screen shows the summary and links to "My Bookings"
+- **My Bookings page** (`/account/bookings`) - Consumers can view all their bookings, filter by status, and cancel pending/confirmed bookings
+- **Cancel support** - Cancellation flows through the same provider abstraction (builtin DB update or Cal.com API)
+
+### Provider Routing
+
+Each listing can be associated with a booking provider via `listings.booking_provider_id` → `booking_provider_integrations`. The API resolves the provider at booking time:
+
+| Provider | Behavior |
+|----------|----------|
+| `builtin` | Inserts directly into the `bookings` table |
+| `calcom` | Creates the booking via Cal.com API and stores a local record with `external_booking_id` |
+| `gohighlevel` | Placeholder (extends builtin; ready for GoHighLevel Appointments API) |
+
+See [docs/BOOKING_PROVIDER_INTEGRATION.md](docs/BOOKING_PROVIDER_INTEGRATION.md) for provider configuration details.
+
+---
+
 ## Project Structure
 
 ```

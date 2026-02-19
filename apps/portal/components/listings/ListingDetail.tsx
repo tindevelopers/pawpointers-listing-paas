@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { ListingMap } from "./ListingMap";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
+import { createClient } from "@/core/database/client";
 
 interface ListingDetailProps {
   listing: Listing;
@@ -18,6 +19,20 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        setIsLoggedIn(!!user);
+      } catch {
+        setIsLoggedIn(false);
+      }
+    }
+    checkAuth();
+  }, []);
 
   // Generate consistent mock data based on listing ID
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
@@ -597,8 +612,9 @@ export function ListingDetail({ listing }: ListingDetailProps) {
       <BookingModal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
+        listingId={listing.id}
         listingTitle={listing.title}
-        isLoggedIn={true}
+        isLoggedIn={isLoggedIn}
       />
 
       {/* Chat Modal */}

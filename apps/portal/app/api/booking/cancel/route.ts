@@ -1,73 +1,129 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { NotImplementedBookingProvider } from '@tinadmin/core';
-import { withRateLimit } from '@/middleware/api-rate-limit';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/core/database/server";
+import { createAdminClient } from "@/core/database/admin-client";
+import { createBookingProvider } from "@listing-platform/booking/providers";
+import { withRateLimit } from "@/middleware/api-rate-limit";
 
-/**
- * Cancel Booking API Route
- * 
- * Cancels a booking.
- * Currently returns 501 Not Implemented until a CRM is integrated.
- * 
- * Rate Limiting: 10 requests per minute per IP
- */
-
-// Force dynamic rendering to prevent build-time execution
-export const dynamic = 'force-dynamic';
-
-const bookingProvider = new NotImplementedBookingProvider();
+export const dynamic = "force-dynamic";
 
 async function handler(request: NextRequest) {
   try {
-    const body = await request.json();
-    
-    const { bookingId, consumerId } = body;
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (!bookingId || !consumerId) {
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Missing required fields: bookingId, consumerId' },
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { bookingId, reason } = body;
+
+    if (!bookingId) {
+      return NextResponse.json(
+        { success: false, error: "bookingId is required" },
         { status: 400 }
       );
     }
 
-    const cancelled = await bookingProvider.cancelBooking?.({
-      bookingId,
-      consumerId,
-    });
+    const adminClient = createAdminClient();
 
-    if (cancelled === undefined) {
+    const { data: booking } = await adminClient
+      .from("bookings")
+      .select("id, user_id, listing_id, status, tenant_id")
+      .eq("id", bookingId)
+      .single();
+
+    if (!booking) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Booking system not yet implemented',
-          message: 'Booking functionality will be available after CRM integration',
-        },
-        { status: 501 }
+        { success: false, error: "Booking not found" },
+        { status: 404 }
       );
     }
+
+    if ((booking as { user_id?: string }).user_id !== user.id) {
+      return NextResponse.json(
+        { success: false, error: "You can only cancel your own bookings" },
+        { status: 403 }
+      );
+    }
+
+    const status = (booking as { status?: string }).status;
+    if (status === "cancelled" || status === "completed") {
+      return NextResponse.json(
+        { success: false, error: `Booking is already ${status}` },
+        { status: 400 }
+      );
+    }
+
+    const tenantId = (booking as { tenant_id?: string }).tenant_id;
+    const listingId = (booking as { listing_id?: string }).listing_id;
+
+    let providerType: "builtin" | "gohighlevel" | "calcom" = "builtin";
+    if (listingId) {
+      const { data: listing } = await adminClient
+        .from("listings")
+        .select("booking_provider_id")
+        .eq("id", listingId)
+        .single();
+      if ((listing as { booking_provider_id?: string })?.booking_provider_id) {
+        const { data: integration } = await adminClient
+          .from("booking_provider_integrations")
+          .select("provider")
+          .eq("id", (listing as { booking_provider_id: string }).booking_provider_id)
+          .single();
+        if (integration?.provider) {
+          providerType = integration.provider as "builtin" | "gohighlevel" | "calcom";
+        }
+      }
+    }
+
+    const context: Record<string, unknown> = {
+      supabase: adminClient,
+      tenantId,
+      listingId,
+      userId: user.id,
+    };
+
+    if (providerType === "calcom" && tenantId) {
+      const { data: integrations } = await adminClient
+        .from("booking_provider_integrations")
+        .select("id, credentials, settings, listing_id")
+        .eq("tenant_id", tenantId)
+        .eq("provider", "calcom")
+        .eq("active", true);
+      const integration =
+        (integrations || []).find(
+          (i: { listing_id?: string | null }) => i.listing_id === listingId
+        ) ??
+        (integrations || []).find(
+          (i: { listing_id?: string | null }) => i.listing_id == null
+        ) ??
+        (integrations || [])[0];
+
+      if (integration?.credentials) {
+        context.providerCredentials = integration.credentials as Record<string, unknown>;
+        context.providerSettings = integration.settings as Record<string, unknown>;
+      }
+    }
+
+    const provider = createBookingProvider(providerType, adminClient as any);
+    await provider.cancelBooking(context as any, bookingId, reason);
 
     return NextResponse.json({
       success: true,
-      data: { cancelled },
+      data: { bookingId, status: "cancelled" },
     });
   } catch (error: unknown) {
-    if (error instanceof Error && error.message === 'BOOKING_NOT_IMPLEMENTED') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Booking system not yet implemented',
-          message: 'Booking functionality will be available after CRM integration',
-        },
-        { status: 501 }
-      );
-    }
-    
-    console.error('Booking cancellation error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to cancel booking' },
-      { status: 500 }
-    );
+    console.error("[POST /api/booking/cancel] Error:", error);
+    const msg = error instanceof Error ? error.message : "Failed to cancel booking";
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
 
-export const POST = withRateLimit(handler, '/api/booking');
-
+export const POST = withRateLimit(handler, "/api/booking/cancel");

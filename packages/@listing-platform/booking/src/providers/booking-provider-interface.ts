@@ -13,6 +13,10 @@ export interface BookingProviderContext {
   tenantId: string;
   listingId?: string;
   userId?: string;
+  /** Provider-specific credentials (e.g. Cal.com apiKey, baseUrl). Set when using external provider. */
+  providerCredentials?: Record<string, unknown>;
+  /** Provider-specific settings (e.g. calEventTypeId). Set when using external provider. */
+  providerSettings?: Record<string, unknown>;
 }
 
 export interface CreateBookingRequest extends CreateBookingInput {

@@ -70,6 +70,18 @@ export async function GET(
       );
     }
 
+    // Fetch AI assistant notes if table exists
+    try {
+      const { data: notes } = await (adminClient as any)
+        .from("booking_ai_assistant_notes")
+        .select("note_type, content, metadata, trigger_event, created_at")
+        .eq("booking_id", params.id)
+        .order("created_at", { ascending: false });
+      (booking as any).ai_assistant_notes = notes ?? [];
+    } catch {
+      (booking as any).ai_assistant_notes = [];
+    }
+
     // Return snake_case format - hooks will transform to camelCase
     return NextResponse.json(booking);
   } catch (error: any) {

@@ -372,6 +372,30 @@ export default function BookingDetailPage() {
                 <p className="text-gray-600 dark:text-gray-400">{booking.internalNotes}</p>
               </div>
             )}
+
+            {/* AI Assistant Notes */}
+            {(booking as any).ai_assistant_notes?.length > 0 && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 shadow-sm dark:border-blue-800 dark:bg-blue-900/20">
+                <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <span className="text-blue-600 dark:text-blue-400">AI Assistant</span>
+                </h2>
+                <div className="space-y-4">
+                  {(booking as any).ai_assistant_notes.map((note: { note_type: string; content: string; trigger_event?: string; created_at: string }, idx: number) => (
+                    <div key={idx} className="rounded-lg border border-blue-100 bg-white p-4 dark:border-blue-800 dark:bg-gray-900">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400 capitalize">
+                          {note.note_type.replace(/_/g, " ")}
+                        </span>
+                        {note.trigger_event && (
+                          <span className="text-xs text-gray-500">from {note.trigger_event}</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note.content}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

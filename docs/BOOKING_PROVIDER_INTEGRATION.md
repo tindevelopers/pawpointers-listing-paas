@@ -12,7 +12,7 @@ Migration: `supabase/migrations/20260121000000_add_booking_provider_integrations
 ## Providers
 - Built-in: uses local bookings/availability
 - GoHighLevel: placeholder routing (extend with Appointments API)
-- Cal.com: placeholder routing (extend with Cal.com API)
+- Cal.com: full integration (availability, create, cancel, webhooks, AI assistant)
 
 ## API
 - `POST /api/booking` supports `provider` override (`builtin|gohighlevel|calcom`)
@@ -24,7 +24,7 @@ Migration: `supabase/migrations/20260121000000_add_booking_provider_integrations
   - `GET /api/booking-providers/:id/health`
 - Webhooks:
   - `/api/webhooks/gohighlevel` (placeholder)
-  - `/api/webhooks/calcom` (placeholder)
+  - `/api/webhooks/calcom` (implemented: BOOKING_CREATED, CANCELLED, RESCHEDULED, REJECTED)
 
 ## UI
 - Integrations list includes Booking providers
@@ -48,12 +48,11 @@ POST /api/booking-providers
 3) In the Admin UI, choose provider in Integrations > Booking or in booking creation form.
 
 ## Extending Providers
+- Cal.com: implemented in `packages/@listing-platform/booking/src/providers/calcom-provider.ts`
 - Implement real API calls in:
-  - `packages/@listing-platform/booking/src/providers/local-booking-provider.ts` (GHL/Cal.com placeholders)
+  - `packages/@listing-platform/booking/src/providers/local-booking-provider.ts` (GHL placeholder)
   - Add OAuth/token handling and map responses to `Booking`
-- Add webhook signature verification in:
-  - `packages/api-server/src/routes/webhooks/gohighlevel.ts`
-  - `packages/api-server/src/routes/webhooks/calcom.ts`
+- Cal.com webhook: `apps/admin/app/api/webhooks/calcom/route.ts` (signature verification via `CALCOM_WEBHOOK_SECRET`)
 - Sync strategies: import/export/bidirectional based on provider settings.
 
 ## Notes
