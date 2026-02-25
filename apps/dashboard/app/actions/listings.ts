@@ -109,6 +109,50 @@ export async function upsertListing(formData: FormData) {
   revalidatePath("/listings");
 }
 
+export async function publishListing(formData: FormData) {
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ status: "published" })
+    .eq("id", id)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    console.error("publishListing error", error);
+    throw error;
+  }
+
+  revalidatePath("/listings");
+}
+
+export async function unpublishListing(formData: FormData) {
+  const id = formData.get("id")?.toString();
+  if (!id) return;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ status: "draft" })
+    .eq("id", id)
+    .eq("owner_id", user.id);
+
+  if (error) {
+    console.error("unpublishListing error", error);
+    throw error;
+  }
+
+  revalidatePath("/listings");
+}
+
 export async function deleteListing(formData: FormData) {
   const id = formData.get("id")?.toString();
   if (!id) return;

@@ -1,6 +1,6 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
-import { createListing } from "@/app/actions/listings";
+import { createListing, publishListing, unpublishListing } from "@/app/actions/listings";
 import { LocationField } from "./LocationField";
 
 export default async function ListingsPage() {
@@ -26,7 +26,7 @@ export default async function ListingsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gray-900">Listings</h1>
         <p className="text-sm text-gray-600">
-          Manage your listings. Drafts stay hidden until you publish them from the platform admin.
+          Manage your listings. Publish a draft to make it visible on the public portal.
         </p>
       </header>
 
@@ -75,7 +75,7 @@ export default async function ListingsPage() {
                 key={listing.id}
                 className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{listing.title}</h3>
                     <p className="text-xs text-gray-500">Slug: {listing.slug}</p>
@@ -83,9 +83,32 @@ export default async function ListingsPage() {
                       Ratings: {listing.rating_average ?? "–"} ({listing.rating_count ?? 0})
                     </p>
                   </div>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                    {listing.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                      {listing.status}
+                    </span>
+                    {listing.status === "draft" ? (
+                      <form action={publishListing} className="inline">
+                        <input type="hidden" name="id" value={listing.id} />
+                        <button
+                          type="submit"
+                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                        >
+                          Publish
+                        </button>
+                      </form>
+                    ) : listing.status === "published" ? (
+                      <form action={unpublishListing} className="inline">
+                        <input type="hidden" name="id" value={listing.id} />
+                        <button
+                          type="submit"
+                          className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200"
+                        >
+                          Unpublish
+                        </button>
+                      </form>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}

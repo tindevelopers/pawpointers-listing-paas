@@ -42,22 +42,40 @@ async function createSystemAdmin() {
   });
 
   try {
-    // 1. Get Platform Admin role ID
-    console.log("📋 Step 1: Finding Platform Admin role...");
-    const { data: roleData, error: roleError } = await supabase
+    // 1. Ensure Platform Admin role exists (insert if missing)
+    console.log("📋 Step 1: Ensuring Platform Admin role exists...");
+    let { data: roleData, error: roleError } = await supabase
       .from("roles")
       .select("id, name")
       .eq("name", "Platform Admin")
       .single();
 
     if (roleError || !roleData) {
-      console.error("❌ Error finding Platform Admin role:", roleError);
-      console.error("\n   Make sure migrations have been run and Platform Admin role exists.");
-      console.error("   Run migrations in Supabase Studio or check the roles table.");
-      process.exit(1);
+      console.log("   Platform Admin role not found, inserting...");
+      const { data: inserted, error: insertErr } = await supabase
+        .from("roles")
+        .insert({
+          name: "Platform Admin",
+          description: "Full system administrator with access to all tenants and system settings",
+          coverage: "platform",
+          permissions: ["*"],
+          gradient: "bg-gradient-to-r from-purple-600 to-blue-600",
+          max_seats: 0,
+          current_seats: 0,
+        })
+        .select("id, name")
+        .single();
+      if (insertErr) {
+        console.error("❌ Error creating Platform Admin role:", insertErr);
+        console.error("   Make sure the roles table exists (run migrations first).");
+        process.exit(1);
+      }
+      roleData = inserted;
+      console.log(`✅ Created Platform Admin role: ${roleData!.id}`);
+    } else {
+      console.log(`✅ Found Platform Admin role: ${roleData.id}`);
     }
-
-    console.log(`✅ Found Platform Admin role: ${roleData.id}\n`);
+    console.log("");
 
     // 2. Check if user already exists in Auth
     console.log("📋 Step 2: Checking if user exists in Auth...");
@@ -74,6 +92,13 @@ async function createSystemAdmin() {
     if (existingAuthUser) {
       console.log(`⚠️  User already exists in Auth: ${existingAuthUser.id}`);
       authUserId = existingAuthUser.id;
+      // Ensure password is set to the known value
+      const { error: updateErr } = await supabase.auth.admin.updateUserById(authUserId, { password });
+      if (updateErr) {
+        console.warn("⚠️  Could not update password (user may need to reset):", updateErr.message);
+      } else {
+        console.log("✅ Password updated to the default.");
+      }
     } else {
       // 3. Create user in Supabase Auth
       console.log("📋 Step 3: Creating user in Supabase Auth...");
