@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "children": [
+    {
+      "id": "dashboard-canvas",
+      "type": "frame",
+      "name": "Dashboard design canvas",
+      "x": 0,
+      "y": 0,
+      "width": 1200,
+      "height": 800,
+      "fill": "#FFFFFF"
+    }
+  ]
+}

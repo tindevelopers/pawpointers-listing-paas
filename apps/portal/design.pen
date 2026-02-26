@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "children": [
+    {
+      "id": "portal-canvas",
+      "type": "frame",
+      "name": "Portal design canvas",
+      "x": 0,
+      "y": 0,
+      "width": 1200,
+      "height": 800,
+      "fill": "#FFFFFF"
+    }
+  ]
+}
