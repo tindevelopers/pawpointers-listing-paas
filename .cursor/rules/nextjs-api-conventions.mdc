@@ -1,0 +1,12 @@
+---
+description: Next.js API route conventions for admin and portal apps
+alwaysApply: true
+---
+
+# Next.js API Conventions
+
+- Require authenticated user checks at the start of each route handler.
+- Resolve tenant context before data queries and enforce tenant filters on read/write operations.
+- Return JSON error objects with stable `code` and user-actionable `message`.
+- Keep external API calls server-side and include health-check endpoints for integration diagnostics.
+- Use explicit input validation for required fields and URL formats before database writes.

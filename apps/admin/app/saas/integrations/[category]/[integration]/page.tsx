@@ -6,7 +6,8 @@ import Label from "@/components/form/Label";
 import Switch from "@/components/form/switch/Switch";
 import { CheckIcon, XMarkIcon, ClockIcon, KeyIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import { useParams } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface IntegrationConfig {
   name: string;
@@ -60,6 +61,7 @@ const integrationConfigs: Record<string, IntegrationConfig> = {
     fields: [
       { name: "apiKey", label: "API Key", type: "password", required: true },
       { name: "apiUrl", label: "API URL", type: "url", required: false, placeholder: "https://api.cal.com" },
+      { name: "calEventTypeId", label: "Event Type ID", type: "text", required: false, placeholder: "e.g. 123 (from Cal.com event type URL or settings)" },
     ],
     additionalSettings: [
       { name: "syncDirection", label: "Sync Direction", type: "select", options: ["export", "import", "bidirectional"] },
@@ -423,7 +425,11 @@ const integrationConfigs: Record<string, IntegrationConfig> = {
 export default function IntegrationDetailPage() {
   const params = useParams();
   const category = (params.category as string) || "";
-  const integrationName = (params.integration as string)?.toLowerCase().replace(/\s+/g, "-");
+  // URL can be "cal.com" but config key is "calcom" – normalize so save/load works
+  const integrationName = (params.integration as string)
+    ?.toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/\./g, "");
   
   const config = integrationConfigs[integrationName] || {
     name: integrationName.charAt(0).toUpperCase() + integrationName.slice(1),
@@ -438,13 +444,156 @@ export default function IntegrationDetailPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [isConnected, setIsConnected] = useState(config.status === "connected");
+  const [loading, setLoading] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(integrationName === "calcom");
+  const [error, setError] = useState<string | null>(null);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>(null);
+  const [connectionMessageType, setConnectionMessageType] = useState<"success" | "error" | null>(null);
 
-  const handleConnect = () => {
-    // Simulate connection
+  // Load Cal.com connection status on mount
+  useEffect(() => {
+    if (integrationName !== "calcom") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/booking-providers?provider=calcom");
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.integration?.connected) {
+          setIsConnected(true);
+        }
+      } catch {
+        if (!cancelled) setStatusLoading(false);
+      } finally {
+        if (!cancelled) setStatusLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [integrationName]);
+
+  const handleConnect = async () => {
+    if (integrationName === "calcom") {
+      const apiKey = formData.apiKey?.trim();
+      if (!apiKey) {
+        setError("API Key is required.");
+        return;
+      }
+      const apiUrl = formData.apiUrl?.trim();
+      if (apiUrl && !/^https?:\/\//i.test(apiUrl)) {
+        setError("API URL must include http:// or https:// (example: https://api.cal.com).");
+        return;
+      }
+      setError(null);
+      setConnectionMessage(null);
+      setConnectionMessageType(null);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/booking-providers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: "calcom",
+            credentials: {
+              apiKey,
+              apiUrl: apiUrl || undefined,
+            },
+            settings: {
+              calEventTypeId: formData.calEventTypeId?.trim() || undefined,
+            },
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data?.error?.message || "Failed to save.");
+          return;
+        }
+        setIsConnected(true);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to save.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    // Fallback for other integrations (no backend yet)
     setIsConnected(true);
   };
 
-  const handleDisconnect = () => {
+  const handleTestConnection = async () => {
+    if (integrationName !== "calcom") return;
+
+    setError(null);
+    setConnectionMessage(null);
+    setConnectionMessageType(null);
+    setTestLoading(true);
+
+    try {
+      const statusRes = await fetch("/api/booking-providers?provider=calcom");
+      const statusData = await statusRes.json();
+      if (!statusRes.ok) {
+        throw new Error(statusData?.error?.message || "Failed to load Cal.com integration.");
+      }
+
+      const integrationId = statusData?.integration?.id as string | undefined;
+      if (!integrationId) {
+        setConnectionMessage("No Cal.com integration is saved yet. Save your API key first.");
+        setConnectionMessageType("error");
+        return;
+      }
+
+      const healthRes = await fetch(`/api/booking-providers/${integrationId}/health`);
+      const healthData = await healthRes.json();
+      if (!healthRes.ok) {
+        throw new Error(healthData?.error?.message || "Cal.com health check failed.");
+      }
+
+      if (healthData?.healthy) {
+        setConnectionMessage("Cal.com connection successful. API key and base URL are valid.");
+        setConnectionMessageType("success");
+      } else {
+        const providerError = (healthData?.error as string | undefined) || "Unknown health check error.";
+        setConnectionMessage(
+          `Cal.com connection failed: ${providerError}. Verify API key and URL (must include https://).`
+        );
+        setConnectionMessageType("error");
+      }
+    } catch (e) {
+      setConnectionMessage(
+        e instanceof Error
+          ? e.message
+          : "Connection test failed. Verify API URL format and API key."
+      );
+      setConnectionMessageType("error");
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (integrationName === "calcom") {
+      setError(null);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/booking-providers", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider: "calcom" }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data?.error?.message || "Failed to disconnect.");
+          return;
+        }
+        setIsConnected(false);
+        setFormData({});
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to disconnect.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     setIsConnected(false);
     setFormData({});
   };
@@ -480,23 +629,48 @@ export default function IntegrationDetailPage() {
             <p className="mt-2 text-gray-500 dark:text-gray-400">{config.description}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
-                statusColors[isConnected ? "connected" : "disconnected"]
-              }`}
-            >
-              <StatusIcon className="h-4 w-4" />
-              {isConnected ? "Connected" : "Disconnected"}
-            </span>
-            {isConnected ? (
-              <Button variant="outline" onClick={handleDisconnect}>
-                Disconnect
-              </Button>
+            {statusLoading ? (
+              <span className="text-sm text-gray-500 dark:text-gray-400">Loading...</span>
             ) : (
-              <Button onClick={handleConnect}>Connect</Button>
+              <>
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                    statusColors[isConnected ? "connected" : "disconnected"]
+                  }`}
+                >
+                  <StatusIcon className="h-4 w-4" />
+                  {isConnected ? "Connected" : "Disconnected"}
+                </span>
+                {isConnected ? (
+                  <Button variant="outline" onClick={handleDisconnect} disabled={loading}>
+                    {loading ? "Disconnecting..." : "Disconnect"}
+                  </Button>
+                ) : (
+                  <Button onClick={handleConnect} disabled={loading}>
+                    {loading ? "Connecting..." : "Connect"}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+            {error}
+          </div>
+        )}
+        {connectionMessage && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              connectionMessageType === "success"
+                ? "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
+                : "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
+            }`}
+          >
+            {connectionMessage}
+          </div>
+        )}
 
         {/* Connection Form */}
         {!isConnected && (
@@ -570,8 +744,12 @@ export default function IntegrationDetailPage() {
               ))}
             </div>
             <div className="mt-6 flex gap-3">
-              <Button variant="outline">Test Connection</Button>
-              <Button onClick={handleConnect}>Save & Connect</Button>
+              <Button variant="outline" disabled={loading || testLoading} onClick={handleTestConnection}>
+                {testLoading ? "Testing..." : "Test Connection"}
+              </Button>
+              <Button onClick={handleConnect} disabled={loading}>
+                {loading ? "Saving..." : "Save & Connect"}
+              </Button>
             </div>
           </div>
         )}
@@ -579,6 +757,21 @@ export default function IntegrationDetailPage() {
         {/* Connected Settings */}
         {isConnected && (
           <div className="space-y-6">
+            {integrationName === "calcom" && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Merchant Scheduling Setup
+                </h2>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Configure service-to-event mappings, staff eligibility, and round robin behavior.
+                </p>
+                <div className="mt-4">
+                  <Link href="/saas/integrations/booking/calcom-setup">
+                    <Button variant="outline">Open Cal.com Setup</Button>
+                  </Link>
+                </div>
+              </div>
+            )}
             {/* API Key Management */}
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="mb-4 flex items-center justify-between">

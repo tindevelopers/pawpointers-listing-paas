@@ -4,7 +4,7 @@
  */
 
 import type { CalComCredentials, CalComSettings } from "./calcom-types";
-import { getCalComApiBase } from "./calcom-types";
+import { DEFAULT_CALCOM_BASE_URL, getCalComApiBase } from "./calcom-types";
 
 const API_VERSION = "v2";
 
@@ -56,7 +56,15 @@ export class CalComApiClient {
 
   constructor(credentials: CalComCredentials) {
     const base = getCalComApiBase(credentials);
-    this.baseUrl = base.includes("/api/") ? base : `${base}/api/${API_VERSION}`;
+    // Cal.com uses /v2 path for both Cloud and self-hosted (docs: production endpoint path /v2)
+    if (base.endsWith("/v2")) {
+      this.baseUrl = base;
+    } else if (base === DEFAULT_CALCOM_BASE_URL) {
+      this.baseUrl = `${base}/v2`;
+    } else {
+      // Self-hosted: use /v2 (not /api/v2) to match Cal.com API v2 convention
+      this.baseUrl = base.includes("/api/") ? base : `${base}/${API_VERSION}`;
+    }
     this.apiKey = credentials.apiKey;
   }
 
@@ -69,6 +77,7 @@ export class CalComApiClient {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
       "Content-Type": "application/json",
+      "cal-api-version": "2024-08-13",
     };
 
     const res = await fetch(url, {
@@ -82,7 +91,8 @@ export class CalComApiClient {
       let errMsg: string;
       try {
         const errJson = JSON.parse(errText);
-        errMsg = errJson.message || errJson.error || errText;
+        const raw = errJson.message ?? errJson.error ?? errJson;
+        errMsg = typeof raw === "string" ? raw : JSON.stringify(raw);
       } catch {
         errMsg = errText || `HTTP ${res.status}`;
       }

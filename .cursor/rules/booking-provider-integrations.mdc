@@ -1,0 +1,12 @@
+---
+description: Booking provider integration implementation standards
+alwaysApply: true
+---
+
+# Booking Provider Integrations
+
+- Keep provider selection behind the existing booking provider abstraction in `packages/@listing-platform/booking/src/providers`.
+- Route external booking traffic through server-only API routes; never call provider APIs directly from client components.
+- Store provider credentials in `booking_provider_integrations.credentials` and provider-specific settings in `booking_provider_integrations.settings`.
+- For Cal.com, keep `calEventTypeId` and related mapping metadata in settings or explicit mapping tables.
+- When adding provider features, keep `createBooking`, `getAvailability`, `cancelBooking`, and `healthCheck` behavior consistent with `BookingProvider` interface contracts.
