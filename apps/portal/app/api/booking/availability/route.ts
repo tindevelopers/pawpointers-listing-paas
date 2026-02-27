@@ -68,14 +68,21 @@ async function handler(request: NextRequest) {
         .eq("tenant_id", tenantId)
         .eq("provider", "calcom")
         .eq("active", true);
+      const integrationsList =
+        ((integrations || []) as Array<{
+          id: string;
+          credentials?: Record<string, unknown> | null;
+          settings?: Record<string, unknown> | null;
+          listing_id?: string | null;
+        }>);
       const integration =
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id === listingId
         ) ??
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id == null
         ) ??
-        (integrations || [])[0];
+        integrationsList[0];
 
       if (integration?.credentials) {
         context.providerCredentials = integration.credentials as Record<string, unknown>;

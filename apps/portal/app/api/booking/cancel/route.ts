@@ -71,14 +71,16 @@ async function handler(request: NextRequest) {
         .select("booking_provider_id")
         .eq("id", listingId)
         .single();
-      if ((listing as { booking_provider_id?: string })?.booking_provider_id) {
+      const bookingProviderId = (listing as { booking_provider_id?: string } | null)?.booking_provider_id;
+      if (bookingProviderId) {
         const { data: integration } = await adminClient
           .from("booking_provider_integrations")
           .select("provider")
-          .eq("id", (listing as { booking_provider_id: string }).booking_provider_id)
+          .eq("id", bookingProviderId)
           .single();
-        if (integration?.provider) {
-          providerType = integration.provider as "builtin" | "gohighlevel" | "calcom";
+        const provider = (integration as { provider?: string } | null)?.provider;
+        if (provider) {
+          providerType = provider as "builtin" | "gohighlevel" | "calcom";
         }
       }
     }
@@ -97,14 +99,21 @@ async function handler(request: NextRequest) {
         .eq("tenant_id", tenantId)
         .eq("provider", "calcom")
         .eq("active", true);
+      const integrationsList =
+        ((integrations || []) as Array<{
+          id: string;
+          credentials?: Record<string, unknown> | null;
+          settings?: Record<string, unknown> | null;
+          listing_id?: string | null;
+        }>);
       const integration =
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id === listingId
         ) ??
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id == null
         ) ??
-        (integrations || [])[0];
+        integrationsList[0];
 
       if (integration?.credentials) {
         context.providerCredentials = integration.credentials as Record<string, unknown>;

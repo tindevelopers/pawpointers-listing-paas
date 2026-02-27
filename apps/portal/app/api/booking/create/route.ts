@@ -130,14 +130,21 @@ async function handler(req: NextRequest) {
         .eq("tenant_id", tenantId)
         .eq("provider", "calcom")
         .eq("active", true);
+      const integrationsList =
+        ((integrations || []) as Array<{
+          id: string;
+          credentials?: Record<string, unknown> | null;
+          settings?: Record<string, unknown> | null;
+          listing_id?: string | null;
+        }>);
       const integration =
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id === lid
         ) ??
-        (integrations || []).find(
+        integrationsList.find(
           (i: { listing_id?: string | null }) => i.listing_id == null
         ) ??
-        (integrations || [])[0];
+        integrationsList[0];
 
       if (!integration?.credentials) {
         return NextResponse.json(
@@ -177,7 +184,7 @@ async function handler(req: NextRequest) {
         currency,
       });
 
-      const b = result.booking as Record<string, unknown>;
+      const b = result.booking;
       return NextResponse.json({
         success: true,
         data: { bookingId: b.id, booking: b },
@@ -212,7 +219,7 @@ async function handler(req: NextRequest) {
       }
     );
 
-    const b = result.booking as Record<string, unknown>;
+    const b = result.booking;
     return NextResponse.json({
       success: true,
       data: { bookingId: b.id, booking: b },
