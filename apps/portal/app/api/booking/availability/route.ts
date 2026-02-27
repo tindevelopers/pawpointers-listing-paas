@@ -49,8 +49,9 @@ async function handler(request: NextRequest) {
         .select("provider")
         .eq("id", (listing as { booking_provider_id: string }).booking_provider_id)
         .single();
-      if (integration?.provider) {
-        providerType = integration.provider as "builtin" | "gohighlevel" | "calcom";
+      const provider = (integration as { provider?: string } | null)?.provider;
+      if (provider) {
+        providerType = provider as "builtin" | "gohighlevel" | "calcom";
       }
     }
 
