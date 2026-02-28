@@ -20,7 +20,12 @@ export default async function AdminControlPlaneLayout({
     }
   }
 
-  const authorized = await isPlatformAdmin();
+  let authorized = false;
+  try {
+    authorized = await isPlatformAdmin();
+  } catch {
+    redirect("/signin");
+  }
 
   if (!authorized) {
     redirect("/signin");

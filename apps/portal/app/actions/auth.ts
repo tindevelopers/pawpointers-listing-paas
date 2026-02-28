@@ -134,7 +134,12 @@ async function getPlatformTenantOrThrow(): Promise<string> {
       return newTenant.id;
     } catch (error) {
       console.error("Error creating platform tenant:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof (error as any)?.message === "string"
+            ? (error as any).message
+            : JSON.stringify(error ?? "Unknown error");
       throw new Error(
         `Platform tenant not configured. ${errorMessage} Please ensure a tenant with domain='platform' exists in the database.`
       );

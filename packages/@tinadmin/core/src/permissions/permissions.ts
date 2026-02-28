@@ -57,8 +57,10 @@ export async function getUserPermissions(
 
   const platformRole = user.roles as { id: string; name: string; permissions: string[] } | null;
   const platformRoleName = platformRole?.name || null;
-  const isPlatformAdmin = platformRoleName === "Platform Admin";
-  
+  // Only treat as Platform Admin when role is "Platform Admin" AND tenant_id is null (system-level).
+  // Users with Platform Admin role but a tenant_id (e.g. misconfigured) or service providers must not get full access.
+  const isPlatformAdmin = platformRoleName === "Platform Admin" && user.tenant_id === null;
+
   // Debug logging for Platform Admin detection
   if (isPlatformAdmin) {
     console.log(`[getUserPermissions] User ${userId} detected as Platform Admin (role: ${platformRoleName}, tenant_id: ${user.tenant_id})`);
@@ -155,6 +157,13 @@ function mapRoleToPermissions(roleName: string, rolePermissions: string[]): User
       "users.read",
       "tenants.read",
       "roles.read",
+      "analytics.read"
+    );
+  } else if (roleName === "Service Provider") {
+    // Service providers (members) get limited access: calendar/bookings for their tenant, no admin menus
+    permissions.push(
+      "users.read",
+      "tenants.read",
       "analytics.read"
     );
   }

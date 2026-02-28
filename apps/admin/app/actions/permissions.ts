@@ -13,6 +13,7 @@ import { getCurrentUserTenantId } from "@/core/multi-tenancy/validation";
 
 /**
  * Get current user's permissions
+ * Returns only serializable data for Next.js server actions.
  */
 export async function getCurrentUserPermissions() {
   const supabase = await createClient();
@@ -26,7 +27,8 @@ export async function getCurrentUserPermissions() {
     };
   }
 
-  return getUserPermissions(user.id);
+  const result = await getUserPermissions(user.id);
+  return JSON.parse(JSON.stringify(result));
 }
 
 /**
@@ -45,7 +47,8 @@ export async function getCurrentUserTenantPermissions() {
     return null;
   }
 
-  return getTenantPermissions(user.id, tenantId);
+  const result = await getTenantPermissions(user.id, tenantId);
+  return result == null ? null : JSON.parse(JSON.stringify(result));
 }
 
 /**
@@ -103,7 +106,8 @@ export async function getCurrentUserPermissionSource(permission: Permission) {
     };
   }
 
-  return getPermissionSource(user.id, tenantId, permission);
+  const result = await getPermissionSource(user.id, tenantId, permission);
+  return JSON.parse(JSON.stringify(result));
 }
 
 

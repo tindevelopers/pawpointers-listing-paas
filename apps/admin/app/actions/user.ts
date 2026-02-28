@@ -61,8 +61,11 @@ export async function getCurrentUser(): Promise<User | null> {
         console.error("[getCurrentUser] Fallback query also failed:", fallbackResult.error);
         return null;
       }
-      
-      return userData as User;
+      try {
+        return JSON.parse(JSON.stringify(userData)) as User;
+      } catch {
+        return null;
+      }
     }
     
     const result: { data: { email: string; full_name: string | null; tenant_id: string | null; roles: { name: string } | null } | null; error: any } = await adminClient
@@ -94,14 +97,12 @@ export async function getCurrentUser(): Promise<User | null> {
       return null;
     }
 
-    console.log("[getCurrentUser] User loaded successfully:", {
-      email: userData.email,
-      full_name: userData.full_name,
-      role: (userData.roles as any)?.name,
-      tenant_id: userData.tenant_id,
-    });
-
-    return userData as User;
+    // Ensure serializable return (Supabase can return Date objects; Next.js server actions require plain data)
+    try {
+      return JSON.parse(JSON.stringify(userData)) as User;
+    } catch (_serializeError) {
+      return null;
+    }
   } catch (error) {
     // Better error handling - log but don't throw to avoid serialization issues
     const errorMessage = error instanceof Error 

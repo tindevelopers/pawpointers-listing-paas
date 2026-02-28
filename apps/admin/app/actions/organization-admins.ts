@@ -112,8 +112,12 @@ export async function getAllOrganizationAdmins(): Promise<OrganizationAdmin[]> {
       console.error("[getAllOrganizationAdmins] Error fetching Organization Admins:", error);
       throw error;
     }
-    
-    return (data || []) as OrganizationAdmin[];
+    // Ensure serializable return for Next.js server actions (e.g. Date -> string)
+    try {
+      return JSON.parse(JSON.stringify(data || [])) as OrganizationAdmin[];
+    } catch (_serializeError) {
+      return [];
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[getAllOrganizationAdmins] Error:", errorMessage);

@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
@@ -8,6 +8,8 @@ import { signOut } from "@/app/actions/auth";
 import { getCurrentUser } from "@/app/actions/user";
 import { createClient as createBrowserClient } from "@/core/database/client";
 import type { Database } from "@/core/database/types";
+
+const PUBLIC_AUTH_PATHS = ["/signin", "/signup", "/admin/create-platform-admin", "/admin/check-platform-admin"];
 
 type User = Database["public"]["Tables"]["users"]["Row"] & {
   roles?: { name: string } | null;
@@ -18,6 +20,7 @@ export default function UserDropdown() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -29,35 +32,38 @@ export default function UserDropdown() {
 
   useEffect(() => {
     async function loadUser() {
+      // Skip server action on public auth pages to avoid "unexpected response" when unauthenticated
+      if (pathname && PUBLIC_AUTH_PATHS.some((p) => pathname.startsWith(p))) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         // Use server action to get current user (bypasses RLS properly)
         const userData = await getCurrentUser();
-        
+
         if (userData) {
-          console.log("[UserDropdown] User loaded:", {
-            email: userData.email,
-            full_name: userData.full_name,
-            role: (userData.roles as any)?.name,
-          });
           setUser(userData);
         } else {
-          console.log("[UserDropdown] No user data returned (user not authenticated or not found)");
           setUser(null);
         }
       } catch (error) {
-        // Better error handling for server action errors
-        const errorMessage = error instanceof Error 
-          ? error.message 
-          : typeof error === 'string' 
-          ? error 
-          : JSON.stringify(error);
-        
-        console.error("[UserDropdown] Error loading user:", {
-          message: errorMessage,
-          error: error,
-          type: typeof error,
-        });
+        // Server can return "An unexpected response was received from the server" when
+        // unauthenticated or when action response isn't serializable; treat as no user.
+        const message =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+              ? error
+              : (error as any)?.message ?? String(error);
+        const isUnexpectedResponse =
+          typeof message === "string" && message.includes("unexpected response");
+
+        if (!isUnexpectedResponse) {
+          console.error("[UserDropdown] Error loading user:", message);
+        }
         setUser(null);
       } finally {
         setLoading(false);
@@ -66,16 +72,19 @@ export default function UserDropdown() {
 
     loadUser();
 
-    // Listen for auth changes
-    const supabase = createBrowserClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadUser();
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    // Listen for auth changes (only subscribe when not on a public auth page)
+    if (pathname && !PUBLIC_AUTH_PATHS.some((p) => pathname.startsWith(p))) {
+      const supabase = createBrowserClient();
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(() => {
+        loadUser();
+      });
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [pathname]);
 
   async function handleSignOut() {
     try {

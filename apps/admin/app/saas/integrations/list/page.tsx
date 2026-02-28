@@ -3,7 +3,7 @@ import PageBreadcrumb from "@/components/common/PageBreadCrumb";
 import Button from "@/components/ui/button/Button";
 import { CheckIcon, XMarkIcon, ClockIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface Integration {
   id: string;
@@ -71,6 +71,8 @@ const integrations: Integration[] = [
   { id: "34", name: "Cal.com", category: "Booking", description: "Use Cal.com for scheduling", status: "disconnected" },
 ];
 
+const CALCOM_INTEGRATION_ID = "34";
+
 const categories = [
   "All",
   "CRM",
@@ -101,8 +103,39 @@ export default function IntegrationsListPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [integrationStatusOverrides, setIntegrationStatusOverrides] = useState<Record<string, "connected" | "disconnected">>({});
 
-  const filteredIntegrations = integrations.filter((integration) => {
+  // Fetch real connection status for Cal.com so list reflects saved API key. Refetch on focus so returning from detail page shows updated status.
+  const fetchCalComStatus = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/booking-providers?provider=calcom");
+      const data = await res.json();
+      if (data?.integration?.connected) {
+        setIntegrationStatusOverrides((prev) => ({ ...prev, [CALCOM_INTEGRATION_ID]: "connected" }));
+      } else {
+        setIntegrationStatusOverrides((prev) => ({ ...prev, [CALCOM_INTEGRATION_ID]: "disconnected" }));
+      }
+    } catch {
+      // Keep default disconnected on error
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCalComStatus();
+  }, [fetchCalComStatus]);
+
+  useEffect(() => {
+    const onFocus = () => fetchCalComStatus();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [fetchCalComStatus]);
+
+  const integrationsWithStatus = integrations.map((i) => ({
+    ...i,
+    status: integrationStatusOverrides[i.id] ?? i.status,
+  }));
+
+  const filteredIntegrations = integrationsWithStatus.filter((integration) => {
     const matchesSearch =
       integration.name.toLowerCase().includes(search.toLowerCase()) ||
       integration.description.toLowerCase().includes(search.toLowerCase());
