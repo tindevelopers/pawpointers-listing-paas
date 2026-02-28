@@ -3,7 +3,7 @@
 import { Listing } from "@/lib/listings";
 import { useMemo } from "react";
 import Link from "next/link";
-import "mapbox-gl/dist/mapbox-gl.css";
+import "@/styles/mapbox-gl.css";
 import { Map, Marker } from "@listing-platform/maps";
 
 interface MapViewProps {

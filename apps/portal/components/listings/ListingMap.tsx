@@ -1,6 +1,6 @@
 "use client";
 
-import "mapbox-gl/dist/mapbox-gl.css";
+import "@/styles/mapbox-gl.css";
 import { Map, Marker } from "@listing-platform/maps";
 
 /**
