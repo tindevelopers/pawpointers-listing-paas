@@ -362,3 +362,12 @@ export async function signIn(formData: FormData): Promise<{ error?: string } | v
     return { error: friendlyMessage };
   }
 }
+
+/**
+ * Sign out current user (portal)
+ */
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/");
+}
