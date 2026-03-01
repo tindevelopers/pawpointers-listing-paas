@@ -131,7 +131,6 @@
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "playwright": "^1.58.2",
     "postcss": "^8",
     "tsx": "^4.19.0",
     "turbo": "^2.3.3",
