@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+      - develop
       - pawpointers-portal
   pull_request:
     branches:
       - main
+      - develop
       - pawpointers-portal
 
 env:
