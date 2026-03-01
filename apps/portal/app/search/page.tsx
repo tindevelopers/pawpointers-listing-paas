@@ -63,16 +63,12 @@ function SearchContent() {
     }
   };
 
-  // Auto-search if there are params - use useEffect to avoid calling during render
+  // Run search whenever URL params change (query, location, category, etc.)
   useEffect(() => {
-    const searchQuery = searchParams.get("q");
     const hasSearchParams = searchParams.toString().length > 0;
-    
-    if (hasSearchParams && !hasSearched) {
+    if (hasSearchParams) {
       performSearch();
-    }
-    // Reset search state when query changes
-    if (hasSearched && searchQuery !== searchParams.get("q")) {
+    } else {
       setHasSearched(false);
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps

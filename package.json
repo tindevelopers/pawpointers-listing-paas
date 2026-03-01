@@ -84,7 +84,8 @@
     "update:package": "tsx scripts/selective-update.ts --package",
     "update:validate": "tsx scripts/validate-update.ts",
     "update:rollback": "tsx scripts/rollback-update.ts",
-    "update:history": "tsx scripts/rollback-update.ts list"
+    "update:history": "tsx scripts/rollback-update.ts list",
+    "book:portal": "tsx scripts/book-appointment-browser.ts"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -130,6 +131,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.58.2",
     "postcss": "^8",
     "tsx": "^4.19.0",
     "turbo": "^2.3.3",

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { type Listing, formatPrice } from "@/lib/listings";
 
 /**
@@ -21,6 +22,7 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, className = "" }: ListingCardProps) {
+  const router = useRouter();
   const primaryImage = listing.images?.[0] || "/images/placeholder-listing.jpg";
 
   // Generate consistent mock data based on listing ID (prevents hydration mismatch)
@@ -87,7 +89,23 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           <button
             onClick={(e) => {
               e.preventDefault();
-              // Handle quick booking
+              e.stopPropagation();
+              // #region agent log
+              fetch("http://127.0.0.1:7249/ingest/78598d8a-083c-4a66-bee9-d588a88f22f7", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "164171" },
+                body: JSON.stringify({
+                  sessionId: "164171",
+                  location: "ListingCard.tsx:BookNow:onClick",
+                  message: "Book Now clicked",
+                  data: { listingId: listing.id, slug: listing.slug },
+                  timestamp: Date.now(),
+                  hypothesisId: "A",
+                  runId: "post-fix",
+                }),
+              }).catch(() => {});
+              // #endregion
+              router.push(`/listings/${listing.slug}#book`);
             }}
             className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
           >

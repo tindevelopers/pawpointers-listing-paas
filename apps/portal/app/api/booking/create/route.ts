@@ -6,9 +6,20 @@ import { withRateLimit } from "@/middleware/api-rate-limit";
 
 export const dynamic = "force-dynamic";
 
+/** Admin client only when needed (e.g. Cal.com credentials). Consumer booking uses user client + RLS. */
+function getAdminClientOrNull(): ReturnType<typeof createAdminClient> | null {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  try {
+    return createAdminClient();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * POST /api/booking/create
- * Create a booking for a listing (portal consumer flow)
+ * Create a booking for a listing (portal consumer flow).
+ * Uses the authenticated user's Supabase client and RLS; admin client only for external provider credentials.
  */
 async function handler(req: NextRequest) {
   try {
@@ -70,8 +81,8 @@ async function handler(req: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
-    const { data: listing } = await adminClient
+    // Consumer flow: use user's client (RLS applies). Public can view published listings.
+    const { data: listing } = await supabase
       .from("listings")
       .select("id, tenant_id, booking_provider_id")
       .eq("id", lid)
@@ -93,15 +104,20 @@ async function handler(req: NextRequest) {
     }
 
     let providerType: "builtin" | "gohighlevel" | "calcom" = "builtin";
-    if ((listing as { booking_provider_id?: string }).booking_provider_id) {
-      const { data: integration } = await adminClient
-        .from("booking_provider_integrations")
-        .select("provider")
-        .eq("id", (listing as { booking_provider_id: string }).booking_provider_id)
-        .single();
-      const provider = (integration as { provider?: string } | null)?.provider;
-      if (provider) {
-        providerType = provider as "builtin" | "gohighlevel" | "calcom";
+    const bookingProviderId = (listing as { booking_provider_id?: string }).booking_provider_id;
+    if (bookingProviderId) {
+      // Resolve provider type: need admin only to read integration (credentials are protected by RLS).
+      const adminClient = getAdminClientOrNull();
+      if (adminClient) {
+        const { data: integration } = await adminClient
+          .from("booking_provider_integrations")
+          .select("provider")
+          .eq("id", bookingProviderId)
+          .single();
+        const provider = (integration as { provider?: string } | null)?.provider;
+        if (provider) {
+          providerType = provider as "builtin" | "gohighlevel" | "calcom";
+        }
       }
     }
 
@@ -109,7 +125,7 @@ async function handler(req: NextRequest) {
     let basePrice = 0;
     let currency = "USD";
     if (evtId) {
-      const { data: eventType } = await adminClient
+      const { data: eventType } = await supabase
         .from("event_types")
         .select("price, currency")
         .eq("id", evtId)
@@ -124,6 +140,18 @@ async function handler(req: NextRequest) {
     const totalAmount = basePrice + serviceFee + taxAmount;
 
     if (providerType === "calcom") {
+      const adminClient = getAdminClientOrNull();
+      if (!adminClient) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Cal.com booking is not configured for this environment. " +
+              "Set SUPABASE_SERVICE_ROLE_KEY in .env.local for listings that use Cal.com.",
+          },
+          { status: 503 }
+        );
+      }
       const { data: integrations } = await adminClient
         .from("booking_provider_integrations")
         .select("id, credentials, settings, listing_id")
@@ -191,10 +219,11 @@ async function handler(req: NextRequest) {
       });
     }
 
-    const provider = createBookingProvider("builtin", adminClient as any);
+    // Builtin provider: use user's client so RLS "Users can create bookings" (user_id = auth.uid()) applies.
+    const provider = createBookingProvider("builtin", supabase as any);
     const result = await provider.createBooking(
       {
-        supabase: adminClient as any,
+        supabase: supabase as any,
         tenantId,
         listingId: lid,
         userId: user.id,

@@ -6,6 +6,16 @@ import { withRateLimit } from "@/middleware/api-rate-limit";
 
 export const dynamic = "force-dynamic";
 
+function getAdminClientOrNull(): ReturnType<typeof createAdminClient> | null {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  try {
+    return createAdminClient();
+  } catch {
+    return null;
+  }
+}
+
+/** Consumer cancel: use user client + RLS; admin only for Cal.com credentials. */
 async function handler(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -31,9 +41,8 @@ async function handler(request: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
-
-    const { data: booking } = await adminClient
+    // RLS "Users can view their own bookings" – only their row is returned
+    const { data: booking } = await supabase
       .from("bookings")
       .select("id, user_id, listing_id, status, tenant_id")
       .eq("id", bookingId)
@@ -66,33 +75,43 @@ async function handler(request: NextRequest) {
 
     let providerType: "builtin" | "gohighlevel" | "calcom" = "builtin";
     if (listingId) {
-      const { data: listing } = await adminClient
+      const { data: listing } = await supabase
         .from("listings")
         .select("booking_provider_id")
         .eq("id", listingId)
         .single();
       const bookingProviderId = (listing as { booking_provider_id?: string } | null)?.booking_provider_id;
       if (bookingProviderId) {
-        const { data: integration } = await adminClient
-          .from("booking_provider_integrations")
-          .select("provider")
-          .eq("id", bookingProviderId)
-          .single();
-        const provider = (integration as { provider?: string } | null)?.provider;
-        if (provider) {
-          providerType = provider as "builtin" | "gohighlevel" | "calcom";
+        const adminClient = getAdminClientOrNull();
+        if (adminClient) {
+          const { data: integration } = await adminClient
+            .from("booking_provider_integrations")
+            .select("provider")
+            .eq("id", bookingProviderId)
+            .single();
+          const provider = (integration as { provider?: string } | null)?.provider;
+          if (provider) {
+            providerType = provider as "builtin" | "gohighlevel" | "calcom";
+          }
         }
       }
     }
 
-    const context: Record<string, unknown> = {
-      supabase: adminClient,
+    let context: Record<string, unknown> = {
+      supabase,
       tenantId,
       listingId,
       userId: user.id,
     };
 
     if (providerType === "calcom" && tenantId) {
+      const adminClient = getAdminClientOrNull();
+      if (!adminClient) {
+        return NextResponse.json(
+          { success: false, error: "Cal.com cancel is not configured. Set SUPABASE_SERVICE_ROLE_KEY." },
+          { status: 503 }
+        );
+      }
       const { data: integrations } = await adminClient
         .from("booking_provider_integrations")
         .select("id, credentials, settings, listing_id")
@@ -119,9 +138,10 @@ async function handler(request: NextRequest) {
         context.providerCredentials = integration.credentials as Record<string, unknown>;
         context.providerSettings = integration.settings as Record<string, unknown>;
       }
+      context.supabase = adminClient;
     }
 
-    const provider = createBookingProvider(providerType, adminClient as any);
+    const provider = createBookingProvider(providerType, (context.supabase as any) as any);
     await provider.cancelBooking(context as any, bookingId, reason);
 
     return NextResponse.json({

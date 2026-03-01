@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useGeocode } from "@listing-platform/maps";
 
 /**
  * SearchBar - Enhanced search component for service listings
  *
  * Features:
  * - Service type selector
- * - Location-based search
+ * - Location-based search (city, zip, or "Use My Location")
  * - Date/time picker for service bookings
  * - Advanced filters button
  */
@@ -32,6 +33,17 @@ export function SearchBar({
   const [serviceType, setServiceType] = useState(searchParams.get("type") || "all");
   const [location, setLocation] = useState(searchParams.get("location") || "");
   const [selectedDate, setSelectedDate] = useState(searchParams.get("date") || "");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const { reverseGeocode } = useGeocode({
+    provider: "mapbox",
+    apiKey: typeof process !== "undefined" ? process.env.NEXT_PUBLIC_MAPBOX_TOKEN : undefined,
+  });
+
+  // Keep location input in sync with URL (e.g. after "Use My Location" or external link)
+  useEffect(() => {
+    setLocation(searchParams.get("location") || "");
+  }, [searchParams]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -69,6 +81,42 @@ export function SearchBar({
     },
     [query, serviceType, location, selectedDate, router, searchParams]
   );
+
+  const handleUseMyLocation = useCallback(() => {
+    setLocationError(null);
+    if (!navigator.geolocation) {
+      setLocationError("Location is not supported by your browser.");
+      return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const result = await reverseGeocode({ lat: latitude, lng: longitude });
+          if (result) {
+            const placeName = result.formatted || [result.city, result.region, result.country].filter(Boolean).join(", ") || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+            setLocation(placeName);
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("location", placeName);
+            params.delete("page");
+            router.push(`/search?${params.toString()}`);
+          } else {
+            setLocationError("Could not resolve your location. Try entering a city or zip code.");
+          }
+        } catch {
+          setLocationError("Could not resolve your location. Try entering a city or zip code.");
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      () => {
+        setLocationError("Location access denied. Enter a city or zip code to search.");
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, [reverseGeocode, router, searchParams]);
 
   return (
     <form onSubmit={handleSubmit} className={`flex flex-col gap-3 ${className}`}>
@@ -192,18 +240,30 @@ export function SearchBar({
           />
         </div>
 
-        {/* Near Me Button */}
+        {/* Use My Location - geolocation + reverse geocode, then search */}
         <button
           type="button"
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium whitespace-nowrap"
+          onClick={handleUseMyLocation}
+          disabled={locationLoading}
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <svg className="h-5 w-5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="hidden sm:inline">Use My Location</span>
+          {locationLoading ? (
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-cyan-500 border-t-transparent" />
+          ) : (
+            <svg className="h-5 w-5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          )}
+          <span className="hidden sm:inline">{locationLoading ? "Finding…" : "Use My Location"}</span>
         </button>
       </div>
+
+      {locationError && (
+        <p className="text-sm text-amber-600 dark:text-amber-400" role="alert">
+          {locationError}
+        </p>
+      )}
     </form>
   );
 }

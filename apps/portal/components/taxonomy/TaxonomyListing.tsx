@@ -9,6 +9,7 @@ import { isFeatureEnabled } from "@/lib/taxonomy-config";
 import { ReviewsList, RatingDisplay } from "@listing-platform/reviews";
 import { Map, Marker } from "@listing-platform/maps";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
+import { GetDirectionsButtons } from "../listings/GetDirectionsButtons";
 
 interface TaxonomyListingProps {
   listing: Listing;
@@ -134,14 +135,13 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
                 </p>
               )}
               <div className="px-6 pt-4">
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-                >
-                  Get directions
-                </a>
+                <GetDirectionsButtons
+                  destination={
+                    location.lat != null && location.lng != null
+                      ? { lat: location.lat, lng: location.lng }
+                      : { address: location.address || "" }
+                  }
+                />
               </div>
               <div className="h-[300px] mt-4">
                 <Map

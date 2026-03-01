@@ -2,11 +2,12 @@
 
 import "@/styles/mapbox-gl.css";
 import { Map, Marker } from "@listing-platform/maps";
+import { GoogleMapEmbed } from "./GoogleMapEmbed";
 
 /**
- * ListingMap - Map component for listing location
- * Uses @listing-platform/maps (Mapbox) for interactive map display.
- * Requires NEXT_PUBLIC_MAPBOX_TOKEN to be set.
+ * ListingMap - Map component for listing location.
+ * Uses Google Maps embed when NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY is set,
+ * otherwise falls back to Mapbox (NEXT_PUBLIC_MAPBOX_TOKEN).
  */
 
 interface ListingMapProps {
@@ -16,9 +17,27 @@ interface ListingMapProps {
 }
 
 export function ListingMap({ lat, lng, title }: ListingMapProps) {
-  const hasToken = typeof process !== "undefined" && process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const hasGoogleKey =
+    typeof process !== "undefined" &&
+    !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY;
+  const hasMapboxToken =
+    typeof process !== "undefined" && !!process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-  if (!hasToken) {
+  if (hasGoogleKey) {
+    return (
+      <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700">
+        <GoogleMapEmbed
+          lat={lat}
+          lng={lng}
+          zoom={14}
+          title={title}
+          className="w-full h-full min-h-[200px]"
+        />
+      </div>
+    );
+  }
+
+  if (!hasMapboxToken) {
     return (
       <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
         <p className="text-sm font-medium">{title}</p>
@@ -26,7 +45,8 @@ export function ListingMap({ lat, lng, title }: ListingMapProps) {
           {lat.toFixed(4)}, {lng.toFixed(4)}
         </p>
         <p className="text-xs mt-2 text-gray-400">
-          Set NEXT_PUBLIC_MAPBOX_TOKEN to show the map
+          Set NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY or NEXT_PUBLIC_MAPBOX_TOKEN
+          to show the map
         </p>
       </div>
     );

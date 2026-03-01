@@ -35,6 +35,8 @@ CREATE TRIGGER trig_sync_listing_location
 -- =============================================================================
 -- PUBLIC LISTINGS VIEW
 -- =============================================================================
+-- Drop first so we can change column type (location: text -> jsonb)
+DROP VIEW IF EXISTS public_listings_view CASCADE;
 
 CREATE OR REPLACE VIEW public_listings_view AS
 SELECT 

@@ -43,6 +43,9 @@
       ],
       "@tinadmin/config": [
         "../../packages/@tinadmin/config/src"
+      ],
+      "@listing-platform/maps": [
+        "../../packages/@listing-platform/maps/src"
       ]
     }
   },

@@ -1,7 +1,41 @@
 @import "tailwindcss";
 
+/* Orange theme - matches portal for merchant dashboard differentiation */
 :root {
   color-scheme: light;
+  --warm-primary: 249, 115, 22;        /* Warm orange #F97316 */
+  --warm-primary-light: 255, 237, 213; /* Light warm orange #FFEDD5 */
+  --warm-primary-dark: 194, 65, 12;    /* Dark warm orange #C2410C */
+}
+
+@theme {
+  --color-warm-primary-50: #fff7ed;
+  --color-warm-primary-100: #ffedd5;
+  --color-warm-primary-200: #fed7aa;
+  --color-warm-primary-300: #fdba74;
+  --color-warm-primary-400: #fb923c;
+  --color-warm-primary-500: #f97316;
+  --color-warm-primary-600: #ea580c;
+  --color-warm-primary-700: #c2410c;
+  --color-warm-primary-800: #9a3412;
+  --color-warm-primary-900: #7c2d12;
+  --color-warm-primary-950: #431407;
+
+  /* brand alias for admin-style components (orange theme) */
+  --color-brand-50: #fff7ed;
+  --color-brand-100: #ffedd5;
+  --color-brand-400: #fb923c;
+  --color-brand-500: #f97316;
+  --color-brand-600: #ea580c;
+
+  /* success for badges */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
 }
 
 body {
@@ -9,16 +43,84 @@ body {
 }
 
 a {
-  @apply text-indigo-600 hover:text-indigo-700;
+  @apply text-orange-600 hover:text-orange-700;
 }
 
 input,
 textarea,
 select {
-  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500;
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500;
 }
 
 button {
   @apply rounded-lg px-4 py-2 font-medium;
 }
 
+/* Menu utilities - orange theme for sidebar (mirrors admin panel structure) */
+@utility menu-item {
+  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;
+}
+
+@utility menu-item-active {
+  @apply bg-orange-50 text-orange-600 dark:bg-orange-500/[0.12] dark:text-orange-400;
+}
+
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 group-hover:text-gray-700 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-gray-300;
+}
+
+@utility menu-item-icon-active {
+  @apply text-orange-600 dark:text-orange-400;
+}
+
+@utility menu-item-icon-inactive {
+  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+}
+
+@utility menu-item-arrow-active {
+  @apply rotate-180 text-orange-600 dark:text-orange-400;
+}
+
+@utility menu-dropdown-item {
+  @apply relative text-sm flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium;
+}
+
+@utility menu-dropdown-item-active {
+  @apply bg-orange-50 text-orange-600 dark:bg-orange-500/[0.12] dark:text-orange-400;
+}
+
+@utility menu-dropdown-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+}
+
+@utility menu-dropdown-badge {
+  @apply text-success-600 dark:text-success-500 block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase;
+}
+
+@utility menu-dropdown-badge-active {
+  @apply bg-success-100 dark:bg-success-500/20;
+}
+
+@utility menu-dropdown-badge-inactive {
+  @apply bg-success-50 group-hover:bg-success-100 dark:bg-success-500/15 dark:group-hover:bg-success-500/20;
+}
+
+@utility menu-dropdown-badge-pro {
+  @apply text-brand-600 dark:text-brand-500 block rounded-full px-2.5 py-0.5 text-xs font-medium uppercase;
+}
+
+@utility menu-dropdown-badge-pro-active {
+  @apply bg-brand-100 dark:bg-brand-500/20;
+}
+
+@utility menu-dropdown-badge-pro-inactive {
+  @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -1,6 +1,35 @@
 -- Cal.com service/staff mapping model for merchant setup
 -- Supports event type per service + round-robin eligible hosts.
 
+-- Ensure event_types exists (from add_calcom_booking_features; may be missing if history repaired)
+CREATE TABLE IF NOT EXISTS event_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+  tenant_id uuid REFERENCES tenants(id),
+  name text NOT NULL,
+  slug text NOT NULL,
+  description text,
+  duration_minutes int NOT NULL DEFAULT 30,
+  price numeric(10,2),
+  currency text DEFAULT 'USD',
+  buffer_before int DEFAULT 0,
+  buffer_after int DEFAULT 0,
+  requires_confirmation bool DEFAULT false,
+  requires_payment bool DEFAULT true,
+  instant_booking bool DEFAULT true,
+  custom_questions jsonb DEFAULT '[]'::jsonb,
+  recurring_config jsonb,
+  timezone text DEFAULT 'UTC',
+  metadata jsonb DEFAULT '{}'::jsonb,
+  active bool DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(listing_id, slug),
+  CHECK (duration_minutes > 0),
+  CHECK (buffer_before >= 0),
+  CHECK (buffer_after >= 0)
+);
+
 CREATE TABLE IF NOT EXISTS service_booking_provider_mappings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid REFERENCES tenants(id) ON DELETE CASCADE,
@@ -31,6 +60,22 @@ CREATE INDEX IF NOT EXISTS idx_service_provider_mapping_provider
 
 CREATE INDEX IF NOT EXISTS idx_service_provider_mapping_event_type
   ON service_booking_provider_mappings (event_type_id);
+
+-- Ensure team_members exists (from add_calcom_booking_features)
+CREATE TABLE IF NOT EXISTS team_members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id uuid REFERENCES tenants(id),
+  role text DEFAULT 'member' CHECK (role IN ('owner', 'member', 'viewer')),
+  event_type_ids uuid[] DEFAULT '{}'::uuid[],
+  availability_override jsonb,
+  round_robin_enabled bool DEFAULT false,
+  round_robin_weight int DEFAULT 1,
+  active bool DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
 -- Add optional Cal.com identity tracking to team members.
 ALTER TABLE team_members

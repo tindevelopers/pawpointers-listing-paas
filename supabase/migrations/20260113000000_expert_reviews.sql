@@ -4,6 +4,26 @@
 -- Adds support for Pet Parent vs PawPointers Expert reviews, including
 -- public expert identity + credentials and optional mystery shopper flag.
 
+-- Ensure is_platform_admin() exists (may be missing if migration history was repaired or DB set up out of order)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = 'public' AND p.proname = 'is_platform_admin') THEN
+    CREATE OR REPLACE FUNCTION public.is_platform_admin()
+    RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER STABLE SET search_path = public, pg_temp
+    AS $fn$
+    DECLARE user_role TEXT; uid UUID;
+    BEGIN
+      uid := auth.uid();
+      IF uid IS NULL THEN RETURN false; END IF;
+      SELECT r.name INTO user_role FROM public.users u JOIN public.roles r ON u.role_id = r.id WHERE u.id = uid LIMIT 1;
+      RETURN COALESCE(user_role = 'Platform Admin', false);
+    EXCEPTION WHEN OTHERS THEN RETURN false;
+    END;
+    $fn$;
+    GRANT EXECUTE ON FUNCTION public.is_platform_admin() TO authenticated, anon, service_role, postgres;
+  END IF;
+END $$;
+
 -- -----------------------------
 -- Expert profiles (public-facing)
 -- -----------------------------

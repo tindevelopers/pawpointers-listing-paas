@@ -5,6 +5,41 @@
 -- that matches what the portal app expects
 --
 -- NOTE: This migration must run after the core listings/taxonomy schema exists.
+-- If listing_taxonomies/taxonomy_terms are missing (e.g. migration history repaired), create minimal stubs.
+
+CREATE TABLE IF NOT EXISTS taxonomy_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid,
+  name text NOT NULL,
+  slug text NOT NULL,
+  description text,
+  hierarchical bool DEFAULT true,
+  config jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS taxonomy_terms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid,
+  taxonomy_type_id uuid REFERENCES taxonomy_types(id) ON DELETE CASCADE,
+  parent_id uuid,
+  name text NOT NULL,
+  slug text NOT NULL,
+  description text,
+  metadata jsonb DEFAULT '{}',
+  display_order int DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS listing_taxonomies (
+  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+  taxonomy_term_id uuid REFERENCES taxonomy_terms(id) ON DELETE CASCADE,
+  taxonomy_type_id uuid REFERENCES taxonomy_types(id),
+  is_primary bool DEFAULT false,
+  PRIMARY KEY (listing_id, taxonomy_term_id)
+);
 
 CREATE OR REPLACE VIEW public_listings_view AS
 SELECT 

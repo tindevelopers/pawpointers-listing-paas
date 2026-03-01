@@ -73,6 +73,9 @@ const nextConfig: NextConfig = {
       '@tinadmin/ui-consumer': '../../packages/@tinadmin/ui-consumer/src',
       '@tinadmin/config': '../../packages/@tinadmin/config/src',
       '@/core': '../../packages/@tinadmin/core/src',
+      // Resolve @listing-platform/booking so Turbopack finds the built package
+      '@listing-platform/booking': '../../packages/@listing-platform/booking',
+      '@listing-platform/booking/providers': '../../packages/@listing-platform/booking/dist/providers/index.js',
     },
   },
 
@@ -85,13 +88,17 @@ const nextConfig: NextConfig = {
     
     // Optimize bundle size with aliases for better tree-shaking
     const path = require('path');
+    const bookingPath = path.resolve(__dirname, '../../packages/@listing-platform/booking');
     config.resolve.alias = {
       ...config.resolve.alias,
       '@tinadmin/core': path.resolve(__dirname, '../../packages/@tinadmin/core/src'),
       '@tinadmin/ui-consumer': path.resolve(__dirname, '../../packages/@tinadmin/ui-consumer/src'),
       '@tinadmin/config': path.resolve(__dirname, '../../packages/@tinadmin/config/src'),
-      // Resolve @/core/* imports from @tinadmin/core package
+      // Resolve @/core/* imports from @tinadmin core package
       '@/core': path.resolve(__dirname, '../../packages/@tinadmin/core/src'),
+      // Resolve @listing-platform/booking (uses package exports from dist)
+      '@listing-platform/booking': bookingPath,
+      '@listing-platform/booking/providers': path.join(bookingPath, 'dist/providers/index.js'),
     };
     
     if (!isServer) {

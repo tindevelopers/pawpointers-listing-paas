@@ -3,6 +3,26 @@
 -- ===================================
 -- Adds AI moderation fields and updates triggers to process ALL reviews
 
+-- Ensure review_moderation_queue exists (may be missing if migration history was repaired)
+CREATE TABLE IF NOT EXISTS public.review_moderation_queue (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  review_id UUID NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+  tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
+  moderation_status TEXT DEFAULT 'pending' CHECK (moderation_status IN ('pending', 'approved', 'rejected', 'escalated')),
+  flagged_reason TEXT,
+  auto_flagged BOOLEAN DEFAULT FALSE,
+  auto_flag_reasons TEXT[],
+  moderator_id UUID REFERENCES users(id),
+  moderation_notes TEXT,
+  moderated_at TIMESTAMPTZ,
+  priority TEXT DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+  assigned_to UUID REFERENCES users(id),
+  assigned_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(review_id)
+);
+
 -- Add AI moderation fields to review_moderation_queue
 ALTER TABLE public.review_moderation_queue 
   ADD COLUMN IF NOT EXISTS ai_moderation_status TEXT CHECK (ai_moderation_status IN ('pending', 'approved', 'rejected', 'needs_review')),

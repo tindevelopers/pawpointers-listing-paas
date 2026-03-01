@@ -27,6 +27,42 @@ ALTER TABLE listings
   ADD COLUMN IF NOT EXISTS booking_provider_id uuid
     REFERENCES booking_provider_integrations(id) ON DELETE SET NULL;
 
+-- Ensure bookings table exists (may be missing if migration history was repaired)
+CREATE TABLE IF NOT EXISTS bookings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  listing_id uuid REFERENCES listings(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id uuid REFERENCES tenants(id),
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  start_time time,
+  end_time time,
+  guest_count int DEFAULT 1,
+  guest_details jsonb,
+  base_price numeric(10,2) NOT NULL,
+  service_fee numeric(10,2) DEFAULT 0,
+  tax_amount numeric(10,2) DEFAULT 0,
+  discount_amount numeric(10,2) DEFAULT 0,
+  total_amount numeric(10,2) NOT NULL,
+  currency text DEFAULT 'USD',
+  payment_status text DEFAULT 'pending',
+  payment_intent_id text,
+  payment_method text,
+  paid_at timestamptz,
+  status text DEFAULT 'pending',
+  confirmation_code text UNIQUE,
+  cancelled_at timestamptz,
+  cancelled_by uuid REFERENCES users(id),
+  cancellation_reason text,
+  refund_amount numeric(10,2),
+  special_requests text,
+  internal_notes text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  CHECK (end_date >= start_date),
+  CHECK (total_amount >= 0)
+);
+
 -- Add external booking references to bookings
 ALTER TABLE bookings
   ADD COLUMN IF NOT EXISTS external_booking_id text,

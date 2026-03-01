@@ -247,6 +247,16 @@ export async function searchListings(
     if (params.maxPrice) query.lte('price', params.maxPrice);
     if (params.sortBy) query.order(params.sortBy === 'date' ? 'created_at' : params.sortBy, { ascending: params.sortOrder === 'asc' });
 
+    // Location: search by city, state, country, or address (e.g. zip, neighborhood)
+    if (params.location?.trim()) {
+      const raw = params.location.trim();
+      const loc = raw.replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/,/g, " ");
+      const pattern = `%${loc}%`;
+      query.or(
+        `location->>city.ilike.${pattern},location->>state.ilike.${pattern},location->>country.ilike.${pattern},location->>address.ilike.${pattern}`
+      );
+    }
+
     const result = await query;
     const { data, error, count } = result;
 
@@ -319,7 +329,8 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
       .limit(limit);
 
     if (error) {
-      throw new Error(`Failed to fetch featured listings: ${error.message}`);
+      console.error('Featured listings Supabase error:', error.message);
+      return [];
     }
 
     // Type assertion to help TypeScript understand the data structure
@@ -372,7 +383,8 @@ export async function getCategories(): Promise<
       .order('name', { ascending: true });
 
     if (error) {
-      throw new Error(`Failed to fetch categories: ${error.message}`);
+      console.error('Categories Supabase error:', error.message);
+      return [];
     }
 
     return data || [];

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
-import { ListingMap } from "./ListingMap";
+import { LocationTabContent } from "./LocationTabContent";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
@@ -32,6 +32,15 @@ export function ListingDetail({ listing }: ListingDetailProps) {
       }
     }
     checkAuth();
+  }, []);
+
+  // Open booking modal when navigated with #book (e.g. from listing card "Book Now")
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#book") {
+      setIsBookingModalOpen(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   // Generate consistent mock data based on listing ID
@@ -435,33 +444,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           )}
 
           {/* Location Tab */}
-          {activeTab === "location" && (
-            <div>
-              {listing.location?.lat && listing.location?.lng && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Location</h2>
-                  <ListingMap
-                    lat={listing.location.lat}
-                    lng={listing.location.lng}
-                    title={listing.title}
-                  />
-                  {listing.location && (
-                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {[
-                          listing.location.address,
-                          listing.location.city,
-                          listing.location.state,
-                        ]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          {activeTab === "location" && <LocationTabContent listing={listing} />}
 
           {/* Pricing Tab */}
           {activeTab === "pricing" && (

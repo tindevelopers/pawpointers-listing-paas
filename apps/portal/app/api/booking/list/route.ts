@@ -27,7 +27,7 @@ async function handler(req: NextRequest) {
 
     let query = supabase
       .from("bookings")
-      .select("*, listings(id, title, slug, images)", { count: "exact" })
+      .select("*, listings(id, title, slug, featured_image, gallery)", { count: "exact" })
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
