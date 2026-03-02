@@ -1,6 +1,7 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
 import { respondToReview, upsertDataForSeoSource } from "@/app/actions/listings";
+import { getScopedListingIds } from "@/lib/listing-access";
 
 async function getContext() {
   const supabase = await createClient();
@@ -12,24 +13,28 @@ async function getContext() {
     return { user: null, listings: [] as any[], reviews: [] as any[] };
   }
 
-  const { data: listings } = await supabase
-    .from("listings")
-    .select("id, title")
-    .eq("owner_id", user.id);
+  const listingIds = await getScopedListingIds(user.id);
 
-  const listingIds = (listings || []).map((l: any) => l.id);
+  const { data: listings } =
+    listingIds.length === 0
+      ? { data: [] }
+      : await supabase
+          .from("listings")
+          .select("id, title")
+          .in("id", listingIds);
+  const listingIdsFromRows = (listings || []).map((l: any) => l.id);
 
   const { data: sources = [] } =
-    listingIds.length === 0
+    listingIdsFromRows.length === 0
       ? { data: [] }
       : await supabase
           .from("external_review_sources")
           .select("entity_id, target, target_type, enabled, last_fetched_at, last_error")
           .eq("provider", "dataforseo")
-          .in("entity_id", listingIds);
+          .in("entity_id", listingIdsFromRows);
 
   const { data: reviews = [] } =
-    listingIds.length === 0
+    listingIdsFromRows.length === 0
       ? { data: [] }
       : await supabase
           .from("reviews")
@@ -54,7 +59,7 @@ async function getContext() {
               priority
             )
           `)
-          .in("listing_id", listingIds)
+          .in("listing_id", listingIdsFromRows)
           .order("created_at", { ascending: false });
 
   return { user, listings: listings || [], reviews: reviews || [], sources: sources || [] };

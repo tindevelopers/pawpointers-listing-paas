@@ -1,6 +1,13 @@
 import { createClient } from "@/core/database/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getScopedListingIds } from "@/lib/listing-access";
+import {
+  cancelBookingAction,
+  completeBookingAction,
+  confirmBookingAction,
+  updateBookingNotesAction,
+} from "@/app/actions/bookings";
 
 export default async function BookingsPage() {
   const supabase = await createClient();
@@ -12,12 +19,7 @@ export default async function BookingsPage() {
     redirect("/signin");
   }
 
-  const { data: listingRows } = await supabase
-    .from("listings")
-    .select("id")
-    .eq("owner_id", user.id);
-
-  const listingIds = (listingRows || []).map((row: { id: string }) => row.id);
+  const listingIds = await getScopedListingIds(user.id);
 
   let bookings: Array<{
     id: string;
@@ -30,6 +32,7 @@ export default async function BookingsPage() {
     total_amount: number;
     currency: string;
     confirmation_code?: string;
+    internal_notes?: string;
     created_at: string;
     listings?: { id: string; title: string; slug: string } | null;
   }> = [];
@@ -37,7 +40,7 @@ export default async function BookingsPage() {
   if (listingIds.length > 0) {
     const { data } = await supabase
       .from("bookings")
-      .select("id, listing_id, status, start_date, end_date, start_time, end_time, total_amount, currency, confirmation_code, created_at, listings(id, title, slug)")
+      .select("id, listing_id, status, start_date, end_date, start_time, end_time, total_amount, currency, confirmation_code, internal_notes, created_at, listings(id, title, slug)")
       .in("listing_id", listingIds)
       .order("start_date", { ascending: true });
 
@@ -115,6 +118,42 @@ export default async function BookingsPage() {
                     <p className="text-right font-medium text-gray-900">
                       {b.currency} {Number(b.total_amount).toFixed(2)}
                     </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {b.status === "pending" ? (
+                        <form action={confirmBookingAction}>
+                          <input type="hidden" name="bookingId" value={b.id} />
+                          <button
+                            type="submit"
+                            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+                          >
+                            Confirm
+                          </button>
+                        </form>
+                      ) : null}
+                      {b.status === "confirmed" ? (
+                        <form action={completeBookingAction}>
+                          <input type="hidden" name="bookingId" value={b.id} />
+                          <button
+                            type="submit"
+                            className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700"
+                          >
+                            Mark Completed
+                          </button>
+                        </form>
+                      ) : null}
+                      {b.status === "pending" || b.status === "confirmed" ? (
+                        <form action={cancelBookingAction}>
+                          <input type="hidden" name="bookingId" value={b.id} />
+                          <input type="hidden" name="reason" value="Cancelled by merchant" />
+                          <button
+                            type="submit"
+                            className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100"
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -148,6 +187,36 @@ export default async function BookingsPage() {
               </ul>
             </section>
           )}
+
+          <section>
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Internal notes</h2>
+            <ul className="space-y-3">
+              {bookings.map((b) => (
+                <li key={`notes-${b.id}`} className="rounded-xl border border-gray-200 bg-white p-4">
+                  <p className="mb-2 text-sm font-medium text-gray-900">
+                    {(b.listings as { title?: string })?.title ?? "Listing"} ·{" "}
+                    <span className="capitalize text-gray-500">{b.status}</span>
+                  </p>
+                  <form action={updateBookingNotesAction} className="space-y-2">
+                    <input type="hidden" name="bookingId" value={b.id} />
+                    <textarea
+                      name="notes"
+                      rows={2}
+                      defaultValue={b.internal_notes || ""}
+                      placeholder="Add internal merchant notes..."
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+                    >
+                      Save notes
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </section>
         </>
       )}
     </div>

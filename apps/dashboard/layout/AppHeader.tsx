@@ -1,6 +1,7 @@
 "use client";
 
 import { useSidebar } from "@/context/SidebarContext";
+import ListingSwitcher from "@/components/ListingSwitcher";
 import UserDropdown from "@/components/UserDropdown";
 import Link from "next/link";
 import React from "react";
@@ -54,7 +55,10 @@ const AppHeader: React.FC = () => {
             Pawpointers Dashboard
           </Link>
         </div>
-        <UserDropdown />
+        <div className="flex items-center gap-3">
+          <ListingSwitcher />
+          <UserDropdown />
+        </div>
       </div>
     </header>
   );

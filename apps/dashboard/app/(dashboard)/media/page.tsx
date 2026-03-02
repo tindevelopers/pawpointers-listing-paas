@@ -1,6 +1,7 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
 import { addImage, deleteImage } from "@/app/actions/listings";
+import { getScopedListingIds } from "@/lib/listing-access";
 
 async function getUserAndListings() {
   const supabase = await createClient();
@@ -12,11 +13,16 @@ async function getUserAndListings() {
     return { user: null, listings: [] as any[] };
   }
 
-  const { data: listings } = await supabase
-    .from("listings")
-    .select("id, title, slug")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
+  const listingIds = await getScopedListingIds(user.id);
+
+  const { data: listings } =
+    listingIds.length === 0
+      ? { data: [] }
+      : await supabase
+          .from("listings")
+          .select("id, title, slug")
+          .in("id", listingIds)
+          .order("created_at", { ascending: false });
 
   return { user, listings: listings || [] };
 }

@@ -144,6 +144,18 @@ async function handler(request: NextRequest) {
     const provider = createBookingProvider(providerType, (context.supabase as any) as any);
     await provider.cancelBooking(context as any, bookingId, reason);
 
+    try {
+      await ((context.supabase as any).from("bookings") as any)
+        .update({
+          cancelled_by: user.id,
+          cancellation_reason: reason ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", bookingId);
+    } catch {
+      // Best effort only; primary cancellation is handled by provider.
+    }
+
     return NextResponse.json({
       success: true,
       data: { bookingId, status: "cancelled" },

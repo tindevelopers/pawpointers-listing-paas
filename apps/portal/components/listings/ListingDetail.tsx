@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { LocationTabContent } from "./LocationTabContent";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
+import { ClaimListingModal } from "./ClaimListingModal";
 import { createClient } from "@/core/database/client";
 
 interface ListingDetailProps {
@@ -15,11 +16,46 @@ interface ListingDetailProps {
 
 type TabType = "overview" | "reviews" | "location" | "pricing";
 
+type ClaimStatus = {
+  canClaim: boolean;
+  isOwner: boolean;
+  isMember: boolean;
+  activeClaim: { id: string; status: string } | null;
+};
+
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(false);
+  const [claimStatus, setClaimStatus] = useState<ClaimStatus | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+
+  const loadClaimStatus = useCallback(async () => {
+    if (!isLoggedIn) {
+      setClaimStatus(null);
+      return;
+    }
+
+    setIsClaimStatusLoading(true);
+    try {
+      const response = await fetch(
+        `/api/listing-claims/status?listingId=${encodeURIComponent(listing.id)}`
+      );
+      const result = await response.json();
+      if (response.ok && result?.success) {
+        setClaimStatus(result.data as ClaimStatus);
+      } else {
+        setClaimStatus(null);
+      }
+    } catch {
+      setClaimStatus(null);
+    } finally {
+      setIsClaimStatusLoading(false);
+    }
+  }, [isLoggedIn, listing.id]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -33,6 +69,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     }
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    loadClaimStatus();
+  }, [loadClaimStatus]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = new URLSearchParams(window.location.search).get("claim");
+    setInviteToken(token);
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && claimStatus?.canClaim && inviteToken) {
+      setIsClaimModalOpen(true);
+    }
+  }, [isLoggedIn, claimStatus?.canClaim, inviteToken]);
 
   // Open booking modal when navigated with #book (e.g. from listing card "Book Now")
   useEffect(() => {
@@ -175,6 +227,20 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               </svg>
               Message
             </button>
+            {isLoggedIn && !isClaimStatusLoading && claimStatus?.canClaim ? (
+              <button
+                type="button"
+                onClick={() => setIsClaimModalOpen(true)}
+                className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Claim Business
+              </button>
+            ) : null}
+            {isLoggedIn && claimStatus?.activeClaim ? (
+              <span className="inline-flex items-center rounded-lg bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
+                Claim status: {claimStatus.activeClaim.status}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -606,6 +672,17 @@ export function ListingDetail({ listing }: ListingDetailProps) {
         onClose={() => setIsChatModalOpen(false)}
         providerName={listing.title}
         providerImage={listing.images?.[0]}
+      />
+
+      <ClaimListingModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        listingId={listing.id}
+        listingTitle={listing.title}
+        inviteToken={inviteToken}
+        onSuccess={async () => {
+          await loadClaimStatus();
+        }}
       />
     </div>
   );

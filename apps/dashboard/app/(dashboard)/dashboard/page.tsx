@@ -1,6 +1,7 @@
 import { createClient } from "@/core/database/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getScopedListingIds } from "@/lib/listing-access";
 
 type DashboardStats = {
   listingCount: number;
@@ -29,13 +30,7 @@ async function getDashboardContext() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data: listingRows } = await supabase
-    .from("listings")
-    .select("id")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const listingIds = (listingRows || []).map((row: any) => row.id);
+  const listingIds = await getScopedListingIds(user.id);
 
   let reviewCount = 0;
   if (listingIds.length > 0) {

@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/core/database/server";
+import {
+  canManageListing,
+  getScopedListingIds,
+} from "@/lib/listing-access";
 
 export async function listListings() {
   const supabase = await createClient();
@@ -10,10 +14,13 @@ export async function listListings() {
 
   if (!user) return [];
 
+  const listingIds = await getScopedListingIds(user.id);
+  if (listingIds.length === 0) return [];
+
   const { data, error } = await supabase
     .from("listings")
     .select("id, title, slug, status, price, currency, featured_image, updated_at")
-    .eq("owner_id", user.id)
+    .in("id", listingIds)
     .order("updated_at", { ascending: false });
 
   if (error) {
@@ -89,6 +96,11 @@ export async function upsertListing(formData: FormData) {
   };
 
   if (id) {
+    const canManage = await canManageListing(user.id, id);
+    if (!canManage) {
+      throw new Error("Not authorized to update this listing");
+    }
+
     const { error } = await (supabase.from("listings") as any).update(payload).eq("id", id);
     if (error) {
       console.error("update listing error", error);
@@ -117,10 +129,14 @@ export async function publishListing(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  const canManage = await canManageListing(user.id, id);
+  if (!canManage) {
+    throw new Error("Not authorized to publish this listing");
+  }
+
   const { error } = await (supabase.from("listings") as any)
     .update({ status: "published" })
-    .eq("id", id)
-    .eq("owner_id", user.id);
+    .eq("id", id);
 
   if (error) {
     console.error("publishListing error", error);
@@ -138,10 +154,14 @@ export async function unpublishListing(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
+  const canManage = await canManageListing(user.id, id);
+  if (!canManage) {
+    throw new Error("Not authorized to unpublish this listing");
+  }
+
   const { error } = await (supabase.from("listings") as any)
     .update({ status: "draft" })
-    .eq("id", id)
-    .eq("owner_id", user.id);
+    .eq("id", id);
 
   if (error) {
     console.error("unpublishListing error", error);
@@ -159,6 +179,11 @@ export async function deleteListing(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
+  const canManage = await canManageListing(user.id, id);
+  if (!canManage) {
+    throw new Error("Not authorized to delete this listing");
+  }
+
   const { error } = await supabase.from("listings").delete().eq("id", id);
   if (error) {
     console.error("delete listing error", error);
@@ -175,6 +200,11 @@ export async function addListingImage(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
+
+  const canManage = await canManageListing(user.id, listingId);
+  if (!canManage) {
+    throw new Error("Not authorized to manage media for this listing");
+  }
 
   const { error } = await (supabase.from("listing_images") as any).insert({
     listing_id: listingId,
@@ -239,6 +269,11 @@ export async function addImage(formData: FormData) {
 
   if (!listingId || !imageUrl) {
     throw new Error("Listing and image URL are required");
+  }
+
+  const canManage = await canManageListing(user.id, listingId);
+  if (!canManage) {
+    throw new Error("Not authorized to manage media for this listing");
   }
 
   const { error } = await supabase
@@ -328,7 +363,8 @@ export async function upsertDataForSeoSource(formData: FormData) {
     .eq("id", entityId)
     .single();
 
-  if (!listing || (listing as any).owner_id !== user.id) {
+  const canManage = listing ? await canManageListing(user.id, entityId) : false;
+  if (!listing || !canManage) {
     throw new Error("Not authorized to manage this listing");
   }
 
