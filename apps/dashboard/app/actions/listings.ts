@@ -117,8 +117,7 @@ export async function publishListing(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
-    .from("listings")
+  const { error } = await (supabase.from("listings") as any)
     .update({ status: "published" })
     .eq("id", id)
     .eq("owner_id", user.id);
@@ -139,8 +138,7 @@ export async function unpublishListing(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const { error } = await supabase
-    .from("listings")
+  const { error } = await (supabase.from("listings") as any)
     .update({ status: "draft" })
     .eq("id", id)
     .eq("owner_id", user.id);
