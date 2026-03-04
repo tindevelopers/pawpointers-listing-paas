@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar, FilterPanel, SearchResults } from "@/components/search";
 import { MapView } from "@/components/search/MapView";
+import { TierSectionContainer } from "@/components/listings";
 import { searchListings, type Listing, type ListingSearchParams } from "@/lib/listings";
 
 /**
@@ -42,8 +43,8 @@ function SearchContent() {
         ? Number(searchParams.get("maxPrice"))
         : undefined,
       location: searchParams.get("location") || undefined,
-      page: Number(searchParams.get("page")) || 1,
-      limit: 12,
+      page: 1,
+      limit: 100,
     };
 
     try {
@@ -200,13 +201,25 @@ function SearchContent() {
         {/* Results */}
         {hasSearched ? (
           viewMode === 'list' ? (
-            <SearchResults
-              listings={listings}
-              total={total}
-              page={page}
-              totalPages={totalPages}
-              isLoading={isLoading}
-            />
+            isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden animate-pulse"
+                  >
+                    <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <TierSectionContainer listings={listings} />
+            )
           ) : (
             <MapView
               listings={listings}

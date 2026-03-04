@@ -12,11 +12,12 @@ import { Header, Footer } from "@/components/layout";
 import { TaxonomyBreadcrumb } from "@/components/taxonomy/TaxonomyBreadcrumb";
 import { TaxonomyListing } from "@/components/taxonomy/TaxonomyListing";
 import { CategoryPage } from "@/components/taxonomy/CategoryPage";
-import { 
-  getListingByTaxonomyPath, 
+import { TierSectionContainer } from "@/components/listings";
+import {
+  getListingByTaxonomyPath,
   getTaxonomyTerm,
   getListingsByTaxonomyTerm,
-  getPopularTaxonomyPaths 
+  getPopularTaxonomyPaths
 } from "@/lib/taxonomy";
 import { getTaxonomyConfig, parseTaxonomyPath, generateSEOMetadata } from "@/lib/taxonomy-config";
 
@@ -182,23 +183,28 @@ export default async function TaxonomyPage({ params, searchParams }: TaxonomyPag
   const term = await getTaxonomyTerm(parsedPath);
   
   if (term) {
-    // Get listings for this taxonomy term
-    const { listings, total, page, totalPages } = await getListingsByTaxonomyTerm(
+    // Get listings for this taxonomy term (organized by tier)
+    const { listings } = await getListingsByTaxonomyTerm(
       parsedPath,
-      { page: 1, limit: 12 }
+      { page: 1, limit: 100 }
     );
-    
+
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8">
           <TaxonomyBreadcrumb path={parsedPath} config={config} />
-          <CategoryPage
-            term={term}
-            listings={listings}
-            config={config}
-            pagination={{ total, page, totalPages }}
-          />
+          <div className="mb-12">
+            <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              {term.name}
+            </h1>
+            {term.description && (
+              <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl">
+                {term.description}
+              </p>
+            )}
+          </div>
+          <TierSectionContainer listings={listings} />
         </main>
         <Footer />
       </div>
