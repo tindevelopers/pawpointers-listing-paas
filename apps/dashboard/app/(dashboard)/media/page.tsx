@@ -1,6 +1,6 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
-import { addImage, deleteImage } from "@/app/actions/listings";
+import { addImage, deleteImage, setFeaturedImage } from "@/app/actions/listings";
 import { getScopedListingIds } from "@/lib/listing-access";
 
 async function getUserAndListings() {
@@ -20,7 +20,7 @@ async function getUserAndListings() {
       ? { data: [] }
       : await supabase
           .from("listings")
-          .select("id, title, slug")
+          .select("id, title, slug, featured_image")
           .in("id", listingIds)
           .order("created_at", { ascending: false });
 
@@ -56,18 +56,18 @@ export default async function MediaPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-gray-900">Media</h1>
         <p className="text-sm text-gray-600">
-          Add image URLs for your listings. Use a CDN or storage bucket URL you control.
+          Upload featured images to Supabase and supporting gallery images to Wasabi.
         </p>
       </header>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900">Add image</h2>
-        <form action={addImage} className="mt-4 grid gap-4 md:grid-cols-2">
+        <h2 className="text-lg font-semibold text-gray-900">Set featured image</h2>
+        <form action={setFeaturedImage} encType="multipart/form-data" className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700" htmlFor="listingId">
+            <label className="text-sm font-medium text-gray-700" htmlFor="featuredListingId">
               Listing
             </label>
-            <select id="listingId" name="listingId" required>
+            <select id="featuredListingId" name="listingId" required>
               <option value="">Select listing</option>
               {(listings || []).map((listing: any) => (
                 <option key={listing.id} value={listing.id}>
@@ -77,16 +77,60 @@ export default async function MediaPage() {
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700" htmlFor="imageUrl">
-              Image URL
+            <label className="text-sm font-medium text-gray-700" htmlFor="featuredImageFile">
+              Featured image file
+            </label>
+            <input id="featuredImageFile" name="featuredImageFile" type="file" accept="image/*" />
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-sm font-medium text-gray-700" htmlFor="featuredImageUrl">
+              Or featured image URL
             </label>
             <input
-              id="imageUrl"
-              name="imageUrl"
+              id="featuredImageUrl"
+              name="featuredImageUrl"
               type="url"
-              placeholder="https://cdn.example.com/photo.jpg"
-              required
+              placeholder="https://cdn.example.com/featured.jpg"
             />
+          </div>
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="bg-orange-500 px-4 py-2 text-white transition hover:bg-orange-600"
+            >
+              Save featured image
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Add gallery image</h2>
+        <form action={addImage} encType="multipart/form-data" className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700" htmlFor="galleryListingId">
+              Listing
+            </label>
+            <select id="galleryListingId" name="listingId" required>
+              <option value="">Select listing</option>
+              {(listings || []).map((listing: any) => (
+                <option key={listing.id} value={listing.id}>
+                  {listing.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700" htmlFor="imageFile">
+              Image file
+            </label>
+            <input id="imageFile" name="imageFile" type="file" accept="image/*" />
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <label className="text-sm font-medium text-gray-700" htmlFor="imageUrl">
+              Or image URL
+            </label>
+            <input id="imageUrl" name="imageUrl" type="url" placeholder="https://cdn.example.com/photo.jpg" />
           </div>
           <div className="md:col-span-2 space-y-2">
             <label className="text-sm font-medium text-gray-700" htmlFor="altText">
@@ -99,7 +143,7 @@ export default async function MediaPage() {
               type="submit"
               className="bg-orange-500 px-4 py-2 text-white transition hover:bg-orange-600"
             >
-              Add image
+              Add gallery image
             </button>
           </div>
         </form>
@@ -116,6 +160,9 @@ export default async function MediaPage() {
                 <div>
                   <p className="text-sm text-gray-500">Listing</p>
                   <p className="text-base font-semibold text-gray-900">{listing.title}</p>
+                  <p className="mt-1 text-xs text-gray-500 truncate">
+                    Featured: {listing.featured_image || "Not set"}
+                  </p>
                 </div>
                 <span className="text-xs text-gray-400">Slug: {listing.slug}</span>
               </div>

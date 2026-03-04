@@ -2,6 +2,9 @@ import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
 import { respondToReview, upsertDataForSeoSource } from "@/app/actions/listings";
 import { getScopedListingIds } from "@/lib/listing-access";
+import { getDashboardEntitlementsForUser } from "@/lib/listing-access";
+import { canAccessDashboardFeature } from "@/lib/subscription-entitlements";
+import EntitlementGate from "@/components/EntitlementGate";
 
 async function getContext() {
   const supabase = await createClient();
@@ -70,6 +73,14 @@ export default async function ReviewsPage() {
 
   if (!user) {
     redirect("/signin");
+  }
+
+  const entitlements = await getDashboardEntitlementsForUser(user.id);
+  const canAccessReviews = canAccessDashboardFeature(entitlements, "reviews");
+  if (!canAccessReviews) {
+    return (
+      <EntitlementGate allowed={false} featureName="Reviews" requiredTier="middle" />
+    );
   }
 
   const listingLookup = (listings || []).reduce<Record<string, string>>((acc, l: any) => {

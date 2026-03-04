@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface ClaimListingModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface ClaimListingModalProps {
   listingId: string;
   listingTitle: string;
   inviteToken?: string | null;
+  isLoggedIn?: boolean;
   onSuccess?: () => Promise<void> | void;
 }
 
@@ -17,6 +19,7 @@ export function ClaimListingModal({
   listingId,
   listingTitle,
   inviteToken,
+  isLoggedIn = true,
   onSuccess,
 }: ClaimListingModalProps) {
   const [email, setEmail] = useState("");
@@ -28,6 +31,18 @@ export function ClaimListingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const currentPath =
+    typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}`
+      : `/listings/${listingId}`;
+  const claimParams = new URLSearchParams();
+  claimParams.set("intent", "claim");
+  claimParams.set("listingId", listingId);
+  claimParams.set("listingTitle", listingTitle);
+  claimParams.set("returnUrl", currentPath);
+  if (inviteToken) claimParams.set("claim", inviteToken);
+  const claimPricingHref = `/pricing?${claimParams.toString()}`;
+  const signInHref = `/signin?returnUrl=${encodeURIComponent(currentPath)}`;
 
   if (!isOpen) return null;
 
@@ -92,7 +107,34 @@ export function ClaimListingModal({
             </button>
           </div>
 
-          {successMessage ? (
+          {!isLoggedIn ? (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                To claim this business, first choose a provider plan and continue with service provider signup.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={claimPricingHref}
+                  className="rounded-lg bg-orange-500 px-4 py-2 text-center text-sm font-medium text-white hover:bg-orange-600"
+                >
+                  View Plans & Continue
+                </Link>
+                <Link
+                  href={signInHref}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-center text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  I already have an account
+                </Link>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : successMessage ? (
             <div className="space-y-4">
               <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
                 {successMessage}

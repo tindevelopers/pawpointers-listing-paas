@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { ApiResponse, Review, ReviewFormData } from '@listing-platform/reviews';
+import { uploadSupportingImage } from '@listing-platform/media';
 
 /**
  * Reviews API Route
@@ -290,7 +291,16 @@ export async function POST(request: NextRequest) {
       const entityId = formData.get('entityId') || formData.get('listingId');
       const rating = formData.get('rating');
       const comment = formData.get('comment') || formData.get('content');
-      const photos = formData.getAll('photos[]') as File[];
+      const arrayPhotos = formData
+        .getAll('photos[]')
+        .filter((value): value is File => value instanceof File);
+      const indexedPhotos = Array.from(formData.entries())
+        .filter(
+          ([key, value]) =>
+            key.startsWith('photos[') && key.endsWith(']') && value instanceof File
+        )
+        .map(([, value]) => value as File);
+      const photos = [...arrayPhotos, ...indexedPhotos].filter((photo) => photo.size > 0);
       console.log('[API /api/reviews POST] FormData parsed:', { entityId, rating, comment, photoCount: photos.length });
 
       if (!entityId || !rating) {
@@ -362,13 +372,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Handle photo uploads (if any)
-    const imageUrls: string[] = [];
-    if (reviewData.photos && reviewData.photos.length > 0) {
-      // TODO: Upload photos to storage (Supabase Storage, S3, etc.)
-      // For now, we'll skip photo uploads
-      // You'll need to implement photo upload logic here
-    }
+    const uploadedPhotoUrls: string[] = [];
 
     // Resolve reviewer type (pet_parent vs expert)
     const requestedReviewerType =
@@ -407,7 +411,7 @@ export async function POST(request: NextRequest) {
       rating: reviewData.rating,
       content: reviewData.comment,
       title: reviewData.comment?.substring(0, 100), // Use first 100 chars as title
-      images: imageUrls,
+      images: [],
       status: 'pending', // Require moderation
       reviewer_type: requestedReviewerType,
       expert_domain: requestedReviewerType === 'expert' ? (reviewData.expertDomain || null) : null,
@@ -439,6 +443,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (reviewData.photos && reviewData.photos.length > 0) {
+      for (const photo of reviewData.photos) {
+        try {
+          const buffer = Buffer.from(await photo.arrayBuffer());
+          const uploaded = await uploadSupportingImage(buffer, {
+            prefix: `reviews/${review.id}`,
+            filename: photo.name,
+            maxWidth: 2000,
+            maxHeight: 2000,
+            quality: 82,
+            format: 'jpeg',
+            generateWebP: true,
+            generateThumbnails: false,
+          });
+          uploadedPhotoUrls.push(uploaded.url);
+        } catch (uploadError) {
+          console.error('[API /api/reviews POST] Failed to upload a review photo:', uploadError);
+        }
+      }
+
+      if (uploadedPhotoUrls.length > 0) {
+        const { data: updatedReview, error: updateError } = await supabase
+          .from('reviews')
+          .update({ images: uploadedPhotoUrls })
+          .eq('id', review.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('[API /api/reviews POST] Failed to persist review image URLs:', updateError);
+        } else if (updatedReview) {
+          Object.assign(review, updatedReview);
+        }
+      }
+    }
+
     // Transform to Review format
     const transformedReview: Review = {
       id: review.id,
@@ -447,7 +487,7 @@ export async function POST(request: NextRequest) {
       rating: review.rating,
       comment: review.content,
       title: review.title,
-      photos: review.images?.map((url: string, index: number) => ({
+      photos: (uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : review.images)?.map((url: string, index: number) => ({
         url,
         displayOrder: index,
       })),

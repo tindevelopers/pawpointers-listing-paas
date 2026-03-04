@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 import MemberSignupForm from "@/components/auth/MemberSignupForm";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Paw Pointers";
 
 export default function MemberSignUpPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const userSignupHref = `/signup/user${query ? `?${query}` : ""}`;
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -34,7 +39,7 @@ export default function MemberSignUpPage() {
               <p className="text-center text-sm text-gray-600 dark:text-gray-400">
                 Looking to book services?{" "}
                 <Link
-                  href="/signup/user"
+                  href={userSignupHref}
                   className="text-blue-600 hover:text-blue-500 font-medium dark:text-blue-400"
                 >
                   Sign up as a customer

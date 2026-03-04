@@ -133,7 +133,7 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
                         </svg>
                       </div>
                     )}
-                    {listing.price && (
+                    {!listing.isUnclaimed && listing.price && (
                       <div className="absolute top-3 right-3 bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
                         From £{listing.price}
                       </div>
@@ -161,7 +161,7 @@ export function MapView({ listings, selectedListingId, onListingSelect }: MapVie
                       </p>
                     )}
                     <button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-2 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group/btn">
-                      <span>View Details</span>
+                      <span>{listing.isUnclaimed ? "Claim or View Details" : "View Details"}</span>
                       <svg className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>

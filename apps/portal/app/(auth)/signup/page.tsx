@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
 
 /**
@@ -10,6 +10,11 @@ import { Header, Footer } from "@/components/layout";
  */
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const userSignupHref = `/signup/user${query ? `?${query}` : ""}`;
+  const memberSignupHref = `/signup/member${query ? `?${query}` : ""}`;
+  const signInHref = `/signin${query ? `?${query}` : ""}`;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -20,7 +25,7 @@ export default function SignUpPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Consumer Signup Card */}
           <div
-            onClick={() => router.push("/signup/user")}
+            onClick={() => router.push(userSignupHref)}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 cursor-pointer hover:shadow-2xl transition-shadow border-2 border-transparent hover:border-blue-500"
           >
             <div className="text-center">
@@ -53,7 +58,7 @@ export default function SignUpPage() {
 
           {/* Service Provider Signup Card */}
           <div
-            onClick={() => router.push("/signup/member")}
+            onClick={() => router.push(memberSignupHref)}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 cursor-pointer hover:shadow-2xl transition-shadow border-2 border-transparent hover:border-blue-500"
           >
             <div className="text-center">
@@ -89,7 +94,7 @@ export default function SignUpPage() {
         <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{" "}
           <Link
-            href="/signin"
+            href={signInHref}
             className="text-blue-600 hover:text-blue-500 font-medium dark:text-blue-400"
           >
             Sign in

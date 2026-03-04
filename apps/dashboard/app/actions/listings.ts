@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/core/database/server";
+import { uploadMainImageAsset, uploadSupportingImage } from "@listing-platform/media";
 import {
   canManageListing,
   getScopedListingIds,
@@ -210,6 +211,7 @@ export async function addListingImage(formData: FormData) {
     listing_id: listingId,
     storage_key: imageUrl,
     cdn_url: imageUrl,
+    storage_backend: "wasabi",
   });
 
   if (error) {
@@ -264,11 +266,12 @@ export async function addImage(formData: FormData) {
   }
 
   const listingId = String(formData.get("listingId") || "");
-  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const imageUrlInput = String(formData.get("imageUrl") || "").trim();
+  const imageFile = formData.get("imageFile");
   const altText = String(formData.get("altText") || "").trim();
 
-  if (!listingId || !imageUrl) {
-    throw new Error("Listing and image URL are required");
+  if (!listingId) {
+    throw new Error("Listing is required");
   }
 
   const canManage = await canManageListing(user.id, listingId);
@@ -276,14 +279,40 @@ export async function addImage(formData: FormData) {
     throw new Error("Not authorized to manage media for this listing");
   }
 
+  let imageUrl = imageUrlInput;
+  let storageKey = imageUrlInput;
+  let storageBackend: "wasabi" | "supabase" = "wasabi";
+
+  if (imageFile instanceof File && imageFile.size > 0) {
+    const buffer = Buffer.from(await imageFile.arrayBuffer());
+    const uploaded = await uploadSupportingImage(buffer, {
+      prefix: `gallery/${listingId}`,
+      filename: imageFile.name,
+      maxWidth: 2400,
+      maxHeight: 2400,
+      quality: 84,
+      format: "jpeg",
+      generateWebP: true,
+      generateThumbnails: true,
+    });
+    imageUrl = uploaded.url;
+    storageKey = uploaded.key;
+    storageBackend = "wasabi";
+  }
+
+  if (!imageUrl) {
+    throw new Error("Upload a file or provide an image URL");
+  }
+
   const { error } = await supabase
     .from("listing_images")
     // @ts-expect-error Supabase type inference
     .insert({
       listing_id: listingId,
-      storage_key: imageUrl,
+      storage_key: storageKey,
       cdn_url: imageUrl,
       alt_text: altText || null,
+      storage_backend: storageBackend,
     });
 
   if (error) {
@@ -291,6 +320,73 @@ export async function addImage(formData: FormData) {
   }
 
   revalidatePath("/media");
+}
+
+export async function setFeaturedImage(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const listingId = String(formData.get("listingId") || "");
+  const featuredImageUrl = String(formData.get("featuredImageUrl") || "").trim();
+  const featuredImageFile = formData.get("featuredImageFile");
+
+  if (!listingId) {
+    throw new Error("Listing is required");
+  }
+
+  const canManage = await canManageListing(user.id, listingId);
+  if (!canManage) {
+    throw new Error("Not authorized to manage media for this listing");
+  }
+
+  let finalFeaturedImageUrl = featuredImageUrl;
+
+  if (featuredImageFile instanceof File && featuredImageFile.size > 0) {
+    const { data: listing } = await supabase
+      .from("listings")
+      .select("tenant_id")
+      .eq("id", listingId)
+      .single();
+
+    const buffer = Buffer.from(await featuredImageFile.arrayBuffer());
+    const uploaded = await uploadMainImageAsset(buffer, {
+      type: "featured",
+      entityId: listingId,
+      tenantId: (listing as any)?.tenant_id ?? null,
+      filename: featuredImageFile.name,
+      contentType: featuredImageFile.type || "image/webp",
+      maxWidth: 1400,
+      maxHeight: 1400,
+      quality: 85,
+      format: "webp",
+      generateThumbnails: false,
+      generateWebP: false,
+    });
+    finalFeaturedImageUrl = uploaded.url;
+  }
+
+  if (!finalFeaturedImageUrl) {
+    throw new Error("Upload a file or provide a URL for the featured image");
+  }
+
+  const { error } = await supabase
+    .from("listings")
+    // @ts-expect-error Supabase type inference
+    .update({ featured_image: finalFeaturedImageUrl })
+    .eq("id", listingId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/media");
+  revalidatePath("/listings");
 }
 
 export async function deleteImage(formData: FormData) {
@@ -305,6 +401,16 @@ export async function deleteImage(formData: FormData) {
 
   const imageId = String(formData.get("imageId") || "");
   if (!imageId) return;
+  const { data: row } = await supabase
+    .from("listing_images")
+    .select("listing_id")
+    .eq("id", imageId)
+    .maybeSingle();
+  const listingImage = row as { listing_id?: string } | null;
+
+  if (!listingImage?.listing_id || !(await canManageListing(user.id, listingImage.listing_id))) {
+    throw new Error("Not authorized to delete this image");
+  }
 
   await supabase.from("listing_images").delete().eq("id", imageId);
   revalidatePath("/media");
@@ -420,6 +526,8 @@ export async function createListing(formData: FormData) {
 
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim();
+  const featuredImageUrlInput = String(formData.get("featuredImageUrl") || "").trim();
+  const featuredImageFile = formData.get("featuredImageFile");
   const addressJson = formData.get("address")?.toString();
 
   if (!title) {
@@ -455,7 +563,7 @@ export async function createListing(formData: FormData) {
     }
   }
 
-  const { error } = await (supabase
+  const { data: createdListing, error } = await (supabase
     .from("listings") as any)
     .insert({
       title,
@@ -465,10 +573,42 @@ export async function createListing(formData: FormData) {
       owner_id: user!.id,
       tenant_id: tenantId,
       ...(address && { address }),
-    });
+    })
+    .select("id, tenant_id")
+    .single();
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  let featuredImage = featuredImageUrlInput;
+  if (featuredImageFile instanceof File && featuredImageFile.size > 0) {
+    const buffer = Buffer.from(await featuredImageFile.arrayBuffer());
+    const uploaded = await uploadMainImageAsset(buffer, {
+      type: "featured",
+      entityId: (createdListing as any).id,
+      tenantId: (createdListing as any).tenant_id ?? tenantId,
+      filename: featuredImageFile.name,
+      contentType: featuredImageFile.type || "image/webp",
+      maxWidth: 1400,
+      maxHeight: 1400,
+      quality: 85,
+      format: "webp",
+      generateThumbnails: false,
+      generateWebP: false,
+    });
+    featuredImage = uploaded.url;
+  }
+
+  if (featuredImage) {
+    const { error: featuredError } = await supabase
+      .from("listings")
+      // @ts-expect-error Supabase type inference
+      .update({ featured_image: featuredImage })
+      .eq("id", (createdListing as any).id);
+    if (featuredError) {
+      throw new Error(featuredError.message);
+    }
   }
 
   revalidatePath("/listings");

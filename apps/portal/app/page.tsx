@@ -140,7 +140,7 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 grid-flow-dense auto-rows-fr">
                 {featuredListings.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} />
                 ))}

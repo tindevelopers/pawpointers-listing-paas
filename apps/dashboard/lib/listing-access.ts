@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@/core/database/server";
 import { cookies } from "next/headers";
+import { resolveDashboardEntitlements } from "./subscription-entitlements";
 
 type MembershipRow = {
   listing_id: string;
@@ -107,4 +108,27 @@ export async function canManageBookingForListing(
 ): Promise<boolean> {
   const listingIds = await getBookingManageableListingIds(userId);
   return listingIds.includes(listingId);
+}
+
+export async function getDashboardEntitlementsForUser(userId: string) {
+  const supabase = await createClient();
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("tenant_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const tenantId = (userRow as { tenant_id?: string | null } | null)?.tenant_id ?? null;
+  if (!tenantId) {
+    return resolveDashboardEntitlements({ accountPlan: "starter" });
+  }
+
+  const { data: tenantRow } = await supabase
+    .from("tenants")
+    .select("plan")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  const accountPlan = (tenantRow as { plan?: string | null } | null)?.plan ?? "starter";
+  return resolveDashboardEntitlements({ accountPlan });
 }

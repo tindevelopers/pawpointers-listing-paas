@@ -50,6 +50,23 @@ export interface UploadResult {
   contentType: string;
 }
 
+export interface FileUploadResult {
+  key: string;
+  url: string;
+  size: number;
+  contentType: string;
+}
+
+export type MainImageType = 'logo' | 'avatar' | 'featured';
+
+export interface MainImageUploadOptions extends ImageOptions {
+  type: MainImageType;
+  entityId: string;
+  tenantId?: string | null;
+  filename?: string;
+  contentType?: string;
+}
+
 export interface PresignedUploadResult {
   /** Presigned URL for direct upload */
   uploadUrl: string;

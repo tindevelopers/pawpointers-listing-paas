@@ -1,4 +1,4 @@
-import { S3Client } from '@aws-sdk/client-s3';
+import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import type { WasabiConfig } from './types';
 
 /**
@@ -76,4 +76,25 @@ export function getConfig(): WasabiConfig {
 export function resetClient(): void {
   _client = null;
   _config = null;
+}
+
+/**
+ * Basic health check for Wasabi connectivity and bucket access.
+ */
+export async function healthCheckWasabi(): Promise<{ ok: boolean; message?: string }> {
+  try {
+    const client = wasabiClient();
+    const config = getConfig();
+    await client.send(
+      new HeadBucketCommand({
+        Bucket: config.bucket,
+      })
+    );
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Unknown Wasabi health error',
+    };
+  }
 }

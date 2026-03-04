@@ -32,6 +32,13 @@ export interface Listing {
   website?: string;
   services?: string[];
   status: 'active' | 'pending' | 'sold' | 'archived';
+  isUnclaimed?: boolean;
+  effectiveTier?: import("@listing-platform/config").ListingTier;
+  cardSizeVariant?: import("@listing-platform/config").ListingCardSizeVariant;
+  accountPlan?: string;
+  subscriptionTierOverride?: import("@listing-platform/config").ListingTier;
+  topTierFeatures?: import("@listing-platform/config").TopTierFeatureFlags;
+  featureAccess?: import("@listing-platform/config").ListingFeatureAccess;
   createdAt: string;
   updatedAt: string;
   // CUSTOMIZE: Add custom fields for your vertical
@@ -62,6 +69,16 @@ export interface ListingSearchResult {
 }
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type {
+  ListingTier,
+  TopTierFeatureFlags,
+} from "@listing-platform/config";
+import {
+  buildFeatureAccess,
+  resolveCardSizeVariant,
+  resolveEffectiveTier,
+  resolveTopTierFeatures,
+} from "./listing-feature-policy";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
@@ -87,6 +104,13 @@ function hasSupabase(): boolean {
   return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 }
 
+/**
+ * Fallback image when listing has no images from DB.
+ * Images come from Supabase (gallery, featured_image); use this only when images array is empty.
+ */
+export const PLACEHOLDER_LISTING_IMAGE =
+  "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800";
+
 function normalizeImageUrls(images: string[] | null | undefined): string[] {
   if (!images || images.length === 0) return [];
   return images
@@ -106,6 +130,87 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
     .filter((u): u is string => !!u && /^https?:\/\//.test(u));
 }
 
+type PublicListingRow = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price: number | null;
+  images: string[] | null;
+  category: string | null;
+  location: Record<string, unknown> | null;
+  status: string;
+  is_unclaimed?: boolean;
+  effective_subscription_tier?: string | null;
+  card_size_variant?: string | null;
+  account_plan?: string | null;
+  subscription_tier_override?: string | null;
+  top_tier_features?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function normalizeTier(value: string | null | undefined): ListingTier | undefined {
+  if (value === "base" || value === "middle" || value === "top") return value;
+  return undefined;
+}
+
+function mapPublicListingRow(row: PublicListingRow): Listing {
+  const isUnclaimed = row.is_unclaimed ?? false;
+  const effectiveTier = resolveEffectiveTier({
+    isUnclaimed,
+    effectiveTier: normalizeTier(row.effective_subscription_tier),
+    accountPlan: row.account_plan,
+    subscriptionTierOverride: normalizeTier(row.subscription_tier_override),
+    topTierFeatures: row.top_tier_features || {},
+  });
+
+  const cardSizeVariant = resolveCardSizeVariant(
+    {
+      isUnclaimed,
+      cardSizeVariant: row.card_size_variant,
+      effectiveTier,
+    },
+    effectiveTier
+  );
+
+  const topTierFeatures = resolveTopTierFeatures(
+    {
+      isUnclaimed,
+      effectiveTier,
+      topTierFeatures: row.top_tier_features || {},
+    },
+    effectiveTier
+  ) as TopTierFeatureFlags;
+
+  const featureAccess = buildFeatureAccess({
+    isUnclaimed,
+    effectiveTier,
+    topTierFeatures,
+  });
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    price: row.price ?? undefined,
+    images: normalizeImageUrls(row.images),
+    category: row.category ?? undefined,
+    location: row.location ?? undefined,
+    status: row.status as 'active' | 'pending' | 'sold' | 'archived',
+    isUnclaimed,
+    effectiveTier,
+    cardSizeVariant,
+    accountPlan: row.account_plan ?? undefined,
+    subscriptionTierOverride: normalizeTier(row.subscription_tier_override),
+    topTierFeatures,
+    featureAccess,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 /**
  * Fetch a single listing by slug
  * Uses the public API endpoint (no auth required)
@@ -115,7 +220,9 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
   try {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
-      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .select(
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+      )
       .eq('slug', slug)
       .eq('status', 'active')
       .maybeSingle();
@@ -129,34 +236,8 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
       return null;
     }
 
-    // Type assertion to help TypeScript understand the data structure
-    const listingData = data as {
-      id: string;
-      slug: string;
-      title: string;
-      description: string;
-      price: number | null;
-      images: string[] | null;
-      category: string | null;
-      location: Record<string, unknown> | null;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    };
-
-    return {
-      id: listingData.id,
-      slug: listingData.slug,
-      title: listingData.title,
-      description: listingData.description,
-      price: listingData.price ?? undefined,
-      images: normalizeImageUrls(listingData.images),
-      category: listingData.category ?? undefined,
-      location: listingData.location ?? undefined,
-      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
-      createdAt: listingData.created_at,
-      updatedAt: listingData.updated_at,
-    };
+    const listingData = data as PublicListingRow;
+    return mapPublicListingRow(listingData);
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -172,7 +253,9 @@ export async function getListingById(id: string): Promise<Listing | null> {
   try {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
-      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .select(
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+      )
       .eq('id', id)
       .eq('status', 'active')
       .maybeSingle();
@@ -186,34 +269,8 @@ export async function getListingById(id: string): Promise<Listing | null> {
       return null;
     }
 
-    // Type assertion to help TypeScript understand the data structure
-    const listingData = data as {
-      id: string;
-      slug: string;
-      title: string;
-      description: string;
-      price: number | null;
-      images: string[] | null;
-      category: string | null;
-      location: Record<string, unknown> | null;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    };
-
-    return {
-      id: listingData.id,
-      slug: listingData.slug,
-      title: listingData.title,
-      description: listingData.description,
-      price: listingData.price ?? undefined,
-      images: listingData.images || [],
-      category: listingData.category ?? undefined,
-      location: listingData.location ?? undefined,
-      status: listingData.status as 'active' | 'pending' | 'sold' | 'archived',
-      createdAt: listingData.created_at,
-      updatedAt: listingData.updated_at,
-    };
+    const listingData = data as PublicListingRow;
+    return mapPublicListingRow(listingData);
   } catch (error) {
     console.error('Error fetching listing:', error);
     return null;
@@ -237,7 +294,10 @@ export async function searchListings(
   try {
     const query = getSupabase()
       .from('public_listings_view')
-      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at', { count: 'exact' })
+      .select(
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at",
+        { count: "exact" }
+      )
       .eq('status', 'active')
       .range((page - 1) * limit, page * limit - 1);
 
@@ -264,34 +324,8 @@ export async function searchListings(
       throw new Error(`Failed to search listings: ${error.message}`);
     }
 
-    // Type assertion to help TypeScript understand the data structure
-    const listingItems = (data || []) as Array<{
-      id: string;
-      slug: string;
-      title: string;
-      description: string;
-      price: number | null;
-      images: string[] | null;
-      category: string | null;
-      location: Record<string, unknown> | null;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    }>;
-
-    const listings = listingItems.map((item) => ({
-      id: item.id,
-      slug: item.slug,
-      title: item.title,
-      description: item.description,
-      price: item.price ?? undefined,
-      images: normalizeImageUrls(item.images),
-      category: item.category ?? undefined,
-      location: item.location ?? undefined,
-      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-    }));
+    const listingItems = (data || []) as PublicListingRow[];
+    const listings = listingItems.map(mapPublicListingRow);
 
     const total = count || 0;
     const totalPages = Math.ceil(total / limit);
@@ -323,7 +357,9 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
   try {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
-      .select('id, slug, title, description, price, images, category, location, status, created_at, updated_at')
+      .select(
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+      )
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -333,34 +369,8 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
       return [];
     }
 
-    // Type assertion to help TypeScript understand the data structure
-    const listingItems = (data || []) as Array<{
-      id: string;
-      slug: string;
-      title: string;
-      description: string;
-      price: number | null;
-      images: string[] | null;
-      category: string | null;
-      location: Record<string, unknown> | null;
-      status: string;
-      created_at: string;
-      updated_at: string;
-    }>;
-
-    return listingItems.map((item) => ({
-      id: item.id,
-      slug: item.slug,
-      title: item.title,
-      description: item.description,
-      price: item.price ?? undefined,
-      images: normalizeImageUrls(item.images),
-      category: item.category ?? undefined,
-      location: item.location ?? undefined,
-      status: item.status as 'active' | 'pending' | 'sold' | 'archived',
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-    }));
+    const listingItems = (data || []) as PublicListingRow[];
+    return listingItems.map(mapPublicListingRow);
   } catch (error) {
     console.error('Error fetching featured listings:', error);
     return [];

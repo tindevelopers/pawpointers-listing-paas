@@ -2,6 +2,9 @@ import { createClient } from "@/core/database/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getScopedListingIds } from "@/lib/listing-access";
+import { getDashboardEntitlementsForUser } from "@/lib/listing-access";
+import { canAccessDashboardFeature } from "@/lib/subscription-entitlements";
+import EntitlementGate from "@/components/EntitlementGate";
 import {
   cancelBookingAction,
   completeBookingAction,
@@ -17,6 +20,14 @@ export default async function BookingsPage() {
 
   if (!user) {
     redirect("/signin");
+  }
+
+  const entitlements = await getDashboardEntitlementsForUser(user.id);
+  const canAccessBookings = canAccessDashboardFeature(entitlements, "bookings");
+  if (!canAccessBookings) {
+    return (
+      <EntitlementGate allowed={false} featureName="Bookings" requiredTier="middle" />
+    );
   }
 
   const listingIds = await getScopedListingIds(user.id);

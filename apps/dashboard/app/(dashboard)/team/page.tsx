@@ -1,5 +1,8 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
+import { getDashboardEntitlementsForUser } from "@/lib/listing-access";
+import { canAccessDashboardFeature } from "@/lib/subscription-entitlements";
+import EntitlementGate from "@/components/EntitlementGate";
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -9,6 +12,14 @@ export default async function TeamPage() {
 
   if (!user) {
     redirect("/signin");
+  }
+
+  const entitlements = await getDashboardEntitlementsForUser(user.id);
+  const canAccessTeam = canAccessDashboardFeature(entitlements, "team");
+  if (!canAccessTeam) {
+    return (
+      <EntitlementGate allowed={false} featureName="Team" requiredTier="top" />
+    );
   }
 
   const { data: current } = await supabase

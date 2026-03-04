@@ -93,77 +93,97 @@ CREATE POLICY "Listing admins can update listing records"
     )
   );
 
--- Listing images: elevated members can manage media
-DROP POLICY IF EXISTS "Listing members can manage images" ON listing_images;
-CREATE POLICY "Listing members can manage images"
-  ON listing_images FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM listing_members
-      WHERE listing_members.listing_id = listing_images.listing_id
-        AND listing_members.user_id = auth.uid()
-        AND listing_members.status = 'active'
-        AND (
-          listing_members.role IN ('owner', 'admin', 'editor')
-          OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+-- Listing images: elevated members can manage media (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'listing_images') THEN
+    DROP POLICY IF EXISTS "Listing members can manage images" ON listing_images;
+    CREATE POLICY "Listing members can manage images"
+      ON listing_images FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM listing_members
+          WHERE listing_members.listing_id = listing_images.listing_id
+            AND listing_members.user_id = auth.uid()
+            AND listing_members.status = 'active'
+            AND (
+              listing_members.role IN ('owner', 'admin', 'editor')
+              OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+            )
         )
-    )
-  );
+      );
+  END IF;
+END $$;
 
--- Listing taxonomies: elevated members can manage terms
-DROP POLICY IF EXISTS "Listing members can manage taxonomies" ON listing_taxonomies;
-CREATE POLICY "Listing members can manage taxonomies"
-  ON listing_taxonomies FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM listing_members
-      WHERE listing_members.listing_id = listing_taxonomies.listing_id
-        AND listing_members.user_id = auth.uid()
-        AND listing_members.status = 'active'
-        AND (
-          listing_members.role IN ('owner', 'admin', 'editor')
-          OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+-- Listing taxonomies: elevated members can manage terms (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'listing_taxonomies') THEN
+    DROP POLICY IF EXISTS "Listing members can manage taxonomies" ON listing_taxonomies;
+    CREATE POLICY "Listing members can manage taxonomies"
+      ON listing_taxonomies FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM listing_members
+          WHERE listing_members.listing_id = listing_taxonomies.listing_id
+            AND listing_members.user_id = auth.uid()
+            AND listing_members.status = 'active'
+            AND (
+              listing_members.role IN ('owner', 'admin', 'editor')
+              OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+            )
         )
-    )
-  );
+      );
+  END IF;
+END $$;
 
--- Availability: elevated members can manage availability
-DROP POLICY IF EXISTS "Listing members can manage availability" ON availability_slots;
-CREATE POLICY "Listing members can manage availability"
-  ON availability_slots FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM listing_members
-      WHERE listing_members.listing_id = availability_slots.listing_id
-        AND listing_members.user_id = auth.uid()
-        AND listing_members.status = 'active'
-        AND (
-          listing_members.role IN ('owner', 'admin', 'editor')
-          OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+-- Availability: elevated members can manage availability (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'availability_slots') THEN
+    DROP POLICY IF EXISTS "Listing members can manage availability" ON availability_slots;
+    CREATE POLICY "Listing members can manage availability"
+      ON availability_slots FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM listing_members
+          WHERE listing_members.listing_id = availability_slots.listing_id
+            AND listing_members.user_id = auth.uid()
+            AND listing_members.status = 'active'
+            AND (
+              listing_members.role IN ('owner', 'admin', 'editor')
+              OR listing_members.permissions && ARRAY['listings.write', 'listings.*']
+            )
         )
-    )
-  );
+      );
+  END IF;
+END $$;
 
--- Bookings: support team members can view bookings tied to their listing
-DROP POLICY IF EXISTS "Listing members can view bookings for their listings" ON bookings;
-CREATE POLICY "Listing members can view bookings for their listings"
-  ON bookings FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1
-      FROM listing_members
-      WHERE listing_members.listing_id = bookings.listing_id
-        AND listing_members.user_id = auth.uid()
-        AND listing_members.status = 'active'
-        AND (
-          listing_members.role IN ('owner', 'admin', 'support')
-          OR listing_members.permissions && ARRAY['bookings.read', 'bookings.write', 'bookings.*']
+-- Bookings: support team members can view bookings tied to their listing (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'bookings') THEN
+    DROP POLICY IF EXISTS "Listing members can view bookings for their listings" ON bookings;
+    CREATE POLICY "Listing members can view bookings for their listings"
+      ON bookings FOR SELECT
+      USING (
+        EXISTS (
+          SELECT 1
+          FROM listing_members
+          WHERE listing_members.listing_id = bookings.listing_id
+            AND listing_members.user_id = auth.uid()
+            AND listing_members.status = 'active'
+            AND (
+              listing_members.role IN ('owner', 'admin', 'support')
+              OR listing_members.permissions && ARRAY['bookings.read', 'bookings.write', 'bookings.*']
+            )
         )
-    )
-  );
+      );
+  END IF;
+END $$;
 
 -- Keep listing_members.updated_at fresh on updates
 DO $$
