@@ -192,11 +192,12 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           {listing.title}
         </h3>
 
-        {isUnclaimed ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-            {listing.description}
-          </p>
-        ) : null}
+        {/* Category Tag - For Unclaimed Listings, shown under title */}
+        {isUnclaimed && listing.category && (
+          <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-3 py-1 rounded-full mb-3 whitespace-nowrap">
+            {listing.category}
+          </span>
+        )}
 
         {/* Location */}
         {listing.location && (
@@ -214,22 +215,20 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
         )}
 
         {/* Price and Category Row */}
-        <div className="flex items-center justify-between">
-          {canShowPricing ? (
-            <div className="text-lg font-bold text-warm-primary">
-              {formatPrice(listing.price)}
-            </div>
-          ) : (
-            <div className="text-sm font-semibold text-orange-600">
-              Unclaimed listing
-            </div>
-          )}
-          {listing.category && (
-            <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-              {listing.category}
-            </span>
-          )}
-        </div>
+        {!isUnclaimed && (
+          <div className="flex items-center justify-between">
+            {canShowPricing ? (
+              <div className="text-lg font-bold text-warm-primary">
+                {formatPrice(listing.price)}
+              </div>
+            ) : null}
+            {listing.category && (
+              <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                {listing.category}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Quick Stats Footer */}
         {isUnclaimed ? (
