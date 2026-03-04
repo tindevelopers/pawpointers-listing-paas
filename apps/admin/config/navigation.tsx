@@ -124,6 +124,7 @@ export const mainNavItems: NavItem[] = [
       { name: "User Management", path: "/saas/admin/entity/user-management" },
       { name: "Tenant Management", path: "/saas/admin/entity/tenant-management" },
       { name: "Organization Management", path: "/saas/admin/entity/organization-management" },
+      { name: "Listing Claims", path: "/saas/admin/entity/listing-claims" },
       { name: "Role Management", path: "/saas/admin/entity/role-management" },
     ],
   },

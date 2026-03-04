@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: `Affordable, transparent pricing plans for pet service providers. Choose from Starter, Pro, or Premium tiers to grow your pet business on ${PLATFORM_NAME}.`,
 };
 
+type PricingSearchParams = Record<string, string | string[] | undefined>;
+
 interface PricingTier {
   name: string;
   emoji: string;
@@ -83,12 +85,45 @@ const addOns = [
   { name: "Social Media Spotlight Post", price: 15, period: "post" },
 ];
 
-export default function PricingPage() {
+export default function PricingPage({
+  searchParams,
+}: {
+  searchParams?: PricingSearchParams;
+}) {
+  const intent = typeof searchParams?.intent === "string" ? searchParams.intent : undefined;
+  const listingId =
+    typeof searchParams?.listingId === "string" ? searchParams.listingId : undefined;
+  const listingSlug =
+    typeof searchParams?.listingSlug === "string" ? searchParams.listingSlug : undefined;
+  const listingTitle =
+    typeof searchParams?.listingTitle === "string" ? searchParams.listingTitle : undefined;
+  const returnUrl =
+    typeof searchParams?.returnUrl === "string" ? searchParams.returnUrl : undefined;
+  const claimToken = typeof searchParams?.claim === "string" ? searchParams.claim : undefined;
+
+  const signupQuery = new URLSearchParams();
+  if (intent === "claim") signupQuery.set("intent", "claim");
+  if (listingId) signupQuery.set("listingId", listingId);
+  if (listingSlug) signupQuery.set("listingSlug", listingSlug);
+  if (listingTitle) signupQuery.set("listingTitle", listingTitle);
+  if (returnUrl) signupQuery.set("returnUrl", returnUrl);
+  if (claimToken) signupQuery.set("claim", claimToken);
+  const signupHref = `/signup/member${signupQuery.toString() ? `?${signupQuery.toString()}` : ""}`;
+
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
       <Header />
 
       <main className="flex-1">
+        {intent === "claim" ? (
+          <section className="bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800">
+            <div className="container mx-auto px-4 py-4">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
+                You are claiming a business listing{listingTitle ? `: ${listingTitle}` : ""}. Choose a plan to continue to provider signup.
+              </p>
+            </div>
+          </section>
+        ) : null}
         {/* Hero Section */}
         <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-16 lg:py-24">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
@@ -169,7 +204,7 @@ export default function PricingPage() {
                       </div>
 
                       {/* CTA Button */}
-                      <Link href="/signup/member">
+                      <Link href={signupHref}>
                         <button
                           className={`w-full py-3 px-6 rounded-lg font-semibold mb-8 transition-all duration-300 ${
                             tier.highlighted
@@ -369,7 +404,7 @@ export default function PricingPage() {
                 Join {PLATFORM_NAME} today and let pet parents find the care
                 their pets deserve — with you. 🐾
               </p>
-              <Link href="/signup/member">
+              <Link href={signupHref}>
                 <button className="bg-white text-orange-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl">
                   Get Started Today
                 </button>

@@ -6,7 +6,12 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { wasabiClient, getConfig } from './client';
 import { optimizeImage, generateAllThumbnails, convertToWebP } from './optimize';
-import type { ImageOptions, UploadResult, PresignedUploadResult } from './types';
+import type {
+  FileUploadResult,
+  ImageOptions,
+  UploadResult,
+  PresignedUploadResult,
+} from './types';
 import { DEFAULT_IMAGE_OPTIONS, THUMBNAIL_SIZES } from './types';
 import crypto from 'crypto';
 
@@ -204,5 +209,42 @@ export async function generatePresignedUploadUrl(
     key,
     finalUrl: getImageUrl(key),
     expiresIn,
+  };
+}
+
+/**
+ * Upload a raw file (video or non-optimized asset) to Wasabi.
+ */
+export async function uploadFile(
+  buffer: Buffer,
+  options: {
+    prefix?: string;
+    filename?: string;
+    contentType?: string;
+    cacheControl?: string;
+  } = {}
+): Promise<FileUploadResult> {
+  const client = wasabiClient();
+  const config = getConfig();
+
+  const prefix = options.prefix || 'uploads';
+  const extension = options.filename?.split('.').pop() || 'bin';
+  const key = generateKey(prefix, extension);
+
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: options.contentType || 'application/octet-stream',
+      CacheControl: options.cacheControl || 'public, max-age=31536000, immutable',
+    })
+  );
+
+  return {
+    key,
+    url: getImageUrl(key),
+    size: buffer.length,
+    contentType: options.contentType || 'application/octet-stream',
   };
 }

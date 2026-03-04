@@ -52,6 +52,7 @@ todos:
       - provider-onboarding-service
       - booking-payment-service
       - payout-service
+isProject: false
 ---
 
 # Marketplace Payment System Enhancement Plan
@@ -61,6 +62,7 @@ todos:
 The existing payment system handles SaaS subscription billing for tenants but lacks the infrastructure for a two-sided marketplace where pet parents pay for services and providers receive payouts minus platform fees.
 
 ### Key Gaps Identified
+
 - Missing `stripe_connect_accounts` database table (code references it but table doesn't exist)
 - No booking-to-payment integration
 - No provider payout management
@@ -91,6 +93,8 @@ sequenceDiagram
     API->>Stripe: Capture/transfer funds
     Stripe->>Provider: $85 transferred
 ```
+
+
 
 ---
 
@@ -199,6 +203,7 @@ ALTER TABLE bookings ADD COLUMN IF NOT EXISTS
 Location: `packages/@listing-platform/payments/src/services/provider-onboarding.ts`
 
 Key Functions:
+
 - `createProviderAccount(userId, businessInfo)` - Create Express Connect account
 - `getOnboardingLink(providerId, returnUrl)` - Generate onboarding URL
 - `refreshOnboardingStatus(providerId)` - Sync account status from Stripe
@@ -207,6 +212,7 @@ Key Functions:
 ### 2.2 Onboarding Status Tracking
 
 Track these capabilities:
+
 - `card_payments` - Can accept card payments
 - `transfers` - Can receive transfers
 - Tax form status (for 1099-K threshold)
@@ -284,6 +290,7 @@ export const platformFeeConfig = {
 Location: `packages/@listing-platform/payments/src/services/provider-payouts.ts`
 
 Key Functions:
+
 - `getProviderBalance(providerId)` - Available and pending balance
 - `getProviderTransactions(providerId, filters)` - Transaction history
 - `initiateManualPayout(providerId, amount?)` - Trigger instant payout
@@ -344,6 +351,7 @@ case 'capability.updated':
 Location: `packages/@listing-platform/payments/src/components/`
 
 Components needed:
+
 - `ProviderOnboardingBanner.tsx` - Shows onboarding status/prompts
 - `ProviderPayoutSettings.tsx` - Configure payout schedule
 - `ProviderBankAccounts.tsx` - View connected bank accounts
@@ -353,6 +361,7 @@ Components needed:
 ### 6.2 Booking Payment UI
 
 Components needed:
+
 - `BookingPaymentForm.tsx` - Card input for booking checkout
 - `TipSelector.tsx` - Add tip to booking
 - `PaymentSummary.tsx` - Breakdown (service, fees, tip, total)
@@ -408,23 +417,29 @@ GET    /api/bookings/:id/payment-status   - Get payment details
 ## Files to Create/Modify
 
 ### New Files
-| File | Purpose |
-|------|---------|
-| `supabase/migrations/20251228000001_stripe_connect_marketplace.sql` | Connect accounts + transactions tables |
-| `packages/@listing-platform/payments/src/services/provider-onboarding.ts` | Provider account management |
-| `packages/@listing-platform/payments/src/services/booking-payment.ts` | Booking payment processing |
-| `packages/@listing-platform/payments/src/services/provider-payouts.ts` | Payout management |
-| `packages/@listing-platform/payments/src/components/ProviderEarningsDashboard.tsx` | Earnings UI |
-| `packages/@listing-platform/payments/src/components/ProviderOnboardingBanner.tsx` | Onboarding prompts |
-| `config/payments.config.ts` | Platform fee configuration |
+
+
+| File                                                                               | Purpose                                |
+| ---------------------------------------------------------------------------------- | -------------------------------------- |
+| `supabase/migrations/20251228000001_stripe_connect_marketplace.sql`                | Connect accounts + transactions tables |
+| `packages/@listing-platform/payments/src/services/provider-onboarding.ts`          | Provider account management            |
+| `packages/@listing-platform/payments/src/services/booking-payment.ts`              | Booking payment processing             |
+| `packages/@listing-platform/payments/src/services/provider-payouts.ts`             | Payout management                      |
+| `packages/@listing-platform/payments/src/components/ProviderEarningsDashboard.tsx` | Earnings UI                            |
+| `packages/@listing-platform/payments/src/components/ProviderOnboardingBanner.tsx`  | Onboarding prompts                     |
+| `config/payments.config.ts`                                                        | Platform fee configuration             |
+
 
 ### Existing Files to Modify
-| File | Changes |
-|------|---------|
-| `apps/admin/app/api/webhooks/stripe/route.ts` | Add Connect event handlers |
-| `packages/@listing-platform/payments/src/types/index.ts` | Add marketplace types |
-| `packages/@listing-platform/payments/src/hooks/index.ts` | Add provider hooks |
-| `database/schema/features/booking.sql` | Add payment tracking fields |
+
+
+| File                                                     | Changes                     |
+| -------------------------------------------------------- | --------------------------- |
+| `apps/admin/app/api/webhooks/stripe/route.ts`            | Add Connect event handlers  |
+| `packages/@listing-platform/payments/src/types/index.ts` | Add marketplace types       |
+| `packages/@listing-platform/payments/src/hooks/index.ts` | Add provider hooks          |
+| `database/schema/features/booking.sql`                   | Add payment tracking fields |
+
 
 ---
 
@@ -448,3 +463,4 @@ GET    /api/bookings/:id/payment-status   - Get payment details
 - Refunds correctly reverse both customer charge and provider transfer
 - Payouts reach provider bank accounts on configured schedule
 - All webhook events are logged and processed reliably
+

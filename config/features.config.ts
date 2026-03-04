@@ -236,7 +236,10 @@ export const featuresConfig = {
   
   // Image handling
   media: {
-    storage: 'wasabi', // 'wasabi', 's3', 'cloudinary', 'local'
+    storage: 'wasabi', // Legacy default for supporting media
+    mainStorage: 'supabase', // Critical images: logos, avatars, featured
+    supportingStorage: 'wasabi', // Gallery/reviews/video for cost control
+    mainBucket: process.env.SUPABASE_MAIN_IMAGES_BUCKET || 'main-images',
     bucket: process.env.WASABI_BUCKET || 'listing-platform-images',
     cdnUrl: process.env.NEXT_PUBLIC_CDN_URL,
     maxImagesPerListing: 20,

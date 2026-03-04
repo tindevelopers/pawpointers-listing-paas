@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { LocationTabContent } from "./LocationTabContent";
 import { AuthenticatedReviewForm } from "../reviews/AuthenticatedReviewForm";
 import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
+import { ClaimListingModal } from "./ClaimListingModal";
 import { createClient } from "@/core/database/client";
 
 interface ListingDetailProps {
@@ -15,11 +16,57 @@ interface ListingDetailProps {
 
 type TabType = "overview" | "reviews" | "location" | "pricing";
 
+type ClaimStatus = {
+  canClaim: boolean;
+  isOwner: boolean;
+  isMember: boolean;
+  activeClaim: { id: string; status: string } | null;
+};
+
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isClaimStatusLoading, setIsClaimStatusLoading] = useState(false);
+  const [claimStatus, setClaimStatus] = useState<ClaimStatus | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const isUnclaimed = listing.isUnclaimed ?? false;
+  const featureAccess = listing.featureAccess;
+  const canBook = featureAccess?.canBook ?? !isUnclaimed;
+  const canMessageOwner = featureAccess?.canMessageOwner ?? !isUnclaimed;
+  const canShowPricing = featureAccess?.canShowPricing ?? !isUnclaimed;
+  const canShowAvailability = featureAccess?.canShowAvailability ?? !isUnclaimed;
+  const canShowReviews = featureAccess?.canShowReviews ?? !isUnclaimed;
+  const canShowPhone = featureAccess?.canShowPhone ?? !isUnclaimed;
+  const canShowEmail = featureAccess?.canShowEmail ?? !isUnclaimed;
+  const canShowWebsite = featureAccess?.canShowWebsite ?? !isUnclaimed;
+  const claimFlowHref = `/pricing?intent=claim&listingId=${encodeURIComponent(listing.id)}&listingSlug=${encodeURIComponent(listing.slug)}`;
+
+  const loadClaimStatus = useCallback(async () => {
+    if (!isLoggedIn) {
+      setClaimStatus(null);
+      return;
+    }
+
+    setIsClaimStatusLoading(true);
+    try {
+      const response = await fetch(
+        `/api/listing-claims/status?listingId=${encodeURIComponent(listing.id)}`
+      );
+      const result = await response.json();
+      if (response.ok && result?.success) {
+        setClaimStatus(result.data as ClaimStatus);
+      } else {
+        setClaimStatus(null);
+      }
+    } catch {
+      setClaimStatus(null);
+    } finally {
+      setIsClaimStatusLoading(false);
+    }
+  }, [isLoggedIn, listing.id]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -34,14 +81,30 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    loadClaimStatus();
+  }, [loadClaimStatus]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = new URLSearchParams(window.location.search).get("claim");
+    setInviteToken(token);
+  }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && claimStatus?.canClaim && inviteToken) {
+      setIsClaimModalOpen(true);
+    }
+  }, [isLoggedIn, claimStatus?.canClaim, inviteToken]);
+
   // Open booking modal when navigated with #book (e.g. from listing card "Book Now")
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.hash === "#book") {
+    if (canBook && window.location.hash === "#book") {
       setIsBookingModalOpen(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, []);
+  }, [canBook]);
 
   // Generate consistent mock data based on listing ID
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
@@ -64,10 +127,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     "events-experiences": ["Pet Classes", "Workshops", "Social Events"],
   };
 
-  const phone = listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length];
-  const email = listing.email || mockEmails[idHash % mockEmails.length];
-  const website = listing.website || mockWebsites[idHash % mockWebsites.length];
-  const services = listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"];
+  const phone =
+    canShowPhone && !isUnclaimed
+      ? listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length]
+      : undefined;
+  const email =
+    canShowEmail && !isUnclaimed
+      ? listing.email || mockEmails[idHash % mockEmails.length]
+      : undefined;
+  const website =
+    canShowWebsite && !isUnclaimed
+      ? listing.website || mockWebsites[idHash % mockWebsites.length]
+      : undefined;
+  const services =
+    !isUnclaimed && featureAccess?.canShowFullDescription !== false
+      ? listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"]
+      : [];
 
   // Mock reviews data
   const mockReviews = [
@@ -115,9 +190,9 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "reviews", label: "Reviews" },
+    ...(canShowReviews ? [{ id: "reviews" as TabType, label: "Reviews" }] : []),
     { id: "location", label: "Location" },
-    { id: "pricing", label: "Pricing" },
+    ...(canShowPricing ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
   ];
 
   return (
@@ -130,20 +205,21 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               {listing.title}
             </h1>
             
-            {/* Rating Badge */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {renderStars(rating)}
+              {canShowReviews ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {renderStars(rating)}
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {rating.toFixed(1)}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    ({reviewCount} reviews)
+                  </span>
                 </div>
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {rating.toFixed(1)}
-                </span>
-                <span className="text-gray-500 dark:text-gray-400">
-                  ({reviewCount} reviews)
-                </span>
-              </div>
-              
+              ) : null}
+
               {/* Category Badge */}
               {listing.category && (
                 <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-bold px-3 py-1.5 rounded-full">
@@ -155,26 +231,60 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
           {/* CTA Button */}
           <div className="flex flex-col gap-2 md:flex-row md:gap-3">
-            <button
-              type="button"
-              onClick={() => setIsBookingModalOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Book Now
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsChatModalOpen(true)}
-              className="border-2 border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Message
-            </button>
+            {isUnclaimed ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.location.href = claimFlowHref;
+                  }
+                }}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Claim Your Business
+              </button>
+            ) : (
+              <>
+                {canBook ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsBookingModalOpen(true)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Book Now
+                  </button>
+                ) : null}
+                {canMessageOwner ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsChatModalOpen(true)}
+                    className="border-2 border-orange-500 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Message
+                  </button>
+                ) : null}
+              </>
+            )}
+            {listing.isUnclaimed && (!isLoggedIn || (!isClaimStatusLoading && claimStatus?.canClaim)) ? (
+              <button
+                type="button"
+                onClick={() => setIsClaimModalOpen(true)}
+                className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 px-6 rounded-lg transition-all duration-200"
+              >
+                Submit claim directly
+              </button>
+            ) : null}
+            {isLoggedIn && claimStatus?.activeClaim ? (
+              <span className="inline-flex items-center rounded-lg bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700">
+                Claim status: {claimStatus.activeClaim.status}
+              </span>
+            ) : null}
           </div>
         </div>
 
@@ -232,7 +342,10 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
       {/* Gallery */}
       <div className="mb-8">
-        <ListingGallery images={listing.images} title={listing.title} />
+        <ListingGallery
+          images={isUnclaimed ? listing.images.slice(0, 1) : listing.images}
+          title={listing.title}
+        />
       </div>
 
       {/* Tab Navigation */}
@@ -261,15 +374,13 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           {/* Overview Tab */}
           {activeTab === "overview" && (
             <div className="space-y-8">
-              {/* Quick Info */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">About</h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
                   {listing.description}
                 </p>
 
-                {/* Services Provided */}
-                {services && services.length > 0 && (
+                {!isUnclaimed && services && services.length > 0 ? (
                   <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">Services Provided</h3>
                     <div className="flex flex-wrap gap-2">
@@ -283,66 +394,80 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                       ))}
                     </div>
                   </div>
+                ) : null}
+
+                {!isUnclaimed ? (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-center w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg mx-auto mb-2">
+                        <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Response Time</p>
+                      <p className="font-bold text-gray-900 dark:text-white">Usually 1h</p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-center w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg mx-auto mb-2">
+                        <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
+                      <p className="font-bold text-gray-900 dark:text-white">{services.length} types</p>
+                    </div>
+                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2">
+                        <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Since</p>
+                      <p className="font-bold text-gray-900 dark:text-white">Jan 2023</p>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.location.href = claimFlowHref;
+                      }
+                    }}
+                    className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+                  >
+                    Claim this business
+                  </button>
                 )}
-
-                {/* Quick Facts Grid */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center justify-center w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg mx-auto mb-2">
-                      <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Response Time</p>
-                    <p className="font-bold text-gray-900 dark:text-white">Usually 1h</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center justify-center w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg mx-auto mb-2">
-                      <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
-                    <p className="font-bold text-gray-900 dark:text-white">{services.length} types</p>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2">
-                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Since</p>
-                    <p className="font-bold text-gray-900 dark:text-white">Jan 2023</p>
-                  </div>
-                </div>
               </div>
 
-              {/* Availability */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Availability</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, idx) => (
-                    <div
-                      key={day}
-                      className={`p-3 rounded-lg text-center font-medium transition-colors ${
-                        idx < 5
-                          ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600'
-                      }`}
-                    >
-                      {day}
-                    </div>
-                  ))}
+              {!isUnclaimed && canShowAvailability ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Availability</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day, idx) => (
+                      <div
+                        key={day}
+                        className={`p-3 rounded-lg text-center font-medium transition-colors ${
+                          idx < 5
+                            ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600"
+                        }`}
+                      >
+                        {day}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Hours:</strong> 9:00 AM - 6:00 PM
+                  </p>
                 </div>
-                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  <strong>Hours:</strong> 9:00 AM - 6:00 PM
-                </p>
-              </div>
+              ) : null}
             </div>
           )}
 
           {/* Reviews Tab */}
-          {activeTab === "reviews" && (
+          {activeTab === "reviews" && canShowReviews && (
             <div className="space-y-6">
               {/* Reviews Summary */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
@@ -447,7 +572,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           {activeTab === "location" && <LocationTabContent listing={listing} />}
 
           {/* Pricing Tab */}
-          {activeTab === "pricing" && (
+          {activeTab === "pricing" && canShowPricing && (
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Pricing</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -541,32 +666,56 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           <div className="sticky top-4">
             {/* Main CTA Card */}
             <div className="bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-600 dark:to-orange-700 rounded-2xl shadow-lg p-6 text-white mb-4">
-              <h3 className="text-xl font-bold mb-2">Ready to book?</h3>
-              <p className="text-orange-100 text-sm mb-4">
-                Secure your service with this trusted provider
-              </p>
-
-              <button
-                type="button"
-                onClick={() => setIsBookingModalOpen(true)}
-                className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2 hover:shadow-lg"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Book Now
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsChatModalOpen(true)}
-                className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Message Provider
-              </button>
+              {isUnclaimed ? (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Own this business?</h3>
+                  <p className="text-orange-100 text-sm mb-4">
+                    Claim this free listing to unlock your profile, bookings, and customer tools.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        window.location.href = claimFlowHref;
+                      }
+                    }}
+                    className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3"
+                  >
+                    Claim Your Business
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-xl font-bold mb-2">Ready to book?</h3>
+                  <p className="text-orange-100 text-sm mb-4">
+                    Secure your service with this trusted provider
+                  </p>
+                  {canBook ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsBookingModalOpen(true)}
+                      className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold py-3 px-4 rounded-lg transition-all duration-200 mb-3 flex items-center justify-center gap-2 hover:shadow-lg"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Book Now
+                    </button>
+                  ) : null}
+                  {canMessageOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsChatModalOpen(true)}
+                      className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white/50 hover:border-white"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      Message Provider
+                    </button>
+                  ) : null}
+                </>
+              )}
             </div>
 
             {/* Verification Badges */}
@@ -587,25 +736,54 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 </div>
               </div>
             </div>
+            {!isUnclaimed && listing.effectiveTier === "top" ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-sm">
+                  Premium Tools (Scaffold)
+                </h3>
+                <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-300">
+                  <li>Search highlight: {listing.topTierFeatures?.highlightInSearch ? "enabled" : "coming soon"}</li>
+                  <li>Homepage spotlight: {listing.topTierFeatures?.homepageSpotlight ? "enabled" : "coming soon"}</li>
+                  <li>Advanced analytics: {listing.topTierFeatures?.advancedAnalytics ? "enabled" : "coming soon"}</li>
+                  <li>Priority support: {listing.topTierFeatures?.prioritySupport ? "enabled" : "coming soon"}</li>
+                </ul>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
 
       {/* Booking Modal */}
-      <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        listingId={listing.id}
-        listingTitle={listing.title}
-        isLoggedIn={isLoggedIn}
-      />
+      {!isUnclaimed && canBook ? (
+        <BookingModal
+          isOpen={isBookingModalOpen}
+          onClose={() => setIsBookingModalOpen(false)}
+          listingId={listing.id}
+          listingTitle={listing.title}
+          isLoggedIn={isLoggedIn}
+        />
+      ) : null}
 
       {/* Chat Modal */}
-      <ChatModal
-        isOpen={isChatModalOpen}
-        onClose={() => setIsChatModalOpen(false)}
-        providerName={listing.title}
-        providerImage={listing.images?.[0]}
+      {!isUnclaimed && canMessageOwner ? (
+        <ChatModal
+          isOpen={isChatModalOpen}
+          onClose={() => setIsChatModalOpen(false)}
+          providerName={listing.title}
+          providerImage={listing.images?.[0]}
+        />
+      ) : null}
+
+      <ClaimListingModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        listingId={listing.id}
+        listingTitle={listing.title}
+        inviteToken={inviteToken}
+        isLoggedIn={isLoggedIn}
+        onSuccess={async () => {
+          await loadClaimStatus();
+        }}
       />
     </div>
   );

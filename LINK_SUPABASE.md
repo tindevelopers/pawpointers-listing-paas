@@ -108,6 +108,34 @@ supabase link --project-ref your-project-ref
 supabase db push
 ```
 
+## Use Remote Supabase for Localhost (No Docker)
+
+To run the portal/dashboard locally against the **remote** Supabase database (no local Docker needed):
+
+1. **Link your project** (one-time):
+   ```bash
+   supabase link --project-ref your-project-ref
+   ```
+   Get the project ref from: https://app.supabase.com → your project → Settings → General
+
+2. **Set `.env.local` to use remote Supabase:**
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+
+3. **Push migrations and seed unclaimed listings:**
+   ```bash
+   pnpm run seed:unclaimed:remote
+   ```
+   This runs `supabase db push --linked --include-seed`, which applies pending migrations and inserts 10 unclaimed listings from `supabase/seed.sql`.
+
+4. **Start dev servers:**
+   ```bash
+   pnpm dev
+   ```
+
 ## Verify Connection
 
 1. **Start the development server:**

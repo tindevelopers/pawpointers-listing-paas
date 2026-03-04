@@ -45,6 +45,15 @@ const nextConfig: NextConfig = {
               hostname,
             }))
         : []),
+      // Supabase storage (for listing images)
+      ...(process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname,
+            },
+          ]
+        : []),
     ],
   },
   

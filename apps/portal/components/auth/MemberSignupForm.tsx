@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUpMember } from "@/app/actions/auth";
 
@@ -80,6 +80,7 @@ interface FormData {
 
 export default function MemberSignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -96,6 +97,7 @@ export default function MemberSignupForm() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const signInHref = `/signin${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 
   const selectedCategory = BUSINESS_CATEGORIES.find(
     (cat) => cat.id === formData.businessCategory
@@ -641,7 +643,7 @@ export default function MemberSignupForm() {
       <p className="text-center text-sm text-gray-600 dark:text-gray-400">
         Already have an account?{" "}
         <Link
-          href="/signin"
+          href={signInHref}
           className="text-blue-600 hover:text-blue-500 font-medium dark:text-blue-400"
         >
           Sign in

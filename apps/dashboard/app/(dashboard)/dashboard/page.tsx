@@ -1,6 +1,8 @@
 import { createClient } from "@/core/database/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getDashboardEntitlementsForUser, getScopedListingIds } from "@/lib/listing-access";
+import { canAccessDashboardFeature, type DashboardFeatureKey } from "@/lib/subscription-entitlements";
 
 type DashboardStats = {
   listingCount: number;
@@ -29,13 +31,7 @@ async function getDashboardContext() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data: listingRows } = await supabase
-    .from("listings")
-    .select("id")
-    .eq("owner_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const listingIds = (listingRows || []).map((row: any) => row.id);
+  const listingIds = await getScopedListingIds(user.id);
 
   let reviewCount = 0;
   if (listingIds.length > 0) {
@@ -83,11 +79,13 @@ export default async function DashboardPage() {
     redirect("/signin");
   }
 
+  const entitlements = await getDashboardEntitlementsForUser(user.id);
+
   const cards = [
-    { label: "Listings", value: stats.listingCount, href: "/listings" },
-    { label: "Bookings", value: stats.bookingCount, href: "/bookings" },
-    { label: "Reviews", value: stats.reviewCount, href: "/reviews" },
-    { label: "Inbox", value: stats.conversationCount, href: "/inbox" },
+    { label: "Listings", value: stats.listingCount, href: "/listings", feature: "listings" as DashboardFeatureKey },
+    { label: "Bookings", value: stats.bookingCount, href: "/bookings", feature: "bookings" as DashboardFeatureKey },
+    { label: "Reviews", value: stats.reviewCount, href: "/reviews", feature: "reviews" as DashboardFeatureKey },
+    { label: "Inbox", value: stats.conversationCount, href: "/inbox", feature: "inbox" as DashboardFeatureKey },
   ];
 
   return (
@@ -102,16 +100,24 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card) => (
-          <Link
-            key={card.label}
-            href={card.href}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-orange-200"
-          >
-            <p className="text-sm text-gray-500">{card.label}</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{card.value}</p>
-          </Link>
-        ))}
+        {cards.map((card) => {
+          const allowed = canAccessDashboardFeature(entitlements, card.feature);
+          const href = allowed ? card.href : `/billing/upgrade?feature=${encodeURIComponent(card.feature)}`;
+
+          return (
+            <Link
+              key={card.label}
+              href={href}
+              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-orange-200"
+            >
+              <p className="text-sm text-gray-500">{card.label}</p>
+              <p className="mt-2 text-3xl font-semibold text-gray-900">{card.value}</p>
+              {!allowed ? (
+                <p className="mt-1 text-xs font-semibold text-orange-600">View plan options</p>
+              ) : null}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

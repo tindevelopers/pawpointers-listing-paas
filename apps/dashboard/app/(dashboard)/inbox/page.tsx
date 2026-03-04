@@ -1,6 +1,9 @@
 import { createClient } from "@/core/database/server";
 import { redirect } from "next/navigation";
 import { sendMessage } from "@/app/actions/listings";
+import { getDashboardEntitlementsForUser } from "@/lib/listing-access";
+import { canAccessDashboardFeature } from "@/lib/subscription-entitlements";
+import EntitlementGate from "@/components/EntitlementGate";
 
 async function getContext() {
   const supabase = await createClient();
@@ -42,6 +45,14 @@ export default async function InboxPage() {
 
   if (!user) {
     redirect("/signin");
+  }
+
+  const entitlements = await getDashboardEntitlementsForUser(user.id);
+  const canAccessInbox = canAccessDashboardFeature(entitlements, "inbox");
+  if (!canAccessInbox) {
+    return (
+      <EntitlementGate allowed={false} featureName="Inbox" requiredTier="middle" />
+    );
   }
 
   return (

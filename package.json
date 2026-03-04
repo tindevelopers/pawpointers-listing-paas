@@ -85,7 +85,9 @@
     "update:validate": "tsx scripts/validate-update.ts",
     "update:rollback": "tsx scripts/rollback-update.ts",
     "update:history": "tsx scripts/rollback-update.ts list",
-    "book:portal": "tsx scripts/book-appointment-browser.ts"
+    "book:portal": "tsx scripts/book-appointment-browser.ts",
+    "seed:unclaimed": "tsx scripts/seed-unclaimed-listings.ts",
+    "seed:unclaimed:remote": "bash scripts/seed-unclaimed-remote.sh"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",

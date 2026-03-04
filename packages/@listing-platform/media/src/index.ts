@@ -10,14 +10,35 @@
  * - Thumbnail generation
  */
 
-export { wasabiClient, getWasabiConfig, createWasabiClient } from './client';
+export {
+  wasabiClient,
+  getWasabiConfig,
+  createWasabiClient,
+  healthCheckWasabi,
+} from './client';
 export {
   uploadImage,
   uploadImages,
+  uploadFile,
   deleteImage,
   deleteImages,
   getImageUrl,
   generatePresignedUploadUrl,
 } from './upload';
-export { optimizeImage, generateThumbnail, ImageSize } from './optimize';
-export type { WasabiConfig, UploadResult, ImageOptions } from './types';
+export { uploadMainImage } from './supabase-storage';
+export {
+  getStorageTargetForAsset,
+  uploadMainImageAsset,
+  uploadSupportingImage,
+  uploadSupportingVideo,
+} from './storage-router';
+export { optimizeImage, generateThumbnail } from './optimize';
+export type {
+  WasabiConfig,
+  UploadResult,
+  FileUploadResult,
+  ImageOptions,
+  MainImageUploadOptions,
+  MainImageType,
+} from './types';
+export type { ImageSize } from './optimize';

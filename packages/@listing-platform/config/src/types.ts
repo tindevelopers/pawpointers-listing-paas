@@ -113,6 +113,9 @@ export interface PlatformConfig {
 
 export interface MediaConfig {
   storage: 'wasabi' | 's3' | 'cloudinary' | 'local';
+  mainStorage?: 'supabase' | 'wasabi' | 's3' | 'cloudinary' | 'local';
+  supportingStorage?: 'supabase' | 'wasabi' | 's3' | 'cloudinary' | 'local';
+  mainBucket?: string;
   bucket?: string;
   cdnUrl?: string;
   maxImagesPerListing: number;
@@ -170,6 +173,39 @@ export interface ListingWithTaxonomy {
     isPrimary: boolean;
   }>;
   // ... other listing fields
+}
+
+export type ListingTier = 'base' | 'middle' | 'top';
+
+export type ListingCardSizeVariant = 'compact' | 'standard' | 'featured';
+
+export interface ListingFeatureAccess {
+  canShowPrimaryImage: boolean;
+  canShowGallery: boolean;
+  canShowShortDescription: boolean;
+  canShowFullDescription: boolean;
+  canShowAddress: boolean;
+  canShowMap: boolean;
+  canShowPhone: boolean;
+  canShowEmail: boolean;
+  canShowWebsite: boolean;
+  canShowPricing: boolean;
+  canShowAvailability: boolean;
+  canBook: boolean;
+  canMessageOwner: boolean;
+  canShowReviews: boolean;
+  canRespondToReviews: boolean;
+  canClaim: boolean;
+}
+
+export interface TopTierFeatureFlags {
+  highlightInSearch: boolean;
+  homepageSpotlight: boolean;
+  premiumBadge: boolean;
+  advancedAnalytics: boolean;
+  prioritySupport: boolean;
+  customBranding: boolean;
+  promotionalSlots: boolean;
 }
 
 

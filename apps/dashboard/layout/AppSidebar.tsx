@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from "react";
+import React, { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -8,6 +8,11 @@ import { useSidebar } from "@/context/SidebarContext";
 import { useTenant } from "@tinadmin/core/multi-tenancy";
 import { useWhiteLabel } from "@/context/WhiteLabelContext";
 import { merchantNavItems, ChevronDownIcon } from "@/config/navigation";
+import { LockIcon } from "@/icons";
+import {
+  canAccessDashboardFeature,
+  resolveDashboardEntitlements,
+} from "@/lib/subscription-entitlements";
 
 const MenuDotsIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400">
@@ -34,6 +39,22 @@ const AppSidebar: React.FC = () => {
   const logoUrl = branding.logo || "/images/logo/logo.svg";
   const logoDarkUrl = branding.logo || "/images/logo/logo-dark.svg";
   const logoIconUrl = branding.favicon || "/images/logo/logo-icon.svg";
+  const entitlements = useMemo(
+    () => resolveDashboardEntitlements({ accountPlan: (tenant as { plan?: string } | null)?.plan }),
+    [tenant]
+  );
+
+  const isItemAccessible = useCallback(
+    (item: NavItem) =>
+      item.featureKey ? canAccessDashboardFeature(entitlements, item.featureKey) : true,
+    [entitlements]
+  );
+
+  const getLockedHref = useCallback(
+    (featureKey?: string) =>
+      `/billing/upgrade${featureKey ? `?feature=${encodeURIComponent(featureKey)}` : ""}`,
+    []
+  );
 
   const isActive = useCallback(
     (path: string) => {
@@ -120,186 +141,156 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (navItems: NavItem[], menuType: "main") => (
     <ul className="flex flex-col gap-1">
-      {navItems.map((nav, index) => (
-        <li key={`${menuType}-${nav.path || nav.name}-${index}`}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              aria-expanded={
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-              }
-              aria-controls={`submenu-${menuType}-${index}`}
-              className={`menu-item group ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
-              } cursor-pointer ${
-                !showExpanded ? "lg:justify-center" : "lg:justify-start"
-              }`}
-            >
-              <span
-                className={
+      {navItems.map((nav, index) => {
+        const navAccessible = isItemAccessible(nav);
+        const hasVisibleSubItems =
+          !!nav.subItems &&
+          nav.subItems.some((subItem) =>
+            entitlements.mode === "showLockedTabs" ? true : isItemAccessible(subItem)
+          );
+
+        if (
+          entitlements.mode === "hideUnavailableTabs" &&
+          !navAccessible &&
+          !hasVisibleSubItems
+        ) {
+          return null;
+        }
+
+        const navPath = nav.path
+          ? navAccessible
+            ? nav.path
+            : getLockedHref(nav.featureKey)
+          : undefined;
+
+        return (
+          <li key={`${menuType}-${nav.path || nav.name}-${index}`}>
+            {nav.subItems ? (
+              <button
+                onClick={() => handleSubmenuToggle(index, menuType)}
+                aria-expanded={
                   openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
                 }
-              >
-                {nav.icon}
-              </span>
-              {showExpanded && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {nav.new && showExpanded && (
-                <span
-                  className={`ml-auto absolute right-10 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                      ? "menu-dropdown-badge-active"
-                      : "menu-dropdown-badge-inactive"
-                  } menu-dropdown-badge`}
-                >
-                  new
-                </span>
-              )}
-              {showExpanded && nav.subItems && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                  }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                href={nav.path}
+                aria-controls={`submenu-${menuType}-${index}`}
                 className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                }`}
+                  openSubmenu?.type === menuType && openSubmenu?.index === index
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
+                } cursor-pointer ${!showExpanded ? "lg:justify-center" : "lg:justify-start"}`}
+                title={!navAccessible ? nav.lockedLabel || "View plan options" : undefined}
               >
                 <span
                   className={
-                    isActive(nav.path)
+                    openSubmenu?.type === menuType && openSubmenu?.index === index
                       ? "menu-item-icon-active"
                       : "menu-item-icon-inactive"
                   }
                 >
                   {nav.icon}
                 </span>
-                {showExpanded && (
-                  <span className="menu-item-text">{nav.name}</span>
-                )}
-              </Link>
-            )
-          )}
-          {nav.subItems && showExpanded && (
-            <div
-              id={`submenu-${menuType}-${index}`}
-              ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
-              }}
-              className="overflow-hidden transition-all duration-300"
-              role="region"
-              aria-labelledby={`menu-${menuType}-${index}`}
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-2 space-y-1 ml-9" role="menu">
-                {nav.subItems.map((subItem, subIndex) => {
-                  const isNestedMenu =
-                    "subItems" in subItem &&
-                    subItem.subItems &&
-                    !("path" in subItem);
-                  const isNestedOpen =
-                    openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index &&
-                    openSubmenu?.subIndex === subIndex;
-
-                  if (isNestedMenu) {
-                    return (
-                      <li
-                        key={
-                          subItem.path || `${subItem.name}-${subIndex}`
-                        }
-                        role="none"
-                      >
-                        <button
-                          onClick={() =>
-                            handleSubmenuToggle(index, menuType, subIndex)
-                          }
-                          className="menu-dropdown-item w-full text-left flex items-center justify-between"
-                        >
-                          <span>{subItem.name}</span>
-                          <ChevronDownIcon
-                            className={`w-4 h-4 transition-transform duration-200 ${
-                              isNestedOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                        {isNestedOpen && (
-                          <ul className="mt-1 ml-4 space-y-1" role="menu">
-                            {subItem.subItems?.map(
-                              (nestedItem, nestedIndex) => {
-                                if (
-                                  "path" in nestedItem &&
-                                  nestedItem.path
-                                ) {
-                                  return (
-                                    <li
-                                      key={
-                                        nestedItem.path ||
-                                        `${nestedItem.name}-${nestedIndex}`
-                                      }
-                                      role="none"
-                                    >
-                                      <Link
-                                        href={nestedItem.path}
-                                        role="menuitem"
-                                        className={`menu-dropdown-item ${
-                                          isActive(nestedItem.path)
-                                            ? "menu-dropdown-item-active"
-                                            : "menu-dropdown-item-inactive"
-                                        }`}
-                                      >
-                                        {nestedItem.name}
-                                      </Link>
-                                    </li>
-                                  );
-                                }
-                                return null;
-                              }
-                            )}
-                          </ul>
-                        )}
-                      </li>
-                    );
+                {showExpanded ? (
+                  <span className="menu-item-text flex items-center gap-2">
+                    {nav.name}
+                    {nav.pro ? (
+                      <span className="menu-dropdown-badge-pro menu-dropdown-badge-pro-inactive">
+                        pro
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
+                {showExpanded && !navAccessible ? (
+                  <LockIcon className="ml-2 h-3.5 w-3.5 text-amber-500" />
+                ) : null}
+                {showExpanded && nav.subItems ? (
+                  <ChevronDownIcon
+                    className={`ml-auto w-5 h-5 transition-transform duration-200 ${
+                      openSubmenu?.type === menuType && openSubmenu?.index === index
+                        ? "rotate-180 text-brand-500"
+                        : ""
+                    }`}
+                  />
+                ) : null}
+              </button>
+            ) : navPath ? (
+              <Link
+                href={navPath}
+                className={`menu-item group ${
+                  nav.path && isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
+                }`}
+                title={!navAccessible ? nav.lockedLabel || "View plan options" : undefined}
+              >
+                <span
+                  className={
+                    nav.path && isActive(nav.path)
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
                   }
+                >
+                  {nav.icon}
+                </span>
+                {showExpanded ? (
+                  <span className="menu-item-text flex items-center gap-2">
+                    {nav.name}
+                    {nav.pro ? (
+                      <span className="menu-dropdown-badge-pro menu-dropdown-badge-pro-inactive">
+                        pro
+                      </span>
+                    ) : null}
+                  </span>
+                ) : null}
+                {showExpanded && !navAccessible ? (
+                  <LockIcon className="ml-2 h-3.5 w-3.5 text-amber-500" />
+                ) : null}
+              </Link>
+            ) : null}
+            {nav.subItems && showExpanded ? (
+              <div
+                id={`submenu-${menuType}-${index}`}
+                ref={(el) => {
+                  subMenuRefs.current[`${menuType}-${index}`] = el;
+                }}
+                className="overflow-hidden transition-all duration-300"
+                role="region"
+                aria-labelledby={`menu-${menuType}-${index}`}
+                style={{
+                  height:
+                    openSubmenu?.type === menuType && openSubmenu?.index === index
+                      ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                      : "0px",
+                }}
+              >
+                <ul className="mt-2 space-y-1 ml-9" role="menu">
+                  {nav.subItems.map((subItem, subIndex) => {
+                    const subAccessible = isItemAccessible(subItem);
+                    if (entitlements.mode === "hideUnavailableTabs" && !subAccessible) {
+                      return null;
+                    }
+                    if (!subItem.path) return null;
+                    const subPath = subAccessible
+                      ? subItem.path
+                      : getLockedHref(subItem.featureKey);
 
-                  if ("path" in subItem && subItem.path) {
                     return (
                       <li
                         key={subItem.path || `${subItem.name}-${subIndex}`}
                         role="none"
                       >
                         <Link
-                          href={subItem.path}
+                          href={subPath}
                           role="menuitem"
                           className={`menu-dropdown-item ${
                             isActive(subItem.path)
                               ? "menu-dropdown-item-active"
                               : "menu-dropdown-item-inactive"
                           }`}
+                          title={!subAccessible ? subItem.lockedLabel || "View plan options" : undefined}
                         >
                           {subItem.name}
                           <span className="flex items-center gap-1 ml-auto">
-                            {subItem.new && (
+                            {!subAccessible ? (
+                              <LockIcon className="h-3.5 w-3.5 text-amber-500" />
+                            ) : null}
+                            {subItem.new ? (
                               <span
                                 className={`ml-auto ${
                                   isActive(subItem.path)
@@ -309,8 +300,8 @@ const AppSidebar: React.FC = () => {
                               >
                                 new
                               </span>
-                            )}
-                            {subItem.pro && (
+                            ) : null}
+                            {subItem.pro ? (
                               <span
                                 className={`ml-auto ${
                                   isActive(subItem.path)
@@ -320,20 +311,18 @@ const AppSidebar: React.FC = () => {
                               >
                                 pro
                               </span>
-                            )}
+                            ) : null}
                           </span>
                         </Link>
                       </li>
                     );
-                  }
-
-                  return null;
-                })}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
+                  })}
+                </ul>
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 

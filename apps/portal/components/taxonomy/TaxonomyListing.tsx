@@ -20,10 +20,16 @@ interface TaxonomyListingProps {
  * Dynamic listing detail component that adapts features based on taxonomy config
  */
 export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
+  const isUnclaimed = listing.isUnclaimed ?? false;
+  const featureAccess = listing.featureAccess;
   const showReviews = isFeatureEnabled(config, "reviews");
   const showMaps = isFeatureEnabled(config, "maps");
   const showBooking = isFeatureEnabled(config, "booking");
   const showInquiry = isFeatureEnabled(config, "inquiry");
+  const canShowReviews = featureAccess?.canShowReviews ?? !isUnclaimed;
+  const canShowPricing = featureAccess?.canShowPricing ?? !isUnclaimed;
+  const canBook = featureAccess?.canBook ?? !isUnclaimed;
+  const canShowAddress = featureAccess?.canShowAddress ?? true;
   
   const customFields = (listing.customFields || {}) as Record<string, unknown>;
   const location = listing.location as { lat?: number; lng?: number; address?: string } | undefined;
@@ -48,7 +54,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
               </div>
               {listing.images.length > 1 && (
                 <div className="grid grid-cols-4 gap-2 p-2">
-                  {listing.images.slice(1, 5).map((image, index) => (
+                  {(isUnclaimed ? [] : listing.images.slice(1, 5)).map((image, index) => (
                     <div
                       key={index}
                       className="relative aspect-square rounded-lg overflow-hidden"
@@ -80,18 +86,20 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
             </h1>
             
             {/* Dynamic Fields Display */}
-            <div className="flex flex-wrap gap-4 text-gray-600 dark:text-gray-300">
-              {config.listingFields
-                .filter((field) => field.displayInCard && customFields[field.key])
-                .map((field) => (
-                  <div key={field.key} className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">{field.label}:</span>
-                    <span className="font-medium">
-                      {formatFieldValue(customFields[field.key], field.type)}
-                    </span>
-                  </div>
-                ))}
-            </div>
+            {!isUnclaimed ? (
+              <div className="flex flex-wrap gap-4 text-gray-600 dark:text-gray-300">
+                {config.listingFields
+                  .filter((field) => field.displayInCard && customFields[field.key])
+                  .map((field) => (
+                    <div key={field.key} className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{field.label}:</span>
+                      <span className="font-medium">
+                        {formatFieldValue(customFields[field.key], field.type)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : null}
           </div>
           
           {/* Description */}
@@ -103,33 +111,35 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
           </div>
           
           {/* Custom Fields Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Details
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {config.listingFields
-                .filter((field) => customFields[field.key] && !field.displayInCard)
-                .map((field) => (
-                  <div key={field.key} className="space-y-1">
-                    <dt className="text-sm text-gray-500 dark:text-gray-400">
-                      {field.label}
-                    </dt>
-                    <dd className="font-medium text-gray-900 dark:text-white">
-                      {formatFieldValue(customFields[field.key], field.type)}
-                    </dd>
-                  </div>
-                ))}
+          {!isUnclaimed ? (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                Details
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {config.listingFields
+                  .filter((field) => customFields[field.key] && !field.displayInCard)
+                  .map((field) => (
+                    <div key={field.key} className="space-y-1">
+                      <dt className="text-sm text-gray-500 dark:text-gray-400">
+                        {field.label}
+                      </dt>
+                      <dd className="font-medium text-gray-900 dark:text-white">
+                        {formatFieldValue(customFields[field.key], field.type)}
+                      </dd>
+                    </div>
+                  ))}
+              </div>
             </div>
-          </div>
+          ) : null}
           
           {/* Map Section */}
-          {showMaps && location?.lat && location?.lng && (
+          {showMaps && !isUnclaimed && location?.lat && location?.lng && (
             <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
               <h2 className="text-xl font-semibold p-6 pb-0 text-gray-900 dark:text-white">
                 Location
               </h2>
-              {location.address && (
+              {canShowAddress && location.address && (
                 <p className="px-6 pt-2 text-gray-600 dark:text-gray-300">
                   {location.address}
                 </p>
@@ -170,7 +180,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
           )}
           
           {/* Reviews Section */}
-          {showReviews && (
+          {showReviews && canShowReviews && !isUnclaimed && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
@@ -209,7 +219,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
           {/* Price Card */}
-          {listing.price !== undefined && (
+          {listing.price !== undefined && canShowPricing && !isUnclaimed && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(listing.price)}
@@ -223,7 +233,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
           )}
           
           {/* Contact/Inquiry Card */}
-          {showInquiry && (
+          {showInquiry && !isUnclaimed && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
               <h3 className="font-semibold text-gray-900 dark:text-white">
                 Contact
@@ -268,7 +278,7 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
           )}
           
           {/* Booking Card */}
-          {showBooking && (
+          {showBooking && canBook && !isUnclaimed && (
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="font-semibold mb-4 text-gray-900 dark:text-white">
                 Book Now
@@ -278,6 +288,23 @@ export function TaxonomyListing({ listing, config }: TaxonomyListingProps) {
               </button>
             </div>
           )}
+
+          {isUnclaimed ? (
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-6 border border-orange-200 dark:border-orange-900/50">
+              <h3 className="font-semibold mb-2 text-orange-900 dark:text-orange-200">
+                Claim this business
+              </h3>
+              <p className="text-sm text-orange-800 dark:text-orange-300 mb-4">
+                Claim to unlock bookings, richer profile content, and customer tools.
+              </p>
+              <a
+                href={`/pricing?intent=claim&listingId=${encodeURIComponent(listing.id)}&listingSlug=${encodeURIComponent(listing.slug)}`}
+                className="inline-flex items-center justify-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
+              >
+                View plans
+              </a>
+            </div>
+          ) : null}
           
           {/* Share Card */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
