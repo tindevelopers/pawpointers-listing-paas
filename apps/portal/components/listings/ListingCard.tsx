@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type Listing, formatPrice, PLACEHOLDER_LISTING_IMAGE } from "@/lib/listings";
+import { getCategoryColorScheme } from "@/lib/category-colors";
 
 /**
  * ListingCard - Enhanced card component for service listings
@@ -193,11 +194,14 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
         </h3>
 
         {/* Category Tag - For Unclaimed Listings, shown under title */}
-        {isUnclaimed && listing.category && (
-          <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-3 py-1 rounded-full mb-3 whitespace-nowrap">
-            {listing.category}
-          </span>
-        )}
+        {isUnclaimed && listing.category && (() => {
+          const colors = getCategoryColorScheme(listing.category);
+          return (
+            <span className={`inline-block ${colors.bg} ${colors.text} text-xs font-semibold px-3 py-1 rounded-full mb-3 whitespace-nowrap`}>
+              {listing.category}
+            </span>
+          );
+        })()}
 
         {/* Location */}
         {listing.location && (
@@ -222,11 +226,14 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
                 {formatPrice(listing.price)}
               </div>
             ) : null}
-            {listing.category && (
-              <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-                {listing.category}
-              </span>
-            )}
+            {listing.category && (() => {
+              const colors = getCategoryColorScheme(listing.category);
+              return (
+                <span className={`inline-block ${colors.bg} ${colors.text} text-xs font-semibold px-2.5 py-1 rounded-full`}>
+                  {listing.category}
+                </span>
+              );
+            })()}
           </div>
         )}
 
