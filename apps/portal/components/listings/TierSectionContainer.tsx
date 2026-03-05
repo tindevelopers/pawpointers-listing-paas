@@ -12,7 +12,7 @@ const ITEMS_PER_PAGE = {
   top: 2,
   middle: 3,
   free: 4,
-  unclaimed: 5,
+  unclaimed: 6,
 };
 
 const GRID_COLS = {
