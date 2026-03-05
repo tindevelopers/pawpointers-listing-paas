@@ -27,11 +27,12 @@ export async function POST(request: NextRequest) {
   _log('POST /api/chat received', { host: request.headers.get('host') ?? undefined }, 'H1');
   // #endregion
   // Check if AI is enabled (gateway first, fallback to direct OpenAI)
+  const aiChatProvider = (process.env.AI_CHAT_PROVIDER ?? '').trim();
   const hasGateway =
     !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
   const hasDirect = !!process.env.OPENAI_API_KEY;
   const hasAbacusDeployment =
-    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    aiChatProvider === 'abacus' &&
     !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
     !!process.env.ABACUS_DEPLOYMENT_ID;
   const hasAbacusRouteLLM = !!process.env.ABACUS_AI_API_KEY;
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
     // #region agent log
     _log('returning 503 AI not configured', {
       abacus: {
-        hasProvider: process.env.AI_CHAT_PROVIDER === 'abacus',
+        hasProvider: aiChatProvider === 'abacus',
         hasToken: !!process.env.ABACUS_DEPLOYMENT_TOKEN,
         hasId: !!process.env.ABACUS_DEPLOYMENT_ID,
       },
@@ -152,18 +153,19 @@ export async function POST(request: NextRequest) {
  * GET handler for health check
  */
 export async function GET() {
+  const aiChatProvider = (process.env.AI_CHAT_PROVIDER ?? '').trim();
   const hasGateway =
     !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
   const hasDirect = !!process.env.OPENAI_API_KEY;
   const hasAbacusDeployment =
-    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    aiChatProvider === 'abacus' &&
     !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
     !!process.env.ABACUS_DEPLOYMENT_ID;
   const hasAbacusRouteLLM = !!process.env.ABACUS_AI_API_KEY;
   const isEnabled =
     hasGateway || hasDirect || hasAbacusDeployment || hasAbacusRouteLLM;
 
-  const provider = (process.env.AI_CHAT_PROVIDER || 'gateway').toLowerCase();
+  const provider = (aiChatProvider || 'gateway').toLowerCase();
   return NextResponse.json({
     status: 'ok',
     endpoint: 'chat',

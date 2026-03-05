@@ -8,7 +8,7 @@ const sdkProvider = createAiSdkProvider();
 
 export function getChatProvider(): ChatProvider {
   const providerEnv = (
-    process.env.AI_CHAT_PROVIDER ||
+    (process.env.AI_CHAT_PROVIDER ?? '').trim() ||
     'gateway'
   ).toLowerCase() as ChatProviderId;
 
