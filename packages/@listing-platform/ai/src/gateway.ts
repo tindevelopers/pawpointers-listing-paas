@@ -34,6 +34,9 @@ function resolveConfig(providerEnv?: string): OpenAIConfig {
     apiKey = openaiKey;
     baseURL = undefined;
   } else {
+    // #region agent log
+    console.log(`[API_CHAT] GATEWAY_RESOLVE_FAIL provider=${JSON.stringify(provider)} hasGatewayKey=${!!gatewayKey} hasGatewayUrl=${!!gatewayUrl} hasOpenaiKey=${!!openaiKey} hasAbacusKey=${!!abacusKey}`);
+    // #endregion
     throw new Error(
       'Missing AI configuration: set AI_GATEWAY_API_KEY/AI_GATEWAY_URL, OPENAI_API_KEY, or ABACUS_AI_API_KEY.'
     );

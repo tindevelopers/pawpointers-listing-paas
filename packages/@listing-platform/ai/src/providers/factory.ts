@@ -13,7 +13,7 @@ export function getChatProvider(): ChatProvider {
   ).toLowerCase() as ChatProviderId;
 
   // #region agent log
-  console.log('[chat-pipeline] H3 getChatProvider', { providerEnv });
+  console.log(`[API_CHAT] FACTORY_RESOLVE provider=${JSON.stringify(providerEnv)}`);
   // #endregion
 
   switch (providerEnv) {
