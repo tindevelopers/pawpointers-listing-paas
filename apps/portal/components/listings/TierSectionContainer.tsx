@@ -9,10 +9,10 @@ interface TierSectionContainerProps {
 }
 
 const ITEMS_PER_PAGE = {
-  top: 6,
-  middle: 9,
-  free: 12,
-  unclaimed: 20,
+  top: 2,
+  middle: 3,
+  free: 4,
+  unclaimed: 4,
 };
 
 const GRID_COLS = {
