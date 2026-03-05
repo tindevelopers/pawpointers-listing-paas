@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const entityId = searchParams.get('entityId') || searchParams.get('listingId'); // Support legacy listingId
+    const sourceType = searchParams.get('sourceType') || undefined;
+    const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
     
     if (!entityId) {
       return NextResponse.json<ApiResponse<Review[]>>(
@@ -57,10 +59,10 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20;
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0;
 
-    // Strategy: fetch first-party + external (DataForSEO) and merge/sort/paginate in code.
+    // Strategy: fetch first-party + external and merge/sort/paginate in code.
     // This keeps ordering stable across sources while we scale up.
     const wantFirstParty = source === 'all' || source === 'first_party';
-    const wantExternal = source === 'all' || source === 'dataforseo';
+    const wantExternal = source === 'all' || source === 'dataforseo' || source === 'yelp';
 
     let firstPartyRows: any[] = [];
     let firstPartyCount = 0;
@@ -99,6 +101,10 @@ export async function GET(request: NextRequest) {
       if (hasComments === true) {
         query = query.not('content', 'is', null);
       }
+      if (verifiedOnly) {
+        // Phase 1 verified signals: booking completion (plus optional purchase/visit flags if set)
+        query = query.or('verified_booking.eq.true,verified_visit.eq.true,verified_purchase.eq.true');
+      }
 
       // Apply sorting (DB)
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
@@ -130,13 +136,24 @@ export async function GET(request: NextRequest) {
     let externalRows: any[] = [];
     if (wantExternal) {
       const windowSize = Math.min(200, offset + limit + 50);
-      const externalQuery = supabase
+      let externalQuery = supabase
         .from('external_reviews')
         .select('*')
         .eq('entity_id', entityId)
-        .eq('provider', 'dataforseo')
         .order('reviewed_at', { ascending: sortOrder === 'asc' })
         .range(0, windowSize - 1);
+
+      // Provider filter (fetch provider): dataforseo vs yelp direct
+      if (source === 'dataforseo') {
+        externalQuery = externalQuery.eq('provider', 'dataforseo');
+      } else if (source === 'yelp') {
+        externalQuery = externalQuery.eq('provider', 'yelp');
+      }
+
+      // Upstream platform filter (google_maps vs yelp vs tripadvisor, etc)
+      if (sourceType) {
+        externalQuery = externalQuery.eq('source_type', sourceType);
+      }
 
       const { data: ext, error: extError } = await externalQuery;
       if (extError) {
@@ -153,6 +170,19 @@ export async function GET(request: NextRequest) {
         );
       }
       externalRows = ext || [];
+    }
+
+    // External owner responses (overlay)
+    const externalResponseByExternalId = new Map<string, any>();
+    if (externalRows.length > 0) {
+      const { data: responseRows } = await supabase
+        .from('external_review_owner_responses')
+        .select('external_review_id, response_text, status, posted_at, updated_at')
+        .in('external_review_id', externalRows.map((r: any) => r.id));
+
+      (responseRows || []).forEach((row: any) => {
+        externalResponseByExternalId.set(String(row.external_review_id), row);
+      });
     }
 
     // Transform first-party rows
@@ -176,36 +206,47 @@ export async function GET(request: NextRequest) {
       expertCredentials: r.reviewer_type === 'expert' ? r.expert_profiles?.credentials : undefined,
       isMysteryShopper: r.reviewer_type === 'expert' ? !!r.is_mystery_shopper : undefined,
       expertRubric: r.reviewer_type === 'expert' ? (r.expert_rubric || undefined) : undefined,
+      dimensionSchemaVersion: r.dimension_schema_version || 1,
+      dimensionScores: r.dimension_scores || undefined,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       helpfulCount: r.helpful_count || 0,
       notHelpfulCount: r.not_helpful_count || 0,
       verifiedPurchase: r.verified_purchase || false,
       verifiedVisit: r.verified_visit || false,
+      verifiedBooking: r.verified_booking || false,
       ownerResponse: r.owner_response,
       ownerResponseAt: r.owner_response_at,
       status: r.status,
     }));
 
-    // Transform external rows (DataForSEO)
+    // Transform external rows (DataForSEO + direct providers)
     const externalReviews: Review[] = externalRows.map((r: any) => ({
-      id: `dataforseo:${r.id}`,
+      id: r.id,
       entityId: r.entity_id,
       listingId: r.entity_id,
       rating: r.rating || 0,
       comment: r.comment || undefined,
       photos: undefined,
-      source: 'dataforseo' as const,
+      source: (r.provider || 'dataforseo') as any,
       sourceType: r.source_type || undefined,
       sourceReviewId: r.source_review_id,
       sourceUrl: r.source_url || undefined,
-      attribution: { label: 'DataForSEO' },
+      attribution: { label: r.provider === 'yelp' ? 'Yelp' : 'DataForSEO' },
       authorName: r.author_name || 'External reviewer',
       reviewerType: 'external',
       createdAt: r.reviewed_at || r.fetched_at,
       updatedAt: r.fetched_at,
       helpfulCount: 0,
       notHelpfulCount: 0,
+      ownerResponse:
+        externalResponseByExternalId.get(String(r.id))?.response_text ||
+        r.raw?.owner_answer ||
+        undefined,
+      ownerResponseAt:
+        externalResponseByExternalId.get(String(r.id))?.posted_at ||
+        externalResponseByExternalId.get(String(r.id))?.updated_at ||
+        undefined,
       status: 'approved',
     }));
 
@@ -291,6 +332,8 @@ export async function POST(request: NextRequest) {
       const entityId = formData.get('entityId') || formData.get('listingId');
       const rating = formData.get('rating');
       const comment = formData.get('comment') || formData.get('content');
+      const dimensionSchemaVersionRaw = formData.get('dimensionSchemaVersion');
+      const dimensionScoresRaw = formData.get('dimensionScores');
       const arrayPhotos = formData
         .getAll('photos[]')
         .filter((value): value is File => value instanceof File);
@@ -323,6 +366,16 @@ export async function POST(request: NextRequest) {
         rating: parseInt(String(rating)),
         comment: comment ? String(comment) : undefined,
         photos: photos.length > 0 ? photos : undefined,
+        dimensionSchemaVersion: dimensionSchemaVersionRaw ? parseInt(String(dimensionSchemaVersionRaw), 10) : undefined,
+        dimensionScores: (() => {
+          if (!dimensionScoresRaw) return undefined;
+          try {
+            const parsed = JSON.parse(String(dimensionScoresRaw));
+            return parsed && typeof parsed === 'object' ? parsed : undefined;
+          } catch {
+            return undefined;
+          }
+        })(),
       };
     } else {
       console.log('[API /api/reviews POST] Parsing JSON...');
@@ -418,6 +471,8 @@ export async function POST(request: NextRequest) {
       expert_profile_id: expertProfileId,
       is_mystery_shopper: requestedReviewerType === 'expert' ? !!reviewData.isMysteryShopper : false,
       expert_rubric: requestedReviewerType === 'expert' ? (reviewData.expertRubric || null) : null,
+      dimension_schema_version: reviewData.dimensionSchemaVersion || 1,
+      dimension_scores: (reviewData.dimensionScores as any) || {},
     };
     console.log('[API /api/reviews POST] Inserting review:', insertData);
     const { data: review, error: insertError } = await supabase
@@ -498,12 +553,15 @@ export async function POST(request: NextRequest) {
       expertDomain: review.expert_domain || undefined,
       isMysteryShopper: review.reviewer_type === 'expert' ? !!review.is_mystery_shopper : undefined,
       expertRubric: review.reviewer_type === 'expert' ? (review.expert_rubric || undefined) : undefined,
+      dimensionSchemaVersion: (review as any).dimension_schema_version || 1,
+      dimensionScores: (review as any).dimension_scores || undefined,
       createdAt: review.created_at,
       updatedAt: review.updated_at,
       helpfulCount: review.helpful_count || 0,
       notHelpfulCount: review.not_helpful_count || 0,
       verifiedPurchase: review.verified_purchase || false,
       verifiedVisit: review.verified_visit || false,
+      verifiedBooking: (review as any).verified_booking || false,
       status: review.status,
     };
 

@@ -9,12 +9,14 @@ import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
 import { ClaimListingModal } from "./ClaimListingModal";
 import { createClient } from "@/core/database/client";
+import { ReviewsList, useReviewStats } from "@listing-platform/reviews";
 
 interface ListingDetailProps {
   listing: Listing;
 }
 
 type TabType = "overview" | "reviews" | "location" | "pricing";
+type ReviewsViewTab = "aggregated" | "verified" | "google" | "yelp";
 
 type ClaimStatus = {
   canClaim: boolean;
@@ -25,6 +27,7 @@ type ClaimStatus = {
 
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [activeReviewsView, setActiveReviewsView] = useState<ReviewsViewTab>("aggregated");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -106,10 +109,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     }
   }, [canBook]);
 
-  // Generate consistent mock data based on listing ID
-  const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
-  const rating = 3.5 + ((idHash % 20) / 10);
-  const reviewCount = 10 + ((idHash * 7) % 150);
+  // Review stats (first-party + external + weighted headline)
+  const { stats: reviewStats } = useReviewStats(listing.id);
+
+  // Generate stable fallback mock data based on listing ID (used only while stats load)
+  const idHash =
+    listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
+  const fallbackRating = 3.5 + ((idHash % 20) / 10);
+  const fallbackReviewCount = 10 + ((idHash * 7) % 150);
+
+  const rating =
+    reviewStats?.headline?.score ??
+    reviewStats?.averageRating ??
+    fallbackRating;
+  const reviewCount =
+    reviewStats?.total ??
+    fallbackReviewCount;
 
   // Fallback mock data for contact info and services if not provided
   const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
@@ -144,33 +159,8 @@ export function ListingDetail({ listing }: ListingDetailProps) {
       ? listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"]
       : [];
 
-  // Mock reviews data
-  const mockReviews = [
-    {
-      id: 1,
-      author: "Sarah M.",
-      rating: 5,
-      date: "2 weeks ago",
-      text: "Absolutely amazing service! The team was professional, punctual, and thorough. My pet came back so happy and clean. Highly recommend!",
-      verified: true,
-    },
-    {
-      id: 2,
-      author: "John D.",
-      rating: 5,
-      date: "1 month ago",
-      text: "Best experience ever. They really care about the animals and it shows. Will definitely be coming back!",
-      verified: true,
-    },
-    {
-      id: 3,
-      author: "Emma W.",
-      rating: 4,
-      date: "2 months ago",
-      text: "Great service overall. Very pleased with the results. Maybe a bit pricey but worth it.",
-      verified: true,
-    },
-  ];
+  const hasGoogle = (reviewStats?.bySourceType?.google_maps?.total || 0) > 0;
+  const hasYelp = (reviewStats?.bySourceType?.yelp?.total || 0) > 0;
 
   const renderStars = (rate: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
@@ -473,7 +463,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Guest Reviews</h2>
 
-                {/* Rating Summary */}
+                {/* Rating Summary (trust-weighted headline) */}
                 <div className="flex flex-col md:flex-row gap-8 pb-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col items-center justify-center">
                     <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
@@ -485,12 +475,20 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Based on {reviewCount} reviews
                     </p>
+                    {reviewStats?.headline ? (
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        PawPointers weight: {(reviewStats.headline.pawpointersWeight * 100).toFixed(0)}%
+                      </p>
+                    ) : null}
                   </div>
 
-                  {/* Rating Breakdown */}
+                  {/* Rating Breakdown (simple; full distribution is available via /api/reviews/stats) */}
                   <div className="flex-1">
                     {[5, 4, 3, 2, 1].map((stars) => {
-                      const percentage = Math.floor((Math.random() * 40) + 20);
+                      const dist = reviewStats?.ratingDistribution as any;
+                      const countForStars = dist?.[stars] || 0;
+                      const percentage =
+                        reviewCount > 0 ? Math.round((countForStars / reviewCount) * 100) : 0;
                       return (
                         <div key={stars} className="flex items-center gap-3 mb-3">
                           <div className="flex items-center gap-1 min-w-max">
@@ -520,51 +518,59 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 </div>
               </div>
 
-              {/* Individual Reviews */}
-              <div className="space-y-4">
-                {mockReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700"
+              {/* Source tabs */}
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { id: "aggregated" as const, label: "Aggregated" },
+                  { id: "verified" as const, label: "Verified" },
+                  { id: "google" as const, label: "Google", hidden: !hasGoogle },
+                  { id: "yelp" as const, label: "Yelp", hidden: !hasYelp },
+                ]).filter((t) => !t.hidden).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setActiveReviewsView(t.id)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                      activeReviewsView === t.id
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                          {review.author}
-                          {review.verified && (
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                            </svg>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{review.date}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {renderStars(review.rating)}
-                      </div>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      {review.text}
-                    </p>
-                  </div>
+                    {t.label}
+                  </button>
                 ))}
               </div>
 
-              {/* Review Form */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Write a Review</h3>
-                <AuthenticatedReviewForm 
+              {/* Reviews feed */}
+              <div className="space-y-4">
+                <ReviewsList
                   entityId={listing.id}
-                  listingId={listing.id}
-                  onSubmit={async (reviewId) => {
-                    console.log('[ListingDetail] Review submitted:', reviewId);
-                    // Show success message and refresh reviews after a short delay
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 2000);
-                  }}
+                  filters={
+                    activeReviewsView === "verified"
+                      ? { source: "first_party", verifiedOnly: true, sortOrder: "desc", limit: 10 }
+                      : activeReviewsView === "google"
+                        ? { source: "dataforseo", sourceType: "google_maps", sortOrder: "desc", limit: 10 }
+                        : activeReviewsView === "yelp"
+                          ? { source: "all", sourceType: "yelp", sortOrder: "desc", limit: 10 }
+                          : { source: "all", sortOrder: "desc", limit: 10 }
+                  }
                 />
               </div>
+
+              {/* Review Form */}
+              {activeReviewsView === "aggregated" || activeReviewsView === "verified" ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Write a Review</h3>
+                  <AuthenticatedReviewForm 
+                    entityId={listing.id}
+                    listingId={listing.id}
+                    onSubmit={async () => {
+                      // Refresh stats + list (simple approach for now)
+                      setTimeout(() => window.location.reload(), 1200);
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
           )}
 

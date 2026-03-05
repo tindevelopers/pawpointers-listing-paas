@@ -35,6 +35,23 @@ export function ReviewCard({ review, variant = 'default', className }: ReviewCar
   const textSecondaryColor = variant === 'featured' ? 'text-white/80' : 'text-neutral-500';
   const textMutedColor = variant === 'featured' ? 'text-white/70' : 'text-neutral-500';
 
+  const isFirstParty = review.source === 'first_party';
+  const sourceLabel = (() => {
+    if (isFirstParty) return 'PawPointers';
+    const st = (review.sourceType || '').toLowerCase();
+    if (st.includes('google')) return 'Google';
+    if (st === 'yelp') return 'Yelp';
+    if (st.includes('tripadvisor')) return 'Tripadvisor';
+    if (typeof review.source === 'string') return review.source;
+    return 'External';
+  })();
+
+  const isVerified =
+    review.verifiedVisit === true ||
+    review.verifiedBooking === true ||
+    review.verifiedPurchase === true ||
+    review.isVerified === true;
+
   return (
     <div className={cn(variants[variant], className)}>
       <div className="flex items-start justify-between mb-3">
@@ -53,6 +70,26 @@ export function ReviewCard({ review, variant = 'default', className }: ReviewCar
           <p className={cn('text-sm', textMutedColor)}>
             {formatDate(review.createdAt)}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold',
+                variant === 'featured' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'
+              )}
+            >
+              {sourceLabel}
+            </span>
+            {isVerified ? (
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold',
+                  variant === 'featured' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
+                )}
+              >
+                Verified
+              </span>
+            ) : null}
+          </div>
         </div>
         <RatingDisplay
           rating={review.rating}
@@ -81,14 +118,20 @@ export function ReviewCard({ review, variant = 'default', className }: ReviewCar
       )}
 
       <div className={cn('flex items-center gap-4 text-sm', textMutedColor)}>
-        <button
-          className={cn(
-            'hover:opacity-80 transition-opacity',
-            variant === 'featured' ? 'text-white' : 'hover:text-primary-600'
-          )}
-        >
-          Helpful ({review.helpfulCount})
-        </button>
+        {isFirstParty ? (
+          <button
+            className={cn(
+              'hover:opacity-80 transition-opacity',
+              variant === 'featured' ? 'text-white' : 'hover:text-primary-600'
+            )}
+          >
+            Helpful ({review.helpfulCount})
+          </button>
+        ) : (
+          <span className={cn(variant === 'featured' ? 'text-white/80' : 'text-neutral-500')}>
+            Helpful ({review.helpfulCount})
+          </span>
+        )}
 
         {review.ownerResponse && (
           <div className={cn(

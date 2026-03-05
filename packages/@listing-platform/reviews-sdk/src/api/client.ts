@@ -165,7 +165,16 @@ export class ReviewsApiClient implements IReviewsApiClient {
       if (filters.source && filters.source !== 'all')
         params.set('source', filters.source);
       if (filters.sourceType) params.set('sourceType', filters.sourceType);
-      if (filters.sortBy) params.set('sortBy', filters.sortBy);
+      if (filters.verifiedOnly !== undefined) params.set('verifiedOnly', String(filters.verifiedOnly));
+      if (filters.sortBy) {
+        const mapped =
+          filters.sortBy === 'date'
+            ? 'created_at'
+            : filters.sortBy === 'helpful'
+              ? 'helpful_count'
+              : 'rating';
+        params.set('sortBy', mapped);
+      }
       if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
       if (filters.limit) params.set('limit', String(filters.limit));
       if (filters.offset) params.set('offset', String(filters.offset));
@@ -241,6 +250,12 @@ export class ReviewsApiClient implements IReviewsApiClient {
       formData.append('listingId', entityId); // Legacy support
       formData.append('rating', String(data.rating));
       if (data.comment) formData.append('comment', data.comment);
+      if (data.dimensionSchemaVersion !== undefined) {
+        formData.append('dimensionSchemaVersion', String(data.dimensionSchemaVersion));
+      }
+      if (data.dimensionScores) {
+        formData.append('dimensionScores', JSON.stringify(data.dimensionScores));
+      }
       data.photos.forEach((photo, index) => {
         formData.append(`photos[${index}]`, photo);
       });
@@ -283,6 +298,8 @@ export class ReviewsApiClient implements IReviewsApiClient {
       listingId: entityId, // Legacy support
       rating: data.rating,
       comment: data.comment,
+      dimensionSchemaVersion: data.dimensionSchemaVersion,
+      dimensionScores: data.dimensionScores,
     };
     console.log('[ReviewsApiClient] Using JSON request:', requestBody);
     return this.request<Review>('/api/reviews', {

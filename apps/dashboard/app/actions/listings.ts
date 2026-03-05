@@ -445,6 +445,35 @@ export async function respondToReview(formData: FormData) {
   revalidatePath("/reviews");
 }
 
+export async function respondToExternalReview(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const externalReviewId = String(formData.get("externalReviewId") || "");
+  const response = String(formData.get("response") || "").trim();
+
+  if (!externalReviewId || !response) {
+    throw new Error("Response cannot be empty");
+  }
+
+  const { error } = await (supabase.rpc as any)("respond_to_external_review", {
+    p_external_review_id: externalReviewId,
+    p_response: response,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/reviews");
+}
+
 export async function upsertDataForSeoSource(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -458,6 +487,7 @@ export async function upsertDataForSeoSource(formData: FormData) {
   const entityId = String(formData.get("entityId") || "");
   const target = String(formData.get("target") || "").trim();
   const targetType = String(formData.get("targetType") || "generic").trim();
+  const provider = String(formData.get("provider") || "dataforseo").trim();
 
   if (!entityId || !target) {
     throw new Error("entityId and target are required");
@@ -477,7 +507,7 @@ export async function upsertDataForSeoSource(formData: FormData) {
   const { error } = await (supabase.from("external_review_sources") as any).upsert({
     entity_id: entityId,
     tenant_id: (listing as any).tenant_id || null,
-    provider: "dataforseo",
+    provider,
     target_type: targetType,
     target,
     enabled: true,

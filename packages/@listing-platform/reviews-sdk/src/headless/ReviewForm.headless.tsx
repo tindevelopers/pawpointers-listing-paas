@@ -7,6 +7,16 @@ import React, { useState } from 'react';
 import { useReviewSubmit } from '../hooks/useReviewSubmit';
 import type { ReviewFormData, ApiError } from '../types';
 
+const DEFAULT_DIMENSION_SCHEMA_VERSION = 1;
+const DEFAULT_DIMENSIONS: Array<{ key: string; label: string }> = [
+  { key: 'cleanliness', label: 'Cleanliness' },
+  { key: 'friendliness', label: 'Friendliness' },
+  { key: 'professionalism', label: 'Professionalism' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'value', label: 'Value' },
+  { key: 'dogs_happiness', label: "Dog's happiness" },
+];
+
 export interface ReviewFormHeadlessProps {
   /** Entity ID for the review */
   entityId: string;
@@ -17,7 +27,7 @@ export interface ReviewFormHeadlessProps {
   renderField: (props: {
     name: string;
     label: string;
-    type: 'rating' | 'textarea' | 'file';
+    type: 'rating' | 'textarea' | 'file' | 'dimensions';
     value?: any;
     onChange: (value: any) => void;
     error?: string;
@@ -68,6 +78,7 @@ export function ReviewFormHeadless({
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
   const [photos, setPhotos] = useState<File[]>([]);
+  const [dimensionScores, setDimensionScores] = useState<Record<string, number>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -83,6 +94,14 @@ export function ReviewFormHeadless({
       console.warn('[ReviewFormHeadless] Validation failed: invalid rating', rating);
       errors.rating = 'Please select a rating';
     }
+    // Require all dimensions for PawPointers scoring v1
+    const missingDimensions = DEFAULT_DIMENSIONS.filter((d) => {
+      const v = dimensionScores?.[d.key];
+      return typeof v !== 'number' || v < 1 || v > 5;
+    });
+    if (missingDimensions.length > 0) {
+      errors.dimensions = 'Please rate all categories';
+    }
 
     if (Object.keys(errors).length > 0) {
       console.error('[ReviewFormHeadless] Validation errors:', errors);
@@ -97,6 +116,8 @@ export function ReviewFormHeadless({
       rating,
       comment: comment.trim() || undefined,
       photos: photos.length > 0 ? photos : undefined,
+      dimensionSchemaVersion: DEFAULT_DIMENSION_SCHEMA_VERSION,
+      dimensionScores,
     };
 
     console.log('[ReviewFormHeadless] Submitting review:', formData);
@@ -130,6 +151,15 @@ export function ReviewFormHeadless({
         value: comment,
         onChange: setComment,
         error: fieldErrors.comment,
+      })}
+
+      {renderField({
+        name: 'dimensions',
+        label: 'Category ratings',
+        type: 'dimensions',
+        value: dimensionScores,
+        onChange: setDimensionScores,
+        error: fieldErrors.dimensions,
       })}
 
       {renderField({

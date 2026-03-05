@@ -9,6 +9,15 @@ import { RatingDisplay } from './RatingDisplay';
 import { cn } from '../utils/cn';
 import type { ApiError } from '../types';
 
+const DIMENSIONS: Array<{ key: string; label: string }> = [
+  { key: 'cleanliness', label: 'Cleanliness' },
+  { key: 'friendliness', label: 'Friendliness' },
+  { key: 'professionalism', label: 'Professionalism' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'value', label: 'Value' },
+  { key: 'dogs_happiness', label: "Dog's happiness" },
+];
+
 export interface ReviewFormProps {
   /** Entity ID for the review */
   entityId: string;
@@ -32,6 +41,8 @@ export function ReviewForm({
   const resolvedEntityId = entityId || listingId || '';
   
   const [hoveredRating, setHoveredRating] = useState<number>(0);
+  const [hoveredDimension, setHoveredDimension] = useState<string | null>(null);
+  const [hoveredDimensionRating, setHoveredDimensionRating] = useState<number>(0);
 
   return (
     <ReviewFormHeadless
@@ -134,6 +145,67 @@ export function ReviewForm({
                 )}
               />
               {error && <p className="mt-1 text-sm text-error-600">{error}</p>}
+            </div>
+          );
+        }
+
+        if (type === 'dimensions') {
+          const scores: Record<string, number> = (value && typeof value === 'object') ? value : {};
+          return (
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                {label} {error && <span className="text-error-600">*</span>}
+              </label>
+              <div className="space-y-3">
+                {DIMENSIONS.map((d) => {
+                  const current = scores[d.key] || 0;
+                  return (
+                    <div key={d.key} className="flex items-center justify-between gap-3">
+                      <div className="min-w-[160px]">
+                        <p className="text-sm font-medium text-gray-800">{d.label}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const isHoveringThis = hoveredDimension === d.key && hoveredDimensionRating > 0;
+                          const isFilled =
+                            (isHoveringThis && hoveredDimensionRating >= star) ||
+                            (!isHoveringThis && current >= star);
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => onChange({ ...scores, [d.key]: star })}
+                              onMouseEnter={() => {
+                                setHoveredDimension(d.key);
+                                setHoveredDimensionRating(star);
+                              }}
+                              onMouseLeave={() => {
+                                setHoveredDimension(null);
+                                setHoveredDimensionRating(0);
+                              }}
+                              className="focus:outline-none focus:ring-2 focus:ring-blue-500 rounded transition-transform hover:scale-110"
+                              aria-label={`${d.label}: ${star} stars`}
+                            >
+                              <svg
+                                className={cn(
+                                  'w-6 h-6 transition-all duration-200',
+                                  isFilled
+                                    ? 'text-yellow-400 fill-yellow-400 drop-shadow-sm'
+                                    : 'text-gray-300 fill-gray-300'
+                                )}
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {error && <p className="mt-2 text-sm text-error-600">{error}</p>}
             </div>
           );
         }

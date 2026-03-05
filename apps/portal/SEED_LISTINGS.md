@@ -47,6 +47,16 @@ curl -X POST http://localhost:3002/api/listings \
   }'
 ```
 
+## Option 4: Seed by Subscription Tier (Tiered Display Testing)
+
+Use this to create 20–30 sample listings across **unclaimed**, **base** (starter), **middle** (professional), and **top** (enterprise) tiers so you can verify the tiered listing display on the portal.
+
+1. **Prerequisites**: Run `scripts/seed-accounts-direct.sql` first (or ensure you have tenants with plans starter/pro/enterprise and at least one user in `public.users` for claimed listings).
+2. **Run the script**: In Supabase SQL Editor, run `apps/portal/scripts/seed-listings-by-tier.sql`.
+3. **Verify**: Open the portal Browse Listings page (`/listings`). You should see four sections: "Top Tier Services" (featured cards), "Professional Services" (standard), "Free Tier Services" (compact), and "Claim Your Business" (unclaimed). A verification query at the end of the script lists each seeded listing with its `effective_subscription_tier` and `card_size_variant`.
+
+If you run the script more than once, you may get duplicate-slug errors; use unique slugs or delete existing `seed-*` listings first.
+
 ## Verify Listings Appear in Portal
 
 After seeding listings:

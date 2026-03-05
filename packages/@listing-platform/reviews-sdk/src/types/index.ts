@@ -113,6 +113,11 @@ export interface Review {
   verificationMethod?: string;
   verifiedPurchase?: boolean;
   verifiedVisit?: boolean;
+  verifiedBooking?: boolean;
+
+  // Structured scoring (first-party)
+  dimensionSchemaVersion?: number;
+  dimensionScores?: Record<string, number>;
 
   // Engagement
   helpfulCount: number;
@@ -144,6 +149,7 @@ export interface ReviewFilters {
   hasComments?: boolean;
   source?: ReviewSource | 'all';
   sourceType?: string;
+  verifiedOnly?: boolean;
   sortBy?: 'date' | 'rating' | 'helpful';
   sortOrder?: 'asc' | 'desc';
   limit?: number;
@@ -164,6 +170,10 @@ export interface ReviewFormData {
   rating: number;
   comment?: string;
   photos?: File[];
+
+  // Structured scoring (first-party)
+  dimensionSchemaVersion?: number;
+  dimensionScores?: Record<string, number>;
 
   // Optional: expert submission (typically from admin tooling)
   reviewerType?: 'pet_parent' | 'expert';
@@ -204,6 +214,20 @@ export interface ReviewStats {
   ratingDistribution: RatingDistribution;
   // Optional breakdown by source (for hybrid systems)
   bySource?: Record<ReviewSource, SourceStats>;
+
+  // Optional breakdown by upstream platform/source type (e.g. google_maps, yelp)
+  bySourceType?: Record<string, SourceStats>;
+
+  // Optional first-party verified-only breakdown
+  verifiedFirstParty?: SourceStats;
+
+  // Optional trust-weighted headline score (blended)
+  headline?: {
+    score: number;
+    pawpointersWeight: number;
+    pawpointersScore: number;
+    externalScore: number;
+  };
 }
 
 // ============================================

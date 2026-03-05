@@ -21,6 +21,7 @@
     "@aws-sdk/s3-request-presigner": "^3.777.0",
     "@listing-platform/shared": "workspace:*",
     "@supabase/supabase-js": "^2.98.0",
+    "react": "^19.2.3",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
