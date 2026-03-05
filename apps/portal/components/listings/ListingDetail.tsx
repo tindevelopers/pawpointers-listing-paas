@@ -219,7 +219,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Overview" },
-    ...(canShowReviews ? [{ id: "reviews" as TabType, label: "Reviews" }] : []),
+    { id: "reviews" as TabType, label: "Reviews" },
     { id: "location", label: "Location" },
     ...(canShowPricing ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
     ...(!isUnclaimed ? [{ id: "news" as TabType, label: "News" }] : []),
@@ -527,7 +527,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           )}
 
           {/* Reviews Tab */}
-          {activeTab === "reviews" && canShowReviews && (
+          {activeTab === "reviews" && (
             <div className="space-y-6">
               {/* Reviews Summary */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
