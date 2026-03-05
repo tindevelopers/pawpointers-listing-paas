@@ -22,5 +22,5 @@ export interface ChatProvider {
   stream?(request: ChatCompletionRequest): AsyncGenerator<string>;
 }
 
-export type ChatProviderId = 'abacus' | 'gateway' | 'openai' | 'ghl';
+export type ChatProviderId = 'abacus' | 'gateway' | 'openai' | 'ghl' | 'routellm';
 

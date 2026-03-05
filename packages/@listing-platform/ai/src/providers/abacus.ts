@@ -1,6 +1,8 @@
 import type { ChatCompletionRequest, ChatCompletionResult, ChatProvider } from './types';
 
-const BASE_URL = process.env.ABACUS_API_BASE_URL?.replace(/\/$/, '') ?? 'https://api.abacus.ai';
+// Predictions API (e.g. ASK JOEY): https://apps.abacus.ai/api/getChatResponse
+const BASE_URL = process.env.ABACUS_API_BASE_URL?.replace(/\/$/, '') ?? 'https://apps.abacus.ai';
+const CHAT_PATH = process.env.ABACUS_CHAT_PATH ?? '/api/getChatResponse';
 const apiKeyHeader = process.env.ABACUS_API_KEY;
 
 export function createAbacusProvider(): ChatProvider {
@@ -20,7 +22,8 @@ export function createAbacusProvider(): ChatProvider {
         );
       }
 
-      const url = new URL(`${BASE_URL}/api/v0/getChatResponse`);
+      const path = CHAT_PATH.startsWith('/') ? CHAT_PATH : `/${CHAT_PATH}`;
+      const url = new URL(`${BASE_URL}${path}`);
       url.searchParams.set('deploymentToken', deploymentToken);
       url.searchParams.set('deploymentId', deploymentId);
 

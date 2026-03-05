@@ -40,8 +40,13 @@ export function ChatWidget({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const shouldSpeakRef = useRef(false);
 
   // Scroll to bottom when messages change
   const scrollToBottom = useCallback(() => {
@@ -51,6 +56,24 @@ export function ChatWidget({
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setIsSpeechSupported(Boolean(SpeechRecognition));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Add welcome message on first open
   useEffect(() => {
@@ -65,10 +88,10 @@ export function ChatWidget({
     }
   }, [isOpen, messages.length, welcomeMessage]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (messageOverride?: string) => {
+    const userMessage = (messageOverride ?? input).trim();
+    if (!userMessage || isLoading) return;
 
-    const userMessage = input.trim();
     setInput('');
     setIsLoading(true);
 
@@ -115,6 +138,11 @@ export function ChatWidget({
           timestamp: new Date(),
         },
       ]);
+
+      if (shouldSpeakRef.current) {
+        speakText(data.message);
+        shouldSpeakRef.current = false;
+      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => [
@@ -125,6 +153,7 @@ export function ChatWidget({
           timestamp: new Date(),
         },
       ]);
+      shouldSpeakRef.current = false;
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +164,49 @@ export function ChatWidget({
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const speakText = useCallback((text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  const handleMicClick = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (!transcript) return;
+      setInput('');
+      shouldSpeakRef.current = true;
+      sendMessage(transcript);
+    };
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
   };
 
   const positionClasses =
@@ -225,13 +297,13 @@ export function ChatWidget({
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 }`}
               >
-                <div
-                  className={`max-w-[80%] px-4 py-2 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                  }`}
-                >
+<div
+                className={`px-4 py-2 rounded-lg ${
+                  message.role === 'user'
+                    ? 'max-w-[85%] bg-blue-500 text-white'
+                    : 'w-full max-w-full bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                }`}
+              >
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   <p
                     className={`text-xs mt-1 ${
@@ -251,8 +323,8 @@ export function ChatWidget({
 
             {/* Loading indicator */}
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg">
+              <div className="flex justify-start w-full">
+                <div className="w-full max-w-full bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg">
                   <div className="flex space-x-2">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                     <div
@@ -281,8 +353,41 @@ export function ChatWidget({
                 onKeyPress={handleKeyPress}
                 placeholder={placeholder}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 text-sm"
               />
+              <button
+                type="button"
+                onClick={handleMicClick}
+                disabled={!isSpeechSupported || isLoading || isSpeaking}
+                className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors ${
+                  isListening
+                    ? 'border-red-500 text-red-500'
+                    : 'border-gray-300 text-gray-600 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300`}
+                aria-label={isListening ? 'Stop listening' : 'Start voice input'}
+                title={
+                  isSpeechSupported
+                    ? isListening
+                      ? 'Stop listening'
+                      : 'Start voice input'
+                    : 'Voice input not supported in this browser'
+                }
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 1a3 3 0 00-3 3v7a3 3 0 006 0V4a3 3 0 00-3-3zm5 10a5 5 0 01-10 0M12 19v4m-4 0h8"
+                  />
+                </svg>
+              </button>
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}

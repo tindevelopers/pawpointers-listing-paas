@@ -58,11 +58,16 @@ export async function chat(
   const embeddingProvider = createOpenAIEmbeddingProvider();
 
   // Search for relevant context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed, continuing without context.', error);
+  }
 
   // Build context string from relevant documents
   const contextStr =
@@ -154,11 +159,16 @@ export async function* streamChat(
   const embeddingProvider = createOpenAIEmbeddingProvider();
 
   // First, yield context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed, continuing without context.', error);
+  }
 
   yield { type: 'context', data: contextDocuments };
 

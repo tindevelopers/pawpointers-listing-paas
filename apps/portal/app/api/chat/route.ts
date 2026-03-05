@@ -19,9 +19,15 @@ interface ChatRequest {
 
 export async function POST(request: NextRequest) {
   // Check if AI is enabled (gateway first, fallback to direct OpenAI)
-  const hasGateway = !!(process.env.AI_GATEWAY_URL && process.env.AI_GATEWAY_API_KEY);
+  const hasGateway =
+    !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
   const hasDirect = !!process.env.OPENAI_API_KEY;
-  if (!hasGateway && !hasDirect) {
+  const hasAbacusDeployment =
+    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
+    !!process.env.ABACUS_DEPLOYMENT_ID;
+  const hasAbacusRouteLLM = !!process.env.ABACUS_AI_API_KEY;
+  if (!hasGateway && !hasDirect && !hasAbacusDeployment && !hasAbacusRouteLLM) {
     return NextResponse.json(
       {
         success: false,
@@ -116,14 +122,23 @@ export async function POST(request: NextRequest) {
  * GET handler for health check
  */
 export async function GET() {
+  const hasGateway =
+    !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
+  const hasDirect = !!process.env.OPENAI_API_KEY;
+  const hasAbacusDeployment =
+    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
+    !!process.env.ABACUS_DEPLOYMENT_ID;
+  const hasAbacusRouteLLM = !!process.env.ABACUS_AI_API_KEY;
   const isEnabled =
-    (!!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY) ||
-    !!process.env.OPENAI_API_KEY;
+    hasGateway || hasDirect || hasAbacusDeployment || hasAbacusRouteLLM;
 
+  const provider = (process.env.AI_CHAT_PROVIDER || 'gateway').toLowerCase();
   return NextResponse.json({
     status: 'ok',
     endpoint: 'chat',
     enabled: isEnabled,
+    provider: isEnabled ? provider : undefined,
     methods: ['POST'],
   });
 }
