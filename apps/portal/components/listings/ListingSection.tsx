@@ -67,12 +67,12 @@ export function ListingSection({
           <span className="text-lg">{icon}</span>
           <span className="text-sm font-semibold uppercase tracking-wide">
             {tier === "top"
-              ? "Premium Featured"
+              ? "Featured"
               : tier === "middle"
-                ? "Professional"
+                ? "Verified"
                 : tier === "free"
-                  ? "Free Tier"
-                  : "Available to Claim"}
+                  ? "Browse More"
+                  : "Claim Your Business"}
           </span>
         </div>
 
