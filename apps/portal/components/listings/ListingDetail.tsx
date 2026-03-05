@@ -15,7 +15,7 @@ interface ListingDetailProps {
   listing: Listing;
 }
 
-type TabType = "overview" | "reviews" | "location" | "pricing";
+type TabType = "overview" | "reviews" | "location" | "pricing" | "news";
 
 type ClaimStatus = {
   canClaim: boolean;
@@ -173,6 +173,34 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     },
   ];
 
+  // Mock news data
+  const mockNews = [
+    {
+      id: 1,
+      title: "New Advanced Training Program Launched",
+      date: "3 days ago",
+      excerpt: "We're excited to announce the launch of our new advanced training program designed for professional handlers and enthusiasts.",
+      content: "Our team has spent months developing a comprehensive curriculum that covers advanced techniques, behavioral psychology, and personalized training methods.",
+      category: "Programs",
+    },
+    {
+      id: 2,
+      title: "Summer Special: 20% Off All Services",
+      date: "1 week ago",
+      excerpt: "This summer, we're offering 20% off all services to help you and your pet enjoy the season.",
+      content: "Take advantage of our seasonal promotion to try our premium services at an unbeatable price. Limited time offer!",
+      category: "Promotions",
+    },
+    {
+      id: 3,
+      title: "Meet Our New Team Member - Dr. Olivia Chen",
+      date: "2 weeks ago",
+      excerpt: "We're thrilled to welcome Dr. Olivia Chen to our growing team of pet care professionals.",
+      content: "Dr. Chen brings 8 years of experience in veterinary medicine and pet behavior training. She specializes in behavior modification and wellness coaching.",
+      category: "Team",
+    },
+  ];
+
   const renderStars = (rate: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
       <svg
@@ -194,6 +222,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     ...(canShowReviews ? [{ id: "reviews" as TabType, label: "Reviews" }] : []),
     { id: "location", label: "Location" },
     ...(canShowPricing ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
+    ...(!isUnclaimed ? [{ id: "news" as TabType, label: "News" }] : []),
   ];
 
   return (
@@ -668,6 +697,43 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                       24/7 support
                     </li>
                   </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* News Tab */}
+          {activeTab === "news" && !isUnclaimed && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Latest News</h2>
+                <div className="space-y-6">
+                  {mockNews.map((newsItem) => (
+                    <div
+                      key={newsItem.id}
+                      className="pb-6 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:pb-0"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                              {newsItem.category}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">{newsItem.date}</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            {newsItem.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {newsItem.content}
+                      </p>
+                      <button className="mt-3 text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold text-sm transition-colors">
+                        Read More →
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
