@@ -1,15 +1,5 @@
 import type { ChatCompletionRequest, ChatCompletionResult, ChatProvider } from './types';
 
-// #region agent log
-const _dbg = (marker: string, kv: Record<string, unknown>) => {
-  console.log(`[API_CHAT] ABACUS_${marker} ${Object.entries(kv).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(' ')}`);
-  fetch('http://127.0.0.1:7313/ingest/c4576c6e-5723-4e78-b6cf-665e307df2d0', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81c538' },
-    body: JSON.stringify({ sessionId: '81c538', location: 'abacus.ts', message: `ABACUS_${marker}`, data: kv, timestamp: Date.now() }),
-  }).catch(() => {});
-};
-// #endregion
-
 const BASE_URL = process.env.ABACUS_API_BASE_URL?.replace(/\/$/, '') ?? 'https://apps.abacus.ai';
 const CHAT_PATH = process.env.ABACUS_CHAT_PATH ?? '/api/getChatResponse';
 const apiKeyHeader = process.env.ABACUS_API_KEY;
@@ -22,9 +12,6 @@ export function createAbacusProvider(): ChatProvider {
       temperature,
       maxTokens,
     }: ChatCompletionRequest) {
-      // #region agent log
-      _dbg('COMPLETE_ENTER', { hasToken: !!process.env.ABACUS_DEPLOYMENT_TOKEN, hasId: !!process.env.ABACUS_DEPLOYMENT_ID, messageCount: messages?.length });
-      // #endregion
       const deploymentToken = process.env.ABACUS_DEPLOYMENT_TOKEN;
       const deploymentId = process.env.ABACUS_DEPLOYMENT_ID;
 
@@ -66,17 +53,11 @@ export function createAbacusProvider(): ChatProvider {
         headers.apiKey = apiKeyHeader;
       }
 
-      // #region agent log
-      _dbg('FETCH_START', { urlHost: url.hostname, urlPath: url.pathname, messageCount: messages?.length });
-      // #endregion
       const response = await fetch(url.toString(), {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
       });
-      // #region agent log
-      _dbg('FETCH_DONE', { status: response.status, ok: response.ok });
-      // #endregion
 
       if (!response.ok) {
         const payload = await response.text();
@@ -115,4 +96,3 @@ export function createAbacusProvider(): ChatProvider {
     },
   };
 }
-

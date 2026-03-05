@@ -12,10 +12,6 @@ export function getChatProvider(): ChatProvider {
     'gateway'
   ).toLowerCase() as ChatProviderId;
 
-  // #region agent log
-  console.log(`[API_CHAT] FACTORY_RESOLVE provider=${JSON.stringify(providerEnv)}`);
-  // #endregion
-
   switch (providerEnv) {
     case 'abacus':
       return createAbacusProvider();

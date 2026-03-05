@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SearchBar } from '@/components/search';
+
+const AUTO_SCROLL_THRESHOLD_PX = 80;
 
 /**
  * AI Chat Interface
@@ -38,18 +40,40 @@ export function AIChat({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const shouldSpeakRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastSentByUserRef = useRef(false);
 
-  // Scroll to bottom when messages change
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  // Container-scoped scroll: only scroll the messages panel, never the page.
+  // Optionally only scroll when user is near bottom (avoid yanking when reading history).
+  const scrollToBottom = useCallback(
+    (options?: { force?: boolean; behavior?: 'auto' | 'smooth' }) => {
+      const el = messagesContainerRef.current;
+      if (!el) return;
+      const { force = false, behavior = 'auto' } = options ?? {};
+      const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+      if (!force && distanceFromBottom > AUTO_SCROLL_THRESHOLD_PX) return;
+      if (behavior === 'smooth') {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      } else {
+        el.scrollTop = el.scrollHeight;
+      }
+    },
+    []
+  );
+
+  useLayoutEffect(() => {
+    if (mode !== 'chat') return;
+    scrollToBottom();
+  }, [messages.length, mode, scrollToBottom]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (mode !== 'chat' || !lastSentByUserRef.current) return;
+    lastSentByUserRef.current = false;
+    requestAnimationFrame(() => scrollToBottom({ force: true, behavior: 'smooth' }));
+  }, [messages.length, mode, scrollToBottom]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -82,6 +106,15 @@ export function AIChat({
     }
   }, [mode, messages.length, welcomeMessage]);
 
+  // Focus chat input when switching to chat tab without scrolling the page
+  useEffect(() => {
+    if (mode !== 'chat') return;
+    const t = requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(t);
+  }, [mode]);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -107,6 +140,7 @@ export function AIChat({
       content: messageContent,
       timestamp: new Date(),
     };
+    lastSentByUserRef.current = true;
     setMessages((prev) => [...prev, newUserMessage]);
 
     try {
@@ -273,9 +307,9 @@ export function AIChat({
           </button>
         </div>
 
-        {/* Content Area */}
+        {/* Content Area: Search = original layout; Chat = fixed height + scroll containment */}
         {mode === 'search' ? (
-          // Search Mode - Full SearchBar
+          // Search Mode - original compact layout (no fixed height or layout-stability constraints)
           <div className="p-6">
             <SearchBar
               placeholder="Search services, professions, or providers..."
@@ -285,9 +319,12 @@ export function AIChat({
           </div>
         ) : (
           // Chat Mode
-          <div className="flex flex-col h-96">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex flex-col min-h-[24rem] max-h-[32rem] h-[24rem] sm:h-[28rem] lg:h-[32rem]">
+            {/* Messages - container-scoped scroll only */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
+            >
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -326,13 +363,13 @@ export function AIChat({
                 </div>
               )}
 
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className="border-t dark:border-gray-700 p-4">
+            <div className="border-t dark:border-gray-700 p-4 flex-shrink-0">
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -340,7 +377,6 @@ export function AIChat({
                   placeholder="Ask me anything..."
                   disabled={isLoading}
                   className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 text-sm disabled:opacity-50"
-                  autoFocus
                 />
                 <button
                   type="button"

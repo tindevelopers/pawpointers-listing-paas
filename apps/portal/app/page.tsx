@@ -63,8 +63,8 @@ export default async function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section - Warm & Friendly */}
-        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-16 lg:py-24 overflow-hidden">
+        {/* Hero Section - Warm & Friendly; min-height keeps section stable when content changes */}
+        <section className="relative min-h-[32rem] lg:min-h-[36rem] bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white pt-16 pb-28 lg:pt-24 lg:pb-36 overflow-hidden">
           {/* Decorative background circles */}
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
@@ -110,8 +110,8 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Decorative Shape */}
-          <div className="absolute bottom-0 left-0 right-0">
+          {/* Decorative Shape - positioned lower so badges above remain visible */}
+          <div className="absolute -bottom-6 left-0 right-0 z-0">
             <svg
               viewBox="0 0 1440 120"
               fill="none"
@@ -126,9 +126,9 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Listings by Tier */}
+        {/* Listings by Tier - use padding (pt) not margin to avoid collapse with hero */}
         {listings.length > 0 && (
-          <section className="py-16 lg:py-24">
+          <section className="pt-16 pb-16 lg:pt-24 lg:pb-24">
             <div className="container mx-auto px-4">
               <div className="text-center mb-16">
                 <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">

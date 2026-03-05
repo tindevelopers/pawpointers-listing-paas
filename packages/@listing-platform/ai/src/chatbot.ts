@@ -6,16 +6,6 @@ import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 import { getAIClient } from './gateway';
 import { getChatProvider } from './providers/factory';
 
-// #region agent log
-const _dbg = (marker: string, kv: Record<string, unknown>) => {
-  console.log(`[API_CHAT] ${marker} ${Object.entries(kv).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(' ')}`);
-  fetch('http://127.0.0.1:7313/ingest/c4576c6e-5723-4e78-b6cf-665e307df2d0', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '81c538' },
-    body: JSON.stringify({ sessionId: '81c538', location: 'chatbot.ts', message: marker, data: kv, timestamp: Date.now() }),
-  }).catch(() => {});
-};
-// #endregion
-
 /**
  * RAG Chatbot
  */
@@ -103,34 +93,16 @@ export async function chat(
     },
   ];
 
-  // #region agent log
-  _dbg('GET_AI_CLIENT_START', {});
-  // #endregion
   let resolvedConfig;
   try {
     const client = getAIClient();
     resolvedConfig = client.resolvedConfig;
-    // #region agent log
-    _dbg('GET_AI_CLIENT_OK', { mode: client.mode, model: resolvedConfig.model });
-    // #endregion
-  } catch (err) {
-    // #region agent log
-    _dbg('GET_AI_CLIENT_FAIL_FALLBACK', { error: err instanceof Error ? err.message : String(err), maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature });
-    // #endregion
+  } catch {
     resolvedConfig = { maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature };
   }
 
-  // #region agent log
-  _dbg('GET_CHAT_PROVIDER_START', {});
-  // #endregion
   const chatProvider = getChatProvider();
-  // #region agent log
-  _dbg('GET_CHAT_PROVIDER_OK', {});
-  // #endregion
 
-  // #region agent log
-  _dbg('PROVIDER_COMPLETE_START', { messageCount: messages.length });
-  // #endregion
   const completion = await chatProvider.complete({
     messages,
     systemPrompt: systemPrompt,
@@ -139,10 +111,6 @@ export async function chat(
   });
 
   const responseMessage = completion.text || '';
-
-  // #region agent log
-  _dbg('PROVIDER_COMPLETE_OK', { responseLen: responseMessage?.length });
-  // #endregion
 
   // Store conversation in database if sessionId provided
   if (sessionId) {
