@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createOpenAIEmbeddingProvider } from './embeddings';
 import { searchDocuments } from '@listing-platform/knowledge-base';
-import { SYSTEM_PROMPT } from './types';
+import { SYSTEM_PROMPT, DEFAULT_OPENAI_CONFIG } from './types';
 import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 import { getAIClient } from './gateway';
 import { getChatProvider } from './providers/factory';
@@ -55,14 +55,18 @@ export async function chat(
     sessionId,
   } = options;
 
-  const embeddingProvider = createOpenAIEmbeddingProvider();
-
-  // Search for relevant context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  // Search for relevant context documents (optional: skip RAG when embedding config is missing, e.g. Abacus deployment-only)
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    const embeddingProvider = createOpenAIEmbeddingProvider();
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed, continuing without context.', error);
+  }
 
   // Build context string from relevant documents
   const contextStr =
@@ -88,14 +92,23 @@ export async function chat(
     },
   ];
 
-  const { resolvedConfig } = getAIClient();
+  // Resolve chat config (getAIClient throws when only Abacus deployment token/id are set; use defaults then)
+  let maxTokens = DEFAULT_OPENAI_CONFIG.maxTokens;
+  let temperature = DEFAULT_OPENAI_CONFIG.temperature;
+  try {
+    const { resolvedConfig } = getAIClient();
+    maxTokens = resolvedConfig.maxTokens;
+    temperature = resolvedConfig.temperature;
+  } catch {
+    // Deployment-only (e.g. Abacus) or no gateway/OpenAI key; use defaults for chat provider
+  }
   const chatProvider = getChatProvider();
 
   const completion = await chatProvider.complete({
     messages,
     systemPrompt: systemPrompt,
-    maxTokens: resolvedConfig.maxTokens,
-    temperature: resolvedConfig.temperature,
+    maxTokens,
+    temperature,
   });
 
   const responseMessage = completion.text || '';
@@ -151,14 +164,18 @@ export async function* streamChat(
     similarityThreshold = 0.75,
   } = options;
 
-  const embeddingProvider = createOpenAIEmbeddingProvider();
-
-  // First, yield context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  // Optional RAG context (skip when embedding config missing, e.g. Abacus deployment-only)
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    const embeddingProvider = createOpenAIEmbeddingProvider();
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed (stream), continuing without context.', error);
+  }
 
   yield { type: 'context', data: contextDocuments };
 
@@ -186,14 +203,22 @@ export async function* streamChat(
     },
   ];
 
-  const { resolvedConfig } = getAIClient();
+  let maxTokens = DEFAULT_OPENAI_CONFIG.maxTokens;
+  let temperature = DEFAULT_OPENAI_CONFIG.temperature;
+  try {
+    const { resolvedConfig } = getAIClient();
+    maxTokens = resolvedConfig.maxTokens;
+    temperature = resolvedConfig.temperature;
+  } catch {
+    // Deployment-only; use defaults
+  }
   const chatProvider = getChatProvider();
 
   const request = {
     messages,
     systemPrompt,
-    maxTokens: resolvedConfig.maxTokens,
-    temperature: resolvedConfig.temperature,
+    maxTokens,
+    temperature,
   };
 
   if (chatProvider.stream) {
