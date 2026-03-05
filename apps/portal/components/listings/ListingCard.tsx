@@ -216,6 +216,13 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           </div>
         )}
 
+        {/* Description - Only for claimed listings */}
+        {!isUnclaimed && listing.description && (
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+            {listing.description}
+          </p>
+        )}
+
         {/* Price and Category Row */}
         {!isUnclaimed && (
           <div className="flex items-center justify-between">
