@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { LocationTabContent } from "./LocationTabContent";
@@ -200,25 +199,13 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     <div className="max-w-6xl mx-auto">
       {/* Header with Name and Rating */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-          <div className="flex items-start gap-4">
-            {listing.logo && (
-              <div className="flex-shrink-0">
-                <Image
-                  src={listing.logo}
-                  alt={`${listing.title} logo`}
-                  width={80}
-                  height={80}
-                  className="rounded-lg object-cover"
-                />
-              </div>
-            )}
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
-                {listing.title}
-              </h1>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
+              {listing.title}
+            </h1>
 
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
               {canShowReviews ? (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
@@ -239,7 +226,6 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   {listing.category}
                 </span>
               )}
-            </div>
             </div>
           </div>
 

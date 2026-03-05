@@ -18,7 +18,6 @@ export interface Listing {
   description: string;
   price?: number;
   images: string[];
-  logo?: string;
   category?: string;
   location?: {
     address?: string;
@@ -138,7 +137,6 @@ type PublicListingRow = {
   description: string;
   price: number | null;
   images: string[] | null;
-  logo?: string | null;
   category: string | null;
   location: Record<string, unknown> | null;
   status: string;
@@ -198,7 +196,6 @@ function mapPublicListingRow(row: PublicListingRow): Listing {
     description: row.description,
     price: row.price ?? undefined,
     images: normalizeImageUrls(row.images),
-    logo: row.logo ?? undefined,
     category: row.category ?? undefined,
     location: row.location ?? undefined,
     status: row.status as 'active' | 'pending' | 'sold' | 'archived',
@@ -224,7 +221,7 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, logo, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('slug', slug)
       .eq('status', 'active')
@@ -257,7 +254,7 @@ export async function getListingById(id: string): Promise<Listing | null> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, logo, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('id', id)
       .eq('status', 'active')
@@ -298,7 +295,7 @@ export async function searchListings(
     const query = getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, logo, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at",
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at",
         { count: "exact" }
       )
       .eq('status', 'active')
@@ -361,7 +358,7 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, logo, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('status', 'active')
       .order('created_at', { ascending: false })
