@@ -36,11 +36,9 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
   const canShowReviews = featureAccess?.canShowReviews ?? !isUnclaimed;
 
   const cardSizeClass =
-    cardSizeVariant === "featured"
-      ? "md:col-span-2 lg:col-span-2"
-      : cardSizeVariant === "compact"
-        ? "max-w-[360px]"
-        : "";
+    cardSizeVariant === "compact"
+      ? "max-w-[360px]"
+      : "";
 
   // Generate consistent mock data based on listing ID (prevents hydration mismatch)
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
