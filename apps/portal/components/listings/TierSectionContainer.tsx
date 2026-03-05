@@ -9,38 +9,38 @@ interface TierSectionContainerProps {
 }
 
 const ITEMS_PER_PAGE = {
-  top: 6,
-  middle: 9,
-  free: 12,
-  unclaimed: 20,
+  top: 2,
+  middle: 3,
+  free: 4,
+  unclaimed: 6,
 };
 
 const GRID_COLS = {
   top: "md:grid-cols-2 lg:grid-cols-2",
   middle: "md:grid-cols-3 lg:grid-cols-3",
-  free: "md:grid-cols-4 lg:grid-cols-5",
-  unclaimed: "md:grid-cols-4 lg:grid-cols-6",
+  free: "md:grid-cols-3 lg:grid-cols-4",
+  unclaimed: "md:grid-cols-5 lg:grid-cols-6",
 };
 
 const TIER_INFO = {
   top: {
-    title: "Top Tier Services",
-    description: "Premium featured services with enhanced visibility and features",
+    title: "Featured Providers",
+    description: "Highly recommended and verified service providers",
     icon: "⭐",
   },
   middle: {
-    title: "Professional Services",
-    description: "Professional businesses with comprehensive listings",
-    icon: "🎯",
+    title: "Verified Providers",
+    description: "Trusted businesses with verified credentials",
+    icon: "✓",
   },
   free: {
-    title: "Free Tier Services",
-    description: "Businesses using the free plan with basic features",
+    title: "Service Providers",
+    description: "Browse more service providers in your area",
     icon: "📋",
   },
   unclaimed: {
     title: "Claim Your Business",
-    description: "Unclaimed business listings available for claiming",
+    description: "Don't see your business? Claim and manage your listing",
     icon: "🏢",
   },
 };
