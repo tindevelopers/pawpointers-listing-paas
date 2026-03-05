@@ -316,7 +316,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       eslint-config-next:
         specifier: 16.1.6
-        version: 16.1.6(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.1.6(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       postcss:
         specifier: ^8
         version: 8.5.6
@@ -413,7 +413,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       eslint-config-next:
         specifier: 16.1.6
-        version: 16.1.6(@typescript-eslint/parser@8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+        version: 16.1.6(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       postcss:
         specifier: ^8
         version: 8.5.6
@@ -1010,6 +1010,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.777.0
         version: 3.955.0
+      '@listing-platform/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@supabase/supabase-js':
         specifier: ^2.98.0
         version: 2.98.0
@@ -1020,6 +1023,12 @@ importers:
       '@types/node':
         specifier: ^20
         version: 20.19.27
+      '@types/react':
+        specifier: ^19
+        version: 19.2.7
+      react:
+        specifier: ^19
+        version: 19.2.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

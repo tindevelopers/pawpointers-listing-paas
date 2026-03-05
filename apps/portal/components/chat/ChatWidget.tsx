@@ -389,7 +389,7 @@ export function ChatWidget({
                 </svg>
               </button>
               <button
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={isLoading || !input.trim()}
                 className="w-10 h-10 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                 style={{ backgroundColor: primaryColor }}

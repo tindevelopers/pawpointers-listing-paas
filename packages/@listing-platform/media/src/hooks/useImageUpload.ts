@@ -34,9 +34,10 @@ export function useImageUpload(options: ImageUploadOptions = {}): UseImageUpload
         const response = await fetch('/api/media/upload', { method: 'POST', body: formData });
         if (!response.ok) throw new Error('Upload failed');
 
-        const data = await response.json();
-        urls.push(data.url);
-        setUploads(prev => prev.map((u, idx) => idx === i ? { ...u, status: 'completed', progress: 100, url: data.url } : u));
+        const data = (await response.json()) as { url?: string };
+        const url = typeof data?.url === 'string' ? data.url : '';
+        urls.push(url);
+        setUploads(prev => prev.map((u, idx) => idx === i ? { ...u, status: 'completed', progress: 100, url } : u));
       } catch (error) {
         setUploads(prev => prev.map((u, idx) => idx === i ? { ...u, status: 'error', error: 'Upload failed' } : u));
       }

@@ -27,7 +27,7 @@ function resolveMessages(
 }
 
 function getContentText(
-  content: RouteLLMResponse['choices'][number]['message']['content']
+  content: string | Array<Record<string, unknown>> | undefined
 ): string {
   if (typeof content === 'string') return content;
   if (!content) return '';

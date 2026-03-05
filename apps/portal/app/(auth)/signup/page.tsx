@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header, Footer } from "@/components/layout";
@@ -8,7 +9,7 @@ import { Header, Footer } from "@/components/layout";
  * Sign Up Selection Page
  * Allows users to choose between consumer signup and service provider signup
  */
-export default function SignUpPage() {
+function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.toString();
@@ -104,5 +105,19 @@ export default function SignUpPage() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+        <Header />
+        <div className="flex-1 flex items-center justify-center"><div className="animate-pulse text-gray-500">Loading...</div></div>
+        <Footer />
+      </div>
+    }>
+      <SignUpContent />
+    </Suspense>
   );
 }
