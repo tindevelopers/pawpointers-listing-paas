@@ -815,19 +815,6 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 </div>
               </div>
             </div>
-            {!isUnclaimed && listing.effectiveTier === "top" ? (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-sm">
-                  Premium Tools (Scaffold)
-                </h3>
-                <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-300">
-                  <li>Search highlight: {listing.topTierFeatures?.highlightInSearch ? "enabled" : "coming soon"}</li>
-                  <li>Homepage spotlight: {listing.topTierFeatures?.homepageSpotlight ? "enabled" : "coming soon"}</li>
-                  <li>Advanced analytics: {listing.topTierFeatures?.advancedAnalytics ? "enabled" : "coming soon"}</li>
-                  <li>Priority support: {listing.topTierFeatures?.prioritySupport ? "enabled" : "coming soon"}</li>
-                </ul>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
