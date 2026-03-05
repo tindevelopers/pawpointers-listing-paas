@@ -13,6 +13,9 @@ export function createAbacusProvider(): ChatProvider {
       temperature,
       maxTokens,
     }: ChatCompletionRequest) {
+      // #region agent log
+      console.log('[chat-pipeline] H4 Abacus complete() entered', { hasToken: !!process.env.ABACUS_DEPLOYMENT_TOKEN, hasId: !!process.env.ABACUS_DEPLOYMENT_ID, messageCount: messages?.length });
+      // #endregion
       const deploymentToken = process.env.ABACUS_DEPLOYMENT_TOKEN;
       const deploymentId = process.env.ABACUS_DEPLOYMENT_ID;
 
@@ -59,6 +62,10 @@ export function createAbacusProvider(): ChatProvider {
         headers,
         body: JSON.stringify(body),
       });
+
+      // #region agent log
+      console.log('[chat-pipeline] H4 Abacus response', { status: response.status, ok: response.ok });
+      // #endregion
 
       if (!response.ok) {
         const payload = await response.text();

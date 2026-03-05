@@ -124,11 +124,13 @@ export function AIChat({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      const data = await response.json().catch(() => ({}));
 
-      const data = await response.json();
+      if (!response.ok) {
+        const msg =
+          (data?.message || data?.error) ?? 'Failed to send message';
+        throw new Error(typeof msg === 'string' ? msg : 'Failed to send message');
+      }
 
       // Store session ID for conversation continuity
       if (data.sessionId && !sessionId) {
@@ -151,11 +153,13 @@ export function AIChat({
       }
     } catch (error) {
       console.error('Chat error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: message.startsWith('Sorry,') ? message : `Sorry, ${message}`,
           timestamp: new Date(),
         },
       ]);

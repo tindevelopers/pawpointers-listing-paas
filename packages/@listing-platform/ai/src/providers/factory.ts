@@ -12,6 +12,10 @@ export function getChatProvider(): ChatProvider {
     'gateway'
   ).toLowerCase() as ChatProviderId;
 
+  // #region agent log
+  console.log('[chat-pipeline] H3 getChatProvider', { providerEnv });
+  // #endregion
+
   switch (providerEnv) {
     case 'abacus':
       return createAbacusProvider();

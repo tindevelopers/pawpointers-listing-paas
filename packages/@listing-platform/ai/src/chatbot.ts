@@ -94,8 +94,14 @@ export async function chat(
   ];
 
   const { resolvedConfig } = getAIClient();
+  // #region agent log
+  console.log('[chat-pipeline] H3 chat() getChatProvider');
+  // #endregion
   const chatProvider = getChatProvider();
 
+  // #region agent log
+  console.log('[chat-pipeline] H4 chat() calling provider.complete()');
+  // #endregion
   const completion = await chatProvider.complete({
     messages,
     systemPrompt: systemPrompt,
@@ -104,6 +110,10 @@ export async function chat(
   });
 
   const responseMessage = completion.text || '';
+
+  // #region agent log
+  console.log('[chat-pipeline] H5 chat() provider.complete() returned', { responseLen: responseMessage?.length });
+  // #endregion
 
   // Store conversation in database if sessionId provided
   if (sessionId) {

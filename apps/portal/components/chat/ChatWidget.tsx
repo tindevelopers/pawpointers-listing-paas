@@ -104,6 +104,9 @@ export function ChatWidget({
     setMessages((prev) => [...prev, newUserMessage]);
 
     try {
+      // #region agent log
+      console.log('[chat-pipeline] frontend request sent', { url: '/api/chat', messageLen: userMessage?.length });
+      // #endregion
       // Send to API
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -118,11 +121,17 @@ export function ChatWidget({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      const data = await response.json().catch(() => ({}));
 
-      const data = await response.json();
+      // #region agent log
+      console.log('[chat-pipeline] frontend response', { status: response.status, ok: response.ok, hasMessage: !!(data?.message) });
+      // #endregion
+
+      if (!response.ok) {
+        const msg =
+          (data?.message || data?.error) ?? 'Failed to send message';
+        throw new Error(typeof msg === 'string' ? msg : 'Failed to send message');
+      }
 
       // Store session ID for conversation continuity
       if (data.sessionId && !sessionId) {
@@ -145,11 +154,13 @@ export function ChatWidget({
       }
     } catch (error) {
       console.error('Chat error:', error);
+      const message =
+        error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: message.startsWith('Sorry,') ? message : `Sorry, ${message}`,
           timestamp: new Date(),
         },
       ]);
