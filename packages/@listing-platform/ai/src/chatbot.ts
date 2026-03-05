@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createOpenAIEmbeddingProvider } from './embeddings';
 import { searchDocuments } from '@listing-platform/knowledge-base';
-import { SYSTEM_PROMPT } from './types';
+import { SYSTEM_PROMPT, DEFAULT_OPENAI_CONFIG } from './types';
 import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 import { getAIClient } from './gateway';
 import { getChatProvider } from './providers/factory';
@@ -115,9 +115,9 @@ export async function chat(
     // #endregion
   } catch (err) {
     // #region agent log
-    _dbg('GET_AI_CLIENT_FAIL', { error: err instanceof Error ? err.message : String(err) });
+    _dbg('GET_AI_CLIENT_FAIL_FALLBACK', { error: err instanceof Error ? err.message : String(err), maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature });
     // #endregion
-    throw err;
+    resolvedConfig = { maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature };
   }
 
   // #region agent log
