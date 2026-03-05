@@ -485,24 +485,42 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               {!isUnclaimed && canShowAvailability ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Availability</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day, idx) => (
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Hours of Operation</h2>
+                  <div className="space-y-2">
+                    {[
+                      { day: "Monday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Tuesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Wednesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Thursday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Friday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Saturday", hours: "10:00 AM - 4:00 PM", isOpen: true },
+                      { day: "Sunday", hours: "Closed", isOpen: false },
+                    ].map((schedule) => (
                       <div
-                        key={day}
-                        className={`p-3 rounded-lg text-center font-medium transition-colors ${
-                          idx < 5
-                            ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600"
+                        key={schedule.day}
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+                          schedule.isOpen
+                            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                            : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                         }`}
                       >
-                        {day}
+                        <span className={`font-semibold ${
+                          schedule.isOpen
+                            ? "text-green-700 dark:text-green-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}>
+                          {schedule.day}
+                        </span>
+                        <span className={`text-sm font-medium ${
+                          schedule.isOpen
+                            ? "text-green-700 dark:text-green-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}>
+                          {schedule.hours}
+                        </span>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Hours:</strong> 9:00 AM - 6:00 PM
-                  </p>
                 </div>
               ) : null}
             </div>
