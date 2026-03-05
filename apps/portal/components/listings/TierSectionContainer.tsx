@@ -12,14 +12,14 @@ const ITEMS_PER_PAGE = {
   top: 2,
   middle: 3,
   free: 4,
-  unclaimed: 4,
+  unclaimed: 5,
 };
 
 const GRID_COLS = {
   top: "md:grid-cols-2 lg:grid-cols-2",
   middle: "md:grid-cols-3 lg:grid-cols-3",
-  free: "md:grid-cols-4 lg:grid-cols-5",
-  unclaimed: "md:grid-cols-4 lg:grid-cols-6",
+  free: "md:grid-cols-3 lg:grid-cols-4",
+  unclaimed: "md:grid-cols-5 lg:grid-cols-6",
 };
 
 const TIER_INFO = {
