@@ -15,7 +15,6 @@ const AUTO_SCROLL_THRESHOLD_PX = 80;
  */
 
 interface ChatMessage {
-  id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
@@ -41,14 +40,11 @@ export function AIChat({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const shouldSpeakRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSentByUserRef = useRef(false);
-  const createMessageId = () =>
-    `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   // Container-scoped scroll: only scroll the messages panel, never the page.
   // Optionally only scroll when user is near bottom (avoid yanking when reading history).
@@ -102,7 +98,6 @@ export function AIChat({
     if (mode === 'chat' && messages.length === 0) {
       setMessages([
         {
-          id: createMessageId(),
           role: 'assistant',
           content: welcomeMessage,
           timestamp: new Date(),
@@ -139,32 +134,14 @@ export function AIChat({
   const sendChatMessage = async (messageContent: string) => {
     setIsLoading(true);
 
-    const assistantMessageId = createMessageId();
-    // Add user + placeholder assistant message
+    // Add user message
     const newUserMessage: ChatMessage = {
-      id: createMessageId(),
       role: 'user',
       content: messageContent,
       timestamp: new Date(),
     };
-    const newAssistantMessage: ChatMessage = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-    };
     lastSentByUserRef.current = true;
-    setMessages((prev) => [...prev, newUserMessage, newAssistantMessage]);
-
-    const updateAssistant = (nextContent: string) => {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? { ...msg, content: nextContent }
-            : msg
-        )
-      );
-    };
+    setMessages((prev) => [...prev, newUserMessage]);
 
     try {
       // Send to API
@@ -174,8 +151,6 @@ export function AIChat({
         body: JSON.stringify({
           message: messageContent,
           sessionId,
-          conversationId,
-          stream: true,
           history: messages.slice(-10).map((m) => ({
             role: m.role,
             content: m.content,
@@ -183,125 +158,28 @@ export function AIChat({
         }),
       });
 
-      const contentType = response.headers.get('content-type') || '';
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         const msg =
           (data?.message || data?.error) ?? 'Failed to send message';
         throw new Error(typeof msg === 'string' ? msg : 'Failed to send message');
       }
 
-      if (contentType.includes('text/event-stream') && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let fullResponse = '';
-        let receivedChunk = false;
-
-        const handleEvent = (eventBlock: string) => {
-          const lines = eventBlock.split('\n');
-          let eventType = 'message';
-          const dataLines: string[] = [];
-
-          for (const line of lines) {
-            if (!line || line.startsWith(':')) continue;
-            if (line.startsWith('event:')) {
-              eventType = line.slice(6).trim();
-              continue;
-            }
-            if (line.startsWith('data:')) {
-              dataLines.push(line.slice(5).trimStart());
-            }
-          }
-
-          if (dataLines.length === 0) return;
-          const data = dataLines.join('\n');
-
-          if (eventType === 'done') {
-            let payload: any = {};
-            try {
-              payload = JSON.parse(data || '{}');
-            } catch {
-              payload = {};
-            }
-            if (payload.sessionId && !sessionId) {
-              setSessionId(payload.sessionId);
-            }
-            if (payload.conversationId) {
-              setConversationId(payload.conversationId);
-            }
-            if (shouldSpeakRef.current && fullResponse) {
-              speakText(fullResponse);
-              shouldSpeakRef.current = false;
-            }
-            setIsLoading(false);
-            return;
-          }
-
-          if (eventType === 'error') {
-            let payload: any = {};
-            try {
-              payload = JSON.parse(data || '{}');
-            } catch {
-              payload = {};
-            }
-            throw new Error(payload?.message || 'Streaming failed');
-          }
-
-          if (data === '[DONE]') {
-            setIsLoading(false);
-            return;
-          }
-
-          let payload: any;
-          try {
-            payload = JSON.parse(data || '{}');
-          } catch {
-            payload = null;
-          }
-          const text = payload?.text;
-          if (typeof text === 'string' && text.length > 0) {
-            receivedChunk = true;
-            fullResponse += text;
-            updateAssistant(fullResponse);
-            if (receivedChunk) {
-              setIsLoading(false);
-            }
-          }
-        };
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          buffer = buffer.replace(/\r\n/g, '\n');
-          const parts = buffer.split('\n\n');
-          buffer = parts.pop() ?? '';
-          for (const part of parts) {
-            handleEvent(part);
-          }
-        }
-
-        if (shouldSpeakRef.current && fullResponse) {
-          speakText(fullResponse);
-          shouldSpeakRef.current = false;
-        }
-
-        return;
-      }
-
-      const data = await response.json().catch(() => ({}));
-
-      updateAssistant(data.message);
-      setIsLoading(false);
-
+      // Store session ID for conversation continuity
       if (data.sessionId && !sessionId) {
         setSessionId(data.sessionId);
       }
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-      }
+
+      // Add assistant response
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: data.message,
+          timestamp: new Date(),
+        },
+      ]);
 
       if (shouldSpeakRef.current) {
         speakText(data.message);
@@ -311,7 +189,14 @@ export function AIChat({
       console.error('Chat error:', error);
       const message =
         error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
-      updateAssistant(message.startsWith('Sorry,') ? message : `Sorry, ${message}`);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: message.startsWith('Sorry,') ? message : `Sorry, ${message}`,
+          timestamp: new Date(),
+        },
+      ]);
       shouldSpeakRef.current = false;
     } finally {
       setIsLoading(false);
@@ -401,7 +286,6 @@ export function AIChat({
               setMode('chat');
               setMessages([
                 {
-                  id: createMessageId(),
                   role: 'assistant',
                   content: welcomeMessage,
                   timestamp: new Date(),
@@ -441,9 +325,9 @@ export function AIChat({
               ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
             >
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <div
-                  key={message.id}
+                  key={index}
                   className={`flex ${
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   }`}

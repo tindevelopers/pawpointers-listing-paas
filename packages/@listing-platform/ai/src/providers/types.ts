@@ -10,7 +10,6 @@ export interface ChatCompletionRequest {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
-  conversationId?: string;
 }
 
 export interface ChatCompletionResult {
