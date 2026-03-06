@@ -30,6 +30,8 @@ export interface ChatOptions {
   similarityThreshold?: number;
   /** Session ID for tracking */
   sessionId?: string;
+  /** Optional provider conversation ID (for streaming) */
+  conversationId?: string;
 }
 
 export interface ChatResponse {
@@ -162,6 +164,8 @@ export async function* streamChat(
     systemPrompt = SYSTEM_PROMPT,
     maxContextDocs = 5,
     similarityThreshold = 0.75,
+    sessionId,
+    conversationId,
   } = options;
 
   // Optional RAG context (skip when embedding config missing, e.g. Abacus deployment-only)
@@ -219,6 +223,7 @@ export async function* streamChat(
     systemPrompt,
     maxTokens,
     temperature,
+    conversationId,
   };
 
   if (chatProvider.stream) {
@@ -227,12 +232,82 @@ export async function* streamChat(
       fullResponse += textPart;
       yield { type: 'token', data: textPart };
     }
-    yield { type: 'done', data: { message: fullResponse, contextDocuments } };
+    if (sessionId) {
+      try {
+        await supabase.from('chat_messages').insert([
+          {
+            session_id: sessionId,
+            role: 'user',
+            content: userMessage,
+            context_document_ids: contextDocuments.map((d) => d.id),
+          },
+          {
+            session_id: sessionId,
+            role: 'assistant',
+            content: fullResponse,
+            context_document_ids: [],
+          },
+        ]);
+
+        await supabase
+          .from('chat_sessions')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', sessionId);
+      } catch (error) {
+        console.error('Error storing chat messages (stream):', error);
+      }
+    }
+
+    const conversationId =
+      typeof chatProvider.getStreamingConversationId === 'function'
+        ? chatProvider.getStreamingConversationId()
+        : undefined;
+    yield {
+      type: 'done',
+      data: {
+        message: fullResponse,
+        contextDocuments,
+        conversationId: conversationId || undefined,
+      },
+    };
   } else {
     const completion = await chatProvider.complete(request);
     const responseText = completion.text || '';
     yield { type: 'token', data: responseText };
-    yield { type: 'done', data: { message: responseText, contextDocuments } };
+    if (sessionId) {
+      try {
+        await supabase.from('chat_messages').insert([
+          {
+            session_id: sessionId,
+            role: 'user',
+            content: userMessage,
+            context_document_ids: contextDocuments.map((d) => d.id),
+          },
+          {
+            session_id: sessionId,
+            role: 'assistant',
+            content: responseText,
+            context_document_ids: [],
+          },
+        ]);
+
+        await supabase
+          .from('chat_sessions')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', sessionId);
+      } catch (error) {
+        console.error('Error storing chat messages (stream fallback):', error);
+      }
+    }
+
+    yield {
+      type: 'done',
+      data: {
+        message: responseText,
+        contextDocuments,
+        conversationId: undefined,
+      },
+    };
   }
 }
 

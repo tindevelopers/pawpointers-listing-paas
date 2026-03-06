@@ -15,13 +15,19 @@ interface ChatRequest {
   sessionId?: string;
   history?: { role: 'user' | 'assistant'; content: string }[];
   tenantId?: string;
+  stream?: boolean;
+  conversationId?: string;
 }
 
 export async function POST(request: NextRequest) {
   // Check if AI is enabled (gateway first, fallback to direct OpenAI)
   const hasGateway = !!(process.env.AI_GATEWAY_URL && process.env.AI_GATEWAY_API_KEY);
   const hasDirect = !!process.env.OPENAI_API_KEY;
-  if (!hasGateway && !hasDirect) {
+  const hasAbacus =
+    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
+    !!process.env.ABACUS_DEPLOYMENT_ID;
+  if (!hasGateway && !hasDirect && !hasAbacus) {
     return NextResponse.json(
       {
         success: false,
@@ -34,7 +40,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ChatRequest = await request.json();
-    const { message, sessionId, history = [], tenantId } = body;
+    const { message, sessionId, history = [], tenantId, stream, conversationId } = body;
+    const wantsStream = stream === true || new URL(request.url).searchParams.get('stream') === '1';
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -67,7 +74,7 @@ export async function POST(request: NextRequest) {
     const tenantSlug = tenantId || request.headers.get('x-tenant-slug');
 
     // Dynamically import the AI package
-    const { chat, createSession } = await import('@listing-platform/ai');
+    const { chat, streamChat, createSession } = await import('@listing-platform/ai');
 
     // Create a session if not provided
     let currentSessionId = sessionId;
@@ -80,6 +87,57 @@ export async function POST(request: NextRequest) {
         // Session creation failed, continue without
         console.warn('Could not create chat session');
       }
+    }
+
+    if (wantsStream) {
+      const encoder = new TextEncoder();
+      const streamGenerator = streamChat(message, {
+        supabase,
+        tenantId: tenantSlug || undefined,
+        history: history.map((m) => ({
+          role: m.role as 'user' | 'assistant' | 'system',
+          content: m.content,
+        })),
+        sessionId: currentSessionId || undefined,
+        conversationId,
+      });
+
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            try {
+              for await (const event of streamGenerator) {
+                if (event.type === 'token') {
+                  const payload = JSON.stringify({ text: event.data });
+                  controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                } else if (event.type === 'done') {
+                  const donePayload =
+                    typeof event.data === 'object' && event.data !== null
+                      ? event.data
+                      : {};
+                  const payload = JSON.stringify({
+                    sessionId: currentSessionId || undefined,
+                    conversationId: (donePayload as any).conversationId || undefined,
+                  });
+                  controller.enqueue(
+                    encoder.encode(`event: done\ndata: ${payload}\n\n`)
+                  );
+                }
+              }
+              controller.close();
+            } catch (error) {
+              controller.error(error);
+            }
+          },
+        }),
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        }
+      );
     }
 
     // Generate response using RAG
@@ -116,9 +174,13 @@ export async function POST(request: NextRequest) {
  * GET handler for health check
  */
 export async function GET() {
-  const isEnabled =
-    (!!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY) ||
-    !!process.env.OPENAI_API_KEY;
+  const hasGateway = !!(process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY);
+  const hasDirect = !!process.env.OPENAI_API_KEY;
+  const hasAbacus =
+    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
+    !!process.env.ABACUS_DEPLOYMENT_ID;
+  const isEnabled = hasGateway || hasDirect || hasAbacus;
 
   return NextResponse.json({
     status: 'ok',

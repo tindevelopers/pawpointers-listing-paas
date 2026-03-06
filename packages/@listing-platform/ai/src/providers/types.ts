@@ -10,6 +10,7 @@ export interface ChatCompletionRequest {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  conversationId?: string;
 }
 
 export interface ChatCompletionResult {
@@ -20,6 +21,7 @@ export interface ChatCompletionResult {
 export interface ChatProvider {
   complete(request: ChatCompletionRequest): Promise<ChatCompletionResult>;
   stream?(request: ChatCompletionRequest): AsyncGenerator<string>;
+  getStreamingConversationId?: () => string | null;
 }
 
 export type ChatProviderId = 'abacus' | 'gateway' | 'openai' | 'ghl';

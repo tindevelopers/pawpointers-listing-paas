@@ -40,7 +40,9 @@ export function ChatWidget({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when messages change
@@ -78,7 +80,15 @@ export function ChatWidget({
       content: userMessage,
       timestamp: new Date(),
     };
-    setMessages((prev) => [...prev, newUserMessage]);
+    setMessages((prev) => [
+      ...prev,
+      newUserMessage,
+      {
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      },
+    ]);
 
     try {
       // Send to API
@@ -92,6 +102,8 @@ export function ChatWidget({
             role: m.role,
             content: m.content,
           })),
+          stream: true,
+          conversationId: conversationId || undefined,
         }),
       });
 
@@ -99,34 +111,145 @@ export function ChatWidget({
         throw new Error('Failed to send message');
       }
 
-      const data = await response.json();
+      const isEventStream = response.headers
+        .get('content-type')
+        ?.includes('text/event-stream');
 
-      // Store session ID for conversation continuity
-      if (data.sessionId && !sessionId) {
-        setSessionId(data.sessionId);
+      if (!isEventStream || !response.body) {
+        const data = await response.json();
+
+        // Store session ID for conversation continuity
+        if (data.sessionId && !sessionId) {
+          setSessionId(data.sessionId);
+        }
+
+        // Update assistant response
+        setMessages((prev) => {
+          const next = [...prev];
+          for (let i = next.length - 1; i >= 0; i -= 1) {
+            if (next[i].role === 'assistant') {
+              next[i] = {
+                ...next[i],
+                content: data.message,
+                timestamp: new Date(),
+              };
+              return next;
+            }
+          }
+          next.push({
+            role: 'assistant',
+            content: data.message,
+            timestamp: new Date(),
+          });
+          return next;
+        });
+        return;
       }
 
-      // Add assistant response
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: data.message,
-          timestamp: new Date(),
-        },
-      ]);
+      setIsStreaming(true);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamDone = false;
+
+      const appendChunk = (chunk: string) => {
+        setMessages((prev) => {
+          const next = [...prev];
+          for (let i = next.length - 1; i >= 0; i -= 1) {
+            if (next[i].role === 'assistant') {
+              next[i] = {
+                ...next[i],
+                content: `${next[i].content}${chunk}`,
+              };
+              return next;
+            }
+          }
+          next.push({
+            role: 'assistant',
+            content: chunk,
+            timestamp: new Date(),
+          });
+          return next;
+        });
+      };
+
+      while (!streamDone) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let boundaryIndex = buffer.indexOf('\n\n');
+        while (boundaryIndex !== -1) {
+          const rawEvent = buffer.slice(0, boundaryIndex).trim();
+          buffer = buffer.slice(boundaryIndex + 2);
+          boundaryIndex = buffer.indexOf('\n\n');
+
+          if (!rawEvent) continue;
+
+          let eventType = 'message';
+          let dataPayload = '';
+          for (const line of rawEvent.split('\n')) {
+            if (line.startsWith('event:')) {
+              eventType = line.slice(6).trim();
+            }
+            if (line.startsWith('data:')) {
+              dataPayload += line.slice(5).trim();
+            }
+          }
+
+          if (!dataPayload) continue;
+
+          if (eventType === 'done') {
+            try {
+              const payload = JSON.parse(dataPayload);
+              if (payload.sessionId && !sessionId) {
+                setSessionId(payload.sessionId);
+              }
+              if (payload.conversationId) {
+                setConversationId(payload.conversationId);
+              }
+            } catch {
+              // Ignore malformed done payload
+            }
+            streamDone = true;
+            break;
+          }
+
+          try {
+            const payload = JSON.parse(dataPayload);
+            if (typeof payload.text === 'string') {
+              appendChunk(payload.text);
+            }
+          } catch {
+            // Ignore malformed SSE payload
+          }
+        }
+      }
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
+      setMessages((prev) => {
+        const next = [...prev];
+        for (let i = next.length - 1; i >= 0; i -= 1) {
+          if (next[i].role === 'assistant') {
+            next[i] = {
+              ...next[i],
+              content: 'Sorry, I encountered an error. Please try again.',
+              timestamp: new Date(),
+            };
+            return next;
+          }
+        }
+        next.push({
           role: 'assistant',
           content: 'Sorry, I encountered an error. Please try again.',
           timestamp: new Date(),
-        },
-      ]);
+        });
+        return next;
+      });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -250,7 +373,7 @@ export function ChatWidget({
             ))}
 
             {/* Loading indicator */}
-            {isLoading && (
+              {isLoading && !isStreaming && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 rounded-lg">
                   <div className="flex space-x-2">
