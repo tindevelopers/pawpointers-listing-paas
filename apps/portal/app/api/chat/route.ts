@@ -109,11 +109,8 @@ export async function POST(request: NextRequest) {
                     })}\n\n`
                   )
                 );
-              } else if (event.type === 'error') {
-                controller.enqueue(
-                  encoder.encode(`event: error\ndata: ${JSON.stringify({ error: event.data })}\n\n`)
-                );
               }
+              // event.type === 'context' is not forwarded to client; errors are sent via catch below
             }
           } catch (err) {
             controller.enqueue(
