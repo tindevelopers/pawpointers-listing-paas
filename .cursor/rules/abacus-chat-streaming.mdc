@@ -1,0 +1,13 @@
+---
+description: Abacus streaming provider and streamChat persistence
+globs: packages/@listing-platform/ai/src/**/*.ts
+alwaysApply: false
+---
+
+# Abacus Streaming + streamChat
+
+- Resolve the conversation base URL from `ABACUS_CONVERSATION_BASE_URL` or `ABACUS_WORKSPACE`.
+- Use Abacus conversation streaming endpoints with `Authorization: Bearer`.
+- Parse SSE safely (keepalive lines, `[DONE]`, malformed JSON).
+- Fall back to `complete()` when streaming fails.
+- `streamChat` should persist messages and include `conversationId` in the `done` payload.

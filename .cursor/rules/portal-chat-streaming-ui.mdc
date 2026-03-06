@@ -1,0 +1,13 @@
+---
+description: Portal chat UI streaming conventions
+globs: apps/portal/components/chat/*.tsx
+alwaysApply: false
+---
+
+# Portal Chat Streaming UI
+
+- Always call `POST /api/chat` with `stream: true`, plus `sessionId`/`conversationId` when available.
+- Parse SSE (`text/event-stream`) by splitting events on blank lines and reading `data:` lines.
+- Handle `event: done` and `event: error`; ignore keepalive/comment lines safely.
+- Update the existing assistant message incrementally as chunks arrive.
+- Persist `sessionId` and `conversationId` from the `done` payload for continuity.
