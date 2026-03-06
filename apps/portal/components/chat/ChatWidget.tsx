@@ -11,9 +11,14 @@ import { useState, useRef, useEffect, useCallback } from 'react';
  */
 
 interface ChatMessage {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+function createMessageId() {
+  return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 interface ChatWidgetProps {
@@ -44,6 +49,7 @@ export function ChatWidget({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const shouldSpeakRef = useRef(false);
@@ -80,6 +86,7 @@ export function ChatWidget({
     if (isOpen && messages.length === 0 && welcomeMessage) {
       setMessages([
         {
+          id: createMessageId(),
           role: 'assistant',
           content: welcomeMessage,
           timestamp: new Date(),
@@ -95,75 +102,122 @@ export function ChatWidget({
     setInput('');
     setIsLoading(true);
 
-    // Add user message
     const newUserMessage: ChatMessage = {
+      id: createMessageId(),
       role: 'user',
       content: userMessage,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, newUserMessage]);
 
+    const placeholderId = createMessageId();
+    setMessages((prev) => [
+      ...prev,
+      { id: placeholderId, role: 'assistant', content: '', timestamp: new Date() },
+    ]);
+
     try {
-      // #region agent log
-      console.log('[chat-pipeline] frontend request sent', { url: '/api/chat', messageLen: userMessage?.length });
-      // #endregion
-      // Send to API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
           sessionId,
-          history: messages.slice(-10).map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          conversationId: conversationId ?? undefined,
+          history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
+          stream: true,
         }),
       });
 
-      const data = await response.json().catch(() => ({}));
-
-      // #region agent log
-      console.log('[chat-pipeline] frontend response', { status: response.status, ok: response.ok, hasMessage: !!(data?.message) });
-      // #endregion
-
-      if (!response.ok) {
-        const msg =
-          (data?.message || data?.error) ?? 'Failed to send message';
-        throw new Error(typeof msg === 'string' ? msg : 'Failed to send message');
-      }
-
-      // Store session ID for conversation continuity
-      if (data.sessionId && !sessionId) {
-        setSessionId(data.sessionId);
-      }
-
-      // Add assistant response
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: data.message,
-          timestamp: new Date(),
-        },
-      ]);
-
-      if (shouldSpeakRef.current) {
-        speakText(data.message);
-        shouldSpeakRef.current = false;
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('text/event-stream') && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulated = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          buffer = buffer.replace(/\r\n/g, '\n');
+          const chunks = buffer.split('\n\n');
+          buffer = chunks.pop() ?? '';
+          for (const chunk of chunks) {
+            let eventType = '';
+            const dataLines: string[] = [];
+            for (const line of chunk.split('\n')) {
+              if (line.startsWith('event:')) eventType = line.slice(6).trim();
+              else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart());
+            }
+            const dataStr = dataLines.join('\n');
+            if (!dataStr) continue;
+            try {
+              const data = JSON.parse(dataStr);
+              if (eventType === 'done') {
+                if (data.sessionId != null && !sessionId) setSessionId(data.sessionId);
+                if (data.conversationId != null) setConversationId(data.conversationId);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === placeholderId ? { ...m, content: data.message ?? accumulated } : m
+                  )
+                );
+                if (shouldSpeakRef.current && (data.message ?? accumulated)) {
+                  speakText(data.message ?? accumulated);
+                  shouldSpeakRef.current = false;
+                }
+              } else if (data.text != null) {
+                accumulated += data.text;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === placeholderId ? { ...m, content: accumulated } : m))
+                );
+              }
+            } catch {
+              // skip non-JSON
+            }
+          }
+        }
+        if (buffer.trim()) {
+          try {
+            const data = JSON.parse(buffer);
+            if (data.text != null) {
+              accumulated += data.text;
+              setMessages((prev) =>
+                prev.map((m) => (m.id === placeholderId ? { ...m, content: accumulated } : m))
+              );
+            }
+          } catch {
+            // ignore
+          }
+        }
+      } else {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const msg = (data?.message || data?.error) ?? 'Failed to send message';
+          throw new Error(typeof msg === 'string' ? msg : 'Failed to send message');
+        }
+        if (data.sessionId != null && !sessionId) setSessionId(data.sessionId);
+        if (data.conversationId != null) setConversationId(data.conversationId);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === placeholderId ? { ...m, content: data.message ?? '' } : m
+          )
+        );
+        if (shouldSpeakRef.current && data.message) {
+          speakText(data.message);
+          shouldSpeakRef.current = false;
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
       const message =
         error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: message.startsWith('Sorry,') ? message : `Sorry, ${message}`,
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === placeholderId
+            ? { ...m, content: message.startsWith('Sorry,') ? message : `Sorry, ${message}` }
+            : m
+        )
+      );
       shouldSpeakRef.current = false;
     } finally {
       setIsLoading(false);
@@ -301,9 +355,9 @@ export function ChatWidget({
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
+{messages.map((message, index) => (
+                <div
+                  key={message.id ?? index}
                 className={`flex ${
                   message.role === 'user' ? 'justify-end' : 'justify-start'
                 }`}

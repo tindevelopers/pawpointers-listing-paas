@@ -10,6 +10,8 @@ export interface ChatCompletionRequest {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
+  /** Provider conversation ID for streaming continuity (e.g. Abacus) */
+  conversationId?: string;
 }
 
 export interface ChatCompletionResult {
