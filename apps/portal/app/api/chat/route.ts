@@ -35,14 +35,23 @@ export async function POST(request: NextRequest) {
       smokeSecret.length > 0 &&
       request.headers.get('x-smoke-test-secret') === smokeSecret;
 
-    let userId: string | undefined;
+    let authData: { user: { id: string } } | null = null;
     if (bypassAuth) {
-      userId = undefined;
+      authData = { user: { id: 'smoke-test-user' } };
     } else {
       const authResult = await supabase.auth.getUser();
-      if (authResult.data?.user) {
-        userId = authResult.data.user.id;
+      if (authResult.error || !authResult.data?.user) {
+        return NextResponse.json(
+          {
+            success: false,
+            code: 'AUTH_REQUIRED',
+            message: 'You must be signed in to use chat.',
+            requestId,
+          },
+          { status: 401 }
+        );
       }
+      authData = authResult.data as { user: { id: string } };
     }
 
     const aiChatProvider = (process.env.AI_CHAT_PROVIDER ?? '').trim();
@@ -106,7 +115,7 @@ export async function POST(request: NextRequest) {
       try {
         currentSessionId = await createSession(supabase, {
           tenantId: tenantSlug || undefined,
-          userId,
+          userId: bypassAuth ? undefined : authData.user.id,
         });
       } catch {
         console.warn('Could not create chat session');
@@ -202,6 +211,30 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return cookieStore.get(name)?.value; },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    return NextResponse.json(
+      {
+        status: 'error',
+        code: 'AUTH_REQUIRED',
+        message: 'You must be signed in to use chat.',
+      },
+      { status: 401 }
+    );
+  }
+
   const aiChatProvider = (process.env.AI_CHAT_PROVIDER ?? '').trim();
   const hasGateway = !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
   const hasDirect = !!process.env.OPENAI_API_KEY;
