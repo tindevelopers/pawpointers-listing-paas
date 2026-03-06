@@ -30,9 +30,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // Only show chat widget if AI is configured
+  const hasGateway =
+    !!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY;
+  const hasDirect = !!process.env.OPENAI_API_KEY;
+  const hasAbacusDeployment =
+    process.env.AI_CHAT_PROVIDER === 'abacus' &&
+    !!process.env.ABACUS_DEPLOYMENT_TOKEN &&
+    !!process.env.ABACUS_DEPLOYMENT_ID;
+  const hasAbacusRouteLLM = !!process.env.ABACUS_AI_API_KEY;
   const showChat =
-    (!!process.env.AI_GATEWAY_URL && !!process.env.AI_GATEWAY_API_KEY) ||
-    !!process.env.OPENAI_API_KEY;
+    hasGateway || hasDirect || hasAbacusDeployment || hasAbacusRouteLLM;
 
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">

@@ -28,11 +28,21 @@
         "WASABI_ACCESS_KEY",
         "WASABI_SECRET_KEY",
         "WASABI_BUCKET",
+        "WASABI_REGION",
+        "WASABI_ENDPOINT",
+        "CALCOM_API_KEY",
         "REVALIDATION_SECRET",
         "VERCEL",
         "VERCEL_ENV",
         "VERCEL_URL",
-        "NODE_ENV"
+        "NODE_ENV",
+        "AI_CHAT_PROVIDER",
+        "ABACUS_DEPLOYMENT_ID",
+        "ABACUS_DEPLOYMENT_TOKEN",
+        "ABACUS_AI_API_KEY",
+        "WASABI_REGION",
+        "WASABI_ENDPOINT",
+        "CALCOM_API_KEY"
       ]
     },
     "dev": {
@@ -60,10 +70,20 @@
         "WASABI_ACCESS_KEY",
         "WASABI_SECRET_KEY",
         "WASABI_BUCKET",
+        "WASABI_REGION",
+        "WASABI_ENDPOINT",
+        "CALCOM_API_KEY",
         "REVALIDATION_SECRET",
         "PORT",
         "ALLOWED_ORIGINS",
-        "NODE_ENV"
+        "NODE_ENV",
+        "AI_CHAT_PROVIDER",
+        "ABACUS_DEPLOYMENT_ID",
+        "ABACUS_DEPLOYMENT_TOKEN",
+        "ABACUS_AI_API_KEY",
+        "WASABI_REGION",
+        "WASABI_ENDPOINT",
+        "CALCOM_API_KEY"
       ]
     },
     "start": {

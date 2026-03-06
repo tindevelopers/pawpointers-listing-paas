@@ -92,3 +92,13 @@ export const THUMBNAIL_SIZES = {
   medium: 400,
   large: 800,
 } as const;
+
+// Re-export UI/component types so "from '../types'" resolves to one place
+export type {
+  MediaImage,
+  MediaVideo,
+  VirtualTourData,
+  Hotspot,
+  UploadProgress,
+  ImageUploadOptions,
+} from './types/index';

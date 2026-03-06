@@ -2,18 +2,21 @@ import type { ChatProvider, ChatProviderId } from './types';
 import { createAbacusProvider } from './abacus';
 import { createAiSdkProvider } from './ai-sdk';
 import { createGhlProvider } from './ghl';
+import { createRouteLLMProvider } from './routellm';
 
 const sdkProvider = createAiSdkProvider();
 
 export function getChatProvider(): ChatProvider {
   const providerEnv = (
-    process.env.AI_CHAT_PROVIDER ||
+    (process.env.AI_CHAT_PROVIDER ?? '').trim() ||
     'gateway'
   ).toLowerCase() as ChatProviderId;
 
   switch (providerEnv) {
     case 'abacus':
       return createAbacusProvider();
+    case 'routellm':
+      return createRouteLLMProvider();
     case 'ghl':
       return createGhlProvider();
     case 'openai':

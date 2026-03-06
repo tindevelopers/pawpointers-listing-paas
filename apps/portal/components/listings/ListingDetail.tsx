@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { LocationTabContent } from "./LocationTabContent";
@@ -9,12 +10,14 @@ import { BookingModal } from "./BookingModal";
 import { ChatModal } from "./ChatModal";
 import { ClaimListingModal } from "./ClaimListingModal";
 import { createClient } from "@/core/database/client";
+import { ReviewsList, useReviewStats } from "@listing-platform/reviews";
 
 interface ListingDetailProps {
   listing: Listing;
 }
 
-type TabType = "overview" | "reviews" | "location" | "pricing";
+type TabType = "overview" | "reviews" | "location" | "pricing" | "news";
+type ReviewsViewTab = "aggregated" | "verified" | "google" | "yelp";
 
 type ClaimStatus = {
   canClaim: boolean;
@@ -25,6 +28,7 @@ type ClaimStatus = {
 
 export function ListingDetail({ listing }: ListingDetailProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [activeReviewsView, setActiveReviewsView] = useState<ReviewsViewTab>("aggregated");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
@@ -106,10 +110,22 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     }
   }, [canBook]);
 
-  // Generate consistent mock data based on listing ID
-  const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
-  const rating = 3.5 + ((idHash % 20) / 10);
-  const reviewCount = 10 + ((idHash * 7) % 150);
+  // Review stats (first-party + external + weighted headline)
+  const { stats: reviewStats } = useReviewStats(listing.id);
+
+  // Generate stable fallback mock data based on listing ID (used only while stats load)
+  const idHash =
+    listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
+  const fallbackRating = 3.5 + ((idHash % 20) / 10);
+  const fallbackReviewCount = 10 + ((idHash * 7) % 150);
+
+  const rating =
+    reviewStats?.headline?.score ??
+    reviewStats?.averageRating ??
+    fallbackRating;
+  const reviewCount =
+    reviewStats?.total ??
+    fallbackReviewCount;
 
   // Fallback mock data for contact info and services if not provided
   const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
@@ -144,31 +160,34 @@ export function ListingDetail({ listing }: ListingDetailProps) {
       ? listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"]
       : [];
 
-  // Mock reviews data
-  const mockReviews = [
+  const hasGoogle = (reviewStats?.bySourceType?.google_maps?.total || 0) > 0;
+  const hasYelp = (reviewStats?.bySourceType?.yelp?.total || 0) > 0;
+
+  // Mock news data
+  const mockNews = [
     {
       id: 1,
-      author: "Sarah M.",
-      rating: 5,
-      date: "2 weeks ago",
-      text: "Absolutely amazing service! The team was professional, punctual, and thorough. My pet came back so happy and clean. Highly recommend!",
-      verified: true,
+      title: "New Advanced Training Program Launched",
+      date: "3 days ago",
+      excerpt: "We're excited to announce the launch of our new advanced training program designed for professional handlers and enthusiasts.",
+      content: "Our team has spent months developing a comprehensive curriculum that covers advanced techniques, behavioral psychology, and personalized training methods.",
+      category: "Programs",
     },
     {
       id: 2,
-      author: "John D.",
-      rating: 5,
-      date: "1 month ago",
-      text: "Best experience ever. They really care about the animals and it shows. Will definitely be coming back!",
-      verified: true,
+      title: "Summer Special: 20% Off All Services",
+      date: "1 week ago",
+      excerpt: "This summer, we're offering 20% off all services to help you and your pet enjoy the season.",
+      content: "Take advantage of our seasonal promotion to try our premium services at an unbeatable price. Limited time offer!",
+      category: "Promotions",
     },
     {
       id: 3,
-      author: "Emma W.",
-      rating: 4,
-      date: "2 months ago",
-      text: "Great service overall. Very pleased with the results. Maybe a bit pricey but worth it.",
-      verified: true,
+      title: "Meet Our New Team Member - Dr. Olivia Chen",
+      date: "2 weeks ago",
+      excerpt: "We're thrilled to welcome Dr. Olivia Chen to our growing team of pet care professionals.",
+      content: "Dr. Chen brings 8 years of experience in veterinary medicine and pet behavior training. She specializes in behavior modification and wellness coaching.",
+      category: "Team",
     },
   ];
 
@@ -190,21 +209,33 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Overview" },
-    ...(canShowReviews ? [{ id: "reviews" as TabType, label: "Reviews" }] : []),
+    { id: "reviews" as TabType, label: "Reviews" },
     { id: "location", label: "Location" },
     ...(canShowPricing ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
+    ...(!isUnclaimed ? [{ id: "news" as TabType, label: "News" }] : []),
   ];
 
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header with Name and Rating */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
-              {listing.title}
-            </h1>
-            
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+          <div className="flex items-start gap-4">
+            {/* Logo Placeholder - For Claimed Listings Only */}
+            {!isUnclaimed && (
+              <div className="flex-shrink-0">
+                <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+            )}
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
+                {listing.title}
+              </h1>
+
             <div className="flex items-center gap-4">
               {canShowReviews ? (
                 <div className="flex items-center gap-2">
@@ -226,6 +257,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   {listing.category}
                 </span>
               )}
+            </div>
             </div>
           </div>
 
@@ -443,37 +475,55 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
               {!isUnclaimed && canShowAvailability ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Availability</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day, idx) => (
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Hours of Operation</h2>
+                  <div className="space-y-2">
+                    {[
+                      { day: "Monday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Tuesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Wednesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Thursday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Friday", hours: "9:00 AM - 6:00 PM", isOpen: true },
+                      { day: "Saturday", hours: "10:00 AM - 4:00 PM", isOpen: true },
+                      { day: "Sunday", hours: "Closed", isOpen: false },
+                    ].map((schedule) => (
                       <div
-                        key={day}
-                        className={`p-3 rounded-lg text-center font-medium transition-colors ${
-                          idx < 5
-                            ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-2 border-green-200 dark:border-green-800"
-                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600"
+                        key={schedule.day}
+                        className={`flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+                          schedule.isOpen
+                            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                            : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                         }`}
                       >
-                        {day}
+                        <span className={`font-semibold ${
+                          schedule.isOpen
+                            ? "text-green-700 dark:text-green-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}>
+                          {schedule.day}
+                        </span>
+                        <span className={`text-sm font-medium ${
+                          schedule.isOpen
+                            ? "text-green-700 dark:text-green-400"
+                            : "text-gray-600 dark:text-gray-400"
+                        }`}>
+                          {schedule.hours}
+                        </span>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Hours:</strong> 9:00 AM - 6:00 PM
-                  </p>
                 </div>
               ) : null}
             </div>
           )}
 
           {/* Reviews Tab */}
-          {activeTab === "reviews" && canShowReviews && (
+          {activeTab === "reviews" && (
             <div className="space-y-6">
               {/* Reviews Summary */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Guest Reviews</h2>
 
-                {/* Rating Summary */}
+                {/* Rating Summary (trust-weighted headline) */}
                 <div className="flex flex-col md:flex-row gap-8 pb-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col items-center justify-center">
                     <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
@@ -485,12 +535,20 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Based on {reviewCount} reviews
                     </p>
+                    {reviewStats?.headline ? (
+                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        PawPointers weight: {(reviewStats.headline.pawpointersWeight * 100).toFixed(0)}%
+                      </p>
+                    ) : null}
                   </div>
 
-                  {/* Rating Breakdown */}
+                  {/* Rating Breakdown (simple; full distribution is available via /api/reviews/stats) */}
                   <div className="flex-1">
                     {[5, 4, 3, 2, 1].map((stars) => {
-                      const percentage = Math.floor((Math.random() * 40) + 20);
+                      const dist = reviewStats?.ratingDistribution as any;
+                      const countForStars = dist?.[stars] || 0;
+                      const percentage =
+                        reviewCount > 0 ? Math.round((countForStars / reviewCount) * 100) : 0;
                       return (
                         <div key={stars} className="flex items-center gap-3 mb-3">
                           <div className="flex items-center gap-1 min-w-max">
@@ -520,51 +578,59 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 </div>
               </div>
 
-              {/* Individual Reviews */}
-              <div className="space-y-4">
-                {mockReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700"
+              {/* Source tabs */}
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { id: "aggregated" as const, label: "Aggregated" },
+                  { id: "verified" as const, label: "Verified" },
+                  { id: "google" as const, label: "Google", hidden: !hasGoogle },
+                  { id: "yelp" as const, label: "Yelp", hidden: !hasYelp },
+                ]).filter((t) => !t.hidden).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setActiveReviewsView(t.id)}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                      activeReviewsView === t.id
+                        ? "bg-orange-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                          {review.author}
-                          {review.verified && (
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                            </svg>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{review.date}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {renderStars(review.rating)}
-                      </div>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      {review.text}
-                    </p>
-                  </div>
+                    {t.label}
+                  </button>
                 ))}
               </div>
 
-              {/* Review Form */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Write a Review</h3>
-                <AuthenticatedReviewForm 
+              {/* Reviews feed */}
+              <div className="space-y-4">
+                <ReviewsList
                   entityId={listing.id}
-                  listingId={listing.id}
-                  onSubmit={async (reviewId) => {
-                    console.log('[ListingDetail] Review submitted:', reviewId);
-                    // Show success message and refresh reviews after a short delay
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 2000);
-                  }}
+                  filters={
+                    activeReviewsView === "verified"
+                      ? { source: "first_party", verifiedOnly: true, sortOrder: "desc", limit: 10 }
+                      : activeReviewsView === "google"
+                        ? { source: "dataforseo", sourceType: "google_maps", sortOrder: "desc", limit: 10 }
+                        : activeReviewsView === "yelp"
+                          ? { source: "all", sourceType: "yelp", sortOrder: "desc", limit: 10 }
+                          : { source: "all", sortOrder: "desc", limit: 10 }
+                  }
                 />
               </div>
+
+              {/* Review Form */}
+              {activeReviewsView === "aggregated" || activeReviewsView === "verified" ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Write a Review</h3>
+                  <AuthenticatedReviewForm 
+                    entityId={listing.id}
+                    listingId={listing.id}
+                    onSubmit={async () => {
+                      // Refresh stats + list (simple approach for now)
+                      setTimeout(() => window.location.reload(), 1200);
+                    }}
+                  />
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -659,6 +725,43 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               </div>
             </div>
           )}
+
+          {/* News Tab */}
+          {activeTab === "news" && !isUnclaimed && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Latest News</h2>
+                <div className="space-y-6">
+                  {mockNews.map((newsItem) => (
+                    <div
+                      key={newsItem.id}
+                      className="pb-6 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:pb-0"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                              {newsItem.category}
+                            </span>
+                            <span className="text-sm text-gray-500 dark:text-gray-400">{newsItem.date}</span>
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                            {newsItem.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        {newsItem.content}
+                      </p>
+                      <button className="mt-3 text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold text-sm transition-colors">
+                        Read More →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar - Always Visible CTA */}
@@ -718,37 +821,26 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               )}
             </div>
 
-            {/* Verification Badges */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm">Verified Badges</h3>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg text-xs">
-                  <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
-                  <span className="font-semibold text-green-700 dark:text-green-300">Identity Verified</span>
-                </div>
-                <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg text-xs">
-                  <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
-                  <span className="font-semibold text-blue-700 dark:text-blue-300">Background Check</span>
-                </div>
-              </div>
-            </div>
-            {!isUnclaimed && listing.effectiveTier === "top" ? (
+            {/* Verification Badges - Only for claimed listings */}
+            {!isUnclaimed && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-sm">
-                  Premium Tools (Scaffold)
-                </h3>
-                <ul className="space-y-2 text-xs text-gray-600 dark:text-gray-300">
-                  <li>Search highlight: {listing.topTierFeatures?.highlightInSearch ? "enabled" : "coming soon"}</li>
-                  <li>Homepage spotlight: {listing.topTierFeatures?.homepageSpotlight ? "enabled" : "coming soon"}</li>
-                  <li>Advanced analytics: {listing.topTierFeatures?.advancedAnalytics ? "enabled" : "coming soon"}</li>
-                  <li>Priority support: {listing.topTierFeatures?.prioritySupport ? "enabled" : "coming soon"}</li>
-                </ul>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-sm">Verified Badges</h3>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg text-xs">
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                    </svg>
+                    <span className="font-semibold text-green-700 dark:text-green-300">Identity Verified</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg text-xs">
+                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                    </svg>
+                    <span className="font-semibold text-blue-700 dark:text-blue-300">Background Check</span>
+                  </div>
+                </div>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

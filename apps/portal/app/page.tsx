@@ -3,9 +3,9 @@ import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
 import { SearchBar } from "@/components/search";
 import { AIChat } from "@/components/chat";
-import { ListingCard } from "@/components/listings";
+import { TierSectionContainer } from "@/components/listings";
 import { AccountCard } from "@/components/accounts/AccountCard";
-import { getFeaturedListings, getCategories, type Listing } from "@/lib/listings";
+import { searchListings, getCategories, type Listing } from "@/lib/listings";
 import { getFeaturedAccounts, type FeaturedAccount } from "@/lib/accounts";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
@@ -31,15 +31,16 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 60; // ISR: revalidate every 60 seconds
 
 export default async function HomePage() {
-  // Fetch featured listings for homepage
-  let featuredListings: Listing[] = [];
+  // Fetch all listings for homepage (organized by tier)
+  let listings: Listing[] = [];
   let categories: Array<{ slug: string; name: string; count: number }> = [];
   let featuredAccounts: FeaturedAccount[] = [];
-  
+
   try {
-    featuredListings = await getFeaturedListings(6);
+    const result = await searchListings({ limit: 100, page: 1 });
+    listings = result.listings;
   } catch (error) {
-    console.error('Error fetching featured listings:', error);
+    console.error('Error fetching listings:', error);
     // Return empty array on error - page will still render
   }
   
@@ -62,8 +63,8 @@ export default async function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section - Warm & Friendly */}
-        <section className="relative bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white py-16 lg:py-24 overflow-hidden">
+        {/* Hero Section - Warm & Friendly; min-height keeps section stable when content changes */}
+        <section className="relative min-h-[32rem] lg:min-h-[36rem] bg-gradient-to-br from-orange-500 via-orange-400 to-cyan-500 text-white pt-16 pb-28 lg:pt-24 lg:pb-36 overflow-hidden">
           {/* Decorative background circles */}
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-400/10 rounded-full blur-3xl"></div>
@@ -109,8 +110,8 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Decorative Shape */}
-          <div className="absolute bottom-0 left-0 right-0">
+          {/* Decorative Shape - positioned lower so badges above remain visible */}
+          <div className="absolute -bottom-6 left-0 right-0 z-0">
             <svg
               viewBox="0 0 1440 120"
               fill="none"
@@ -125,48 +126,20 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Featured Listings */}
-        {featuredListings.length > 0 && (
-          <section className="py-16 lg:py-24">
+        {/* Listings by Tier - use padding (pt) not margin to avoid collapse with hero */}
+        {listings.length > 0 && (
+          <section className="pt-16 pb-16 lg:pt-24 lg:pb-24">
             <div className="container mx-auto px-4">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                  {/* CUSTOMIZE: Update section title */}
-                  Featured Listings
+              <div className="text-center mb-16">
+                <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                  Browse Listings by Tier
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                  {/* CUSTOMIZE: Update section description */}
-                  Check out our top picks and most popular listings.
+                <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+                  Discover services organized by subscription level - from top-tier premium services to unclaimed businesses available to claim.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 grid-flow-dense auto-rows-fr">
-                {featuredListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
-
-              <div className="text-center mt-10">
-                <Link
-                  href="/listings"
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-                >
-                  View All Listings
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </Link>
-              </div>
+              <TierSectionContainer listings={listings} />
             </div>
           </section>
         )}

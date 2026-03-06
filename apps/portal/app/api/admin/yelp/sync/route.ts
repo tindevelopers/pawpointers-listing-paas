@@ -4,14 +4,13 @@ import { cookies } from 'next/headers';
 import type { ApiResponse } from '@listing-platform/reviews';
 
 /**
- * DataForSEO sync endpoint (manual trigger / cron target)
+ * Yelp sync endpoint (manual trigger / cron target)
  *
- * POST /api/admin/dataforseo/sync
+ * POST /api/admin/yelp/sync
  *
  * Notes:
  * - Requires an authenticated Platform Admin (checked via `is_platform_admin()` RPC).
- * - This is a scaffold: you must configure DataForSEO credentials + choose the exact DataForSEO endpoint
- *   for your targets (e.g., Google Maps reviews by place_id).
+ * - Yelp Fusion API typically returns a limited number of reviews per business.
  */
 export async function POST(_request: NextRequest) {
   try {
@@ -49,10 +48,18 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    const apiKey = process.env.YELP_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json<ApiResponse<{ ok: boolean }>>(
+        { data: { ok: false }, error: { code: 'CONFIG_ERROR', message: 'Missing YELP_API_KEY env var' } },
+        { status: 500 }
+      );
+    }
+
     const { data: sources, error: sourcesError } = await supabase
       .from('external_review_sources')
       .select('*')
-      .eq('provider', 'dataforseo')
+      .eq('provider', 'yelp')
       .eq('enabled', true);
 
     if (sourcesError) {
@@ -62,41 +69,60 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // IMPORTANT: You must set these server-side env vars in production.
-    const login = process.env.DATAFORSEO_LOGIN;
-    const password = process.env.DATAFORSEO_PASSWORD;
-    if (!login || !password) {
-      return NextResponse.json<ApiResponse<{ ok: boolean }>>(
-        {
-          data: { ok: false },
-          error: { code: 'CONFIG_ERROR', message: 'Missing DATAFORSEO_LOGIN/DATAFORSEO_PASSWORD env vars' },
-        },
-        { status: 500 }
-      );
-    }
-
-    const basicAuth = Buffer.from(`${login}:${password}`).toString('base64');
-
     let processed = 0;
-    let tasksSubmitted = 0;
+    let upserted = 0;
+
     for (const src of sources || []) {
       try {
-        const taskId = await submitGoogleReviewsTask(basicAuth, src);
-        if (!taskId) continue;
+        const businessId = String(src.target || '').trim();
+        if (!businessId) continue;
+
+        const res = await fetch(`https://api.yelp.com/v3/businesses/${encodeURIComponent(businessId)}/reviews`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Yelp request failed: ${res.status}`);
+        }
+
+        const json = await res.json();
+        const reviews: any[] = Array.isArray(json?.reviews) ? json.reviews : [];
+
+        for (const r of reviews) {
+          const sourceReviewId = String(r.id || '');
+          if (!sourceReviewId) continue;
+
+          await supabase.from('external_reviews').upsert({
+            entity_id: src.entity_id,
+            tenant_id: src.tenant_id || null,
+            provider: 'yelp',
+            source_type: 'yelp',
+            source_review_id: sourceReviewId,
+            source_url: r.url || null,
+            author_name: r?.user?.name || null,
+            rating: typeof r.rating === 'number' ? Math.round(r.rating) : null,
+            comment: r.text || null,
+            reviewed_at: r.time_created || null,
+            fetched_at: new Date().toISOString(),
+            raw: r,
+          } as any);
+          upserted += 1;
+        }
 
         await supabase
           .from('external_review_sources')
           .update({
-            last_task_id: taskId,
-            last_task_submitted_at: new Date().toISOString(),
-            next_poll_at: new Date(Date.now() + 60_000).toISOString(), // poll after 1 min
+            last_fetched_at: new Date().toISOString(),
             last_error: null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', src.id);
 
         processed += 1;
-        tasksSubmitted += 1;
       } catch (e: any) {
         await supabase
           .from('external_review_sources')
@@ -108,8 +134,8 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    return NextResponse.json<ApiResponse<{ ok: boolean; processed: number; tasksSubmitted: number }>>({
-      data: { ok: true, processed, tasksSubmitted },
+    return NextResponse.json<ApiResponse<{ ok: boolean; processed: number; upserted: number }>>({
+      data: { ok: true, processed, upserted },
     });
   } catch (error: any) {
     return NextResponse.json<ApiResponse<{ ok: boolean }>>(
@@ -117,50 +143,5 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-async function submitGoogleReviewsTask(
-  basicAuth: string,
-  src: any
-): Promise<string | null> {
-  const targetType = String(src.target_type || 'generic');
-  const target = String(src.target || '');
-  if (!target) return null;
-
-  const locationName = process.env.DATAFORSEO_DEFAULT_LOCATION_NAME || 'United States';
-  const languageName = process.env.DATAFORSEO_DEFAULT_LANGUAGE_NAME || 'English';
-
-  const payload: any = {
-    location_name: locationName,
-    language_name: languageName,
-    depth: 50,
-    sort_by: 'relevant',
-    tag: `listing:${src.entity_id}`,
-  };
-
-  if (targetType.includes('cid')) {
-    payload.cid = target;
-  } else if (targetType.includes('place_id')) {
-    payload.place_id = target;
-  } else {
-    payload.keyword = target;
-  }
-
-  const res = await fetch('https://api.dataforseo.com/v3/business_data/google/reviews/task_post', {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${basicAuth}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify([payload]),
-  });
-
-  if (!res.ok) {
-    throw new Error(`DataForSEO request failed: ${res.status}`);
-  }
-
-  const json = await res.json();
-  const taskId = json?.tasks?.[0]?.id;
-  return taskId ? String(taskId) : null;
 }
 

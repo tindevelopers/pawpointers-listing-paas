@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Header, Footer } from "@/components/layout";
-import { SearchBar, SearchResults } from "@/components/search";
+import { SearchBar } from "@/components/search";
+import { TierSectionContainer } from "@/components/listings";
 import { searchListings, getCategories } from "@/lib/listings";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
@@ -25,14 +26,13 @@ interface ListingsPageProps {
 
 export default async function ListingsPage({ searchParams }: ListingsPageProps) {
   const params = await searchParams;
-  const page = Number(params.page) || 1;
   const category = typeof params.category === "string" ? params.category : undefined;
 
-  // Fetch listings
-  const { listings, total, totalPages } = await searchListings({
-    page,
+  // Fetch all listings (organized by tier in TierSectionContainer)
+  const { listings } = await searchListings({
     category,
-    limit: 12,
+    limit: 100,
+    page: 1,
   });
 
   // Fetch categories for quick filters
@@ -94,13 +94,8 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
           </div>
         )}
 
-        {/* Results */}
-        <SearchResults
-          listings={listings}
-          total={total}
-          page={page}
-          totalPages={totalPages}
-        />
+        {/* Results organized by tier */}
+        <TierSectionContainer listings={listings} />
       </main>
 
       <Footer />

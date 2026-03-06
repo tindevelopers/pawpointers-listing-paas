@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createOpenAIEmbeddingProvider } from './embeddings';
 import { searchDocuments } from '@listing-platform/knowledge-base';
-import { SYSTEM_PROMPT } from './types';
+import { SYSTEM_PROMPT, DEFAULT_OPENAI_CONFIG } from './types';
 import type { KnowledgeSearchResult } from '@listing-platform/knowledge-base';
 import { getAIClient } from './gateway';
 import { getChatProvider } from './providers/factory';
@@ -58,11 +58,16 @@ export async function chat(
   const embeddingProvider = createOpenAIEmbeddingProvider();
 
   // Search for relevant context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed, continuing without context.', error);
+  }
 
   // Build context string from relevant documents
   const contextStr =
@@ -88,7 +93,14 @@ export async function chat(
     },
   ];
 
-  const { resolvedConfig } = getAIClient();
+  let resolvedConfig;
+  try {
+    const client = getAIClient();
+    resolvedConfig = client.resolvedConfig;
+  } catch {
+    resolvedConfig = { maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature };
+  }
+
   const chatProvider = getChatProvider();
 
   const completion = await chatProvider.complete({
@@ -154,11 +166,16 @@ export async function* streamChat(
   const embeddingProvider = createOpenAIEmbeddingProvider();
 
   // First, yield context documents
-  const contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
-    tenantId,
-    limit: maxContextDocs,
-    threshold: similarityThreshold,
-  });
+  let contextDocuments: KnowledgeSearchResult[] = [];
+  try {
+    contextDocuments = await searchDocuments(supabase, embeddingProvider, userMessage, {
+      tenantId,
+      limit: maxContextDocs,
+      threshold: similarityThreshold,
+    });
+  } catch (error) {
+    console.warn('Knowledge base search failed, continuing without context.', error);
+  }
 
   yield { type: 'context', data: contextDocuments };
 

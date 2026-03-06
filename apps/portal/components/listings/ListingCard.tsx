@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { type Listing, formatPrice, PLACEHOLDER_LISTING_IMAGE } from "@/lib/listings";
+import { getCategoryColorScheme } from "@/lib/category-colors";
 
 /**
  * ListingCard - Enhanced card component for service listings
@@ -35,11 +36,9 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
   const canShowReviews = featureAccess?.canShowReviews ?? !isUnclaimed;
 
   const cardSizeClass =
-    cardSizeVariant === "featured"
-      ? "md:col-span-2 lg:col-span-2"
-      : cardSizeVariant === "compact"
-        ? "max-w-[360px]"
-        : "";
+    cardSizeVariant === "compact"
+      ? "max-w-[360px]"
+      : "";
 
   // Generate consistent mock data based on listing ID (prevents hydration mismatch)
   const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
@@ -192,11 +191,15 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           {listing.title}
         </h3>
 
-        {isUnclaimed ? (
-          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-            {listing.description}
-          </p>
-        ) : null}
+        {/* Category Tag - For Unclaimed Listings, shown under title */}
+        {isUnclaimed && listing.category && (() => {
+          const colors = getCategoryColorScheme(listing.category);
+          return (
+            <span className={`inline-block ${colors.bg} ${colors.text} text-xs font-semibold px-3 py-1 rounded-full mb-3 whitespace-nowrap`}>
+              {listing.category}
+            </span>
+          );
+        })()}
 
         {/* Location */}
         {listing.location && (
@@ -213,23 +216,31 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           </div>
         )}
 
+        {/* Description - Only for claimed listings */}
+        {!isUnclaimed && listing.description && (
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+            {listing.description}
+          </p>
+        )}
+
         {/* Price and Category Row */}
-        <div className="flex items-center justify-between">
-          {canShowPricing ? (
-            <div className="text-lg font-bold text-warm-primary">
-              {formatPrice(listing.price)}
-            </div>
-          ) : (
-            <div className="text-sm font-semibold text-orange-600">
-              Unclaimed listing
-            </div>
-          )}
-          {listing.category && (
-            <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-semibold px-2.5 py-1 rounded-full">
-              {listing.category}
-            </span>
-          )}
-        </div>
+        {!isUnclaimed && (
+          <div className="flex items-center justify-between">
+            {canShowPricing ? (
+              <div className="text-lg font-bold text-warm-primary">
+                {formatPrice(listing.price)}
+              </div>
+            ) : null}
+            {listing.category && (() => {
+              const colors = getCategoryColorScheme(listing.category);
+              return (
+                <span className={`inline-block ${colors.bg} ${colors.text} text-xs font-semibold px-2.5 py-1 rounded-full`}>
+                  {listing.category}
+                </span>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Quick Stats Footer */}
         {isUnclaimed ? (
@@ -246,33 +257,25 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
             Claim Your Business
           </button>
         ) : (
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-1">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-              </svg>
-              <span className="capitalize">{listing.effectiveTier || "base"} plan</span>
+          canShowAvailability && (
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center text-xs text-gray-600 dark:text-gray-400">
+              {isAvailable ? (
+                <>
+                  <svg className="w-3.5 h-3.5 text-green-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                  </svg>
+                  <span className="availability-available">Available</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5 text-red-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                  </svg>
+                  <span className="availability-unavailable">Fully Booked</span>
+                </>
+              )}
             </div>
-            {canShowAvailability ? (
-              <div className="flex items-center gap-1">
-                {isAvailable ? (
-                  <>
-                    <svg className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                    </svg>
-                    <span className="availability-available">Available</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-                    </svg>
-                    <span className="availability-unavailable">Fully Booked</span>
-                  </>
-                )}
-              </div>
-            ) : null}
-          </div>
+          )
         )}
       </div>
     </Link>
