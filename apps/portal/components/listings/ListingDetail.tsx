@@ -174,9 +174,10 @@ export function ListingDetail({ listing }: ListingDetailProps) {
     { key: "sun", label: "Sunday" },
   ] as const;
 
-  const hoursEntries = hours
+  type HoursEntry = { day: string; open: boolean; hours: string };
+  const hoursEntries: HoursEntry[] = hours
     ? dayLabels
-        .map((day) => {
+        .map((day): HoursEntry | null => {
           const dayHours = (hours as any)?.[day.key];
           if (!dayHours || typeof dayHours.open !== "boolean") return null;
           const openTime = dayHours.openTime || "";
@@ -187,7 +188,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
             hours: dayHours.open ? [openTime, closeTime].filter(Boolean).join(" - ") : "Closed",
           };
         })
-        .filter(Boolean)
+        .filter((s): s is HoursEntry => s != null)
     : [];
 
   const hasHours = hoursEntries.length > 0;
