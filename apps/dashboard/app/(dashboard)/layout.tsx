@@ -29,7 +29,7 @@ export default function MerchantLayout({
         className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
       >
         <AppHeader />
-        <div className="p-4 mx-auto max-w-7xl md:p-6">{children}</div>
+        <div className="px-4 pt-3 pb-6 mx-auto max-w-7xl md:px-6 md:pt-4 md:pb-6">{children}</div>
       </div>
     </div>
   );

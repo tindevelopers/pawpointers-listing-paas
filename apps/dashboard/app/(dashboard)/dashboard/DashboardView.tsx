@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import {
   ListIcon,
   StarIcon,
@@ -15,7 +14,6 @@ import {
   PieChartIcon,
   BuildingIcon,
   HorizontaLDots,
-  ChevronDownIcon,
 } from "@/icons";
 
 type Card = { label: string; value: number; href: string };
@@ -50,101 +48,34 @@ const QUICK_ACTIONS = [
   },
 ];
 
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
-
-function FilterIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-    </svg>
-  );
-}
-
 export function DashboardView({
-  tenantId,
   cards,
 }: {
   tenantId: string | null;
   cards: Card[];
 }) {
-  const [searchQuery, setSearchQuery] = useState("");
-
   return (
-    <div className="space-y-8">
-      {/* Page header */}
-      <header className="animate-fade-in pb-4 border-b border-gray-200/90">
-        <p className="text-sm text-gray-500">Tenant</p>
-        <h1 className="mt-1 text-3xl font-bold text-gray-900">Merchant Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Tenant ID: {tenantId ?? "Not linked"} — manage your listings, respond to reviews, and stay
-          on top of customer messages.
-        </p>
-      </header>
-
-      {/* Metric cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card, i) => {
-          const CardIcon = CARD_ICONS[card.label];
-          return (
-            <Link
-              key={card.label}
-              href={card.href}
-              className="animate-fade-in-up block rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
-              style={{
-                opacity: 0,
-                animationDelay: `${(i + 1) * STAGGER_DELAY_MS}ms`,
-              }}
-            >
-              {CardIcon && (
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600 [&>svg]:h-5 [&>svg]:w-5">
-                  <CardIcon />
-                </span>
-              )}
-              <p className="mt-2 text-sm text-gray-500">{card.label}</p>
-              <p className="mt-1 text-3xl font-semibold text-gray-900">{card.value}</p>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Toolbar: search, filters, Add listing */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Search tenants..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder-gray-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-            />
-          </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+    <div className="space-y-5">
+      {/* Header: title, short subtitle, primary action */}
+      <div className="border-b border-gray-200/90 pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <header className="animate-fade-in min-w-0">
+            <h1 className="text-3xl font-bold text-gray-900">Merchant Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Manage your listings, respond to reviews, and stay on top of customer messages.
+            </p>
+          </header>
+          <Link
+            href="/listings"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[14px] bg-orange-500 px-5 py-2.5 font-medium !text-white shadow-sm transition-all duration-200 ease-out hover:scale-[1.02] hover:bg-orange-600 hover:!text-white hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 [&_svg]:text-white"
           >
-            <FilterIcon className="h-4 w-4 text-gray-500" />
-            2 Filters
-            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-          </button>
+            <PlusIcon className="h-5 w-5 shrink-0" />
+            Add listing
+          </Link>
         </div>
-        <Link
-          href="/listings"
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-[14px] bg-orange-500 px-5 py-2.5 font-medium !text-white shadow-sm transition-all duration-200 ease-out hover:scale-[1.02] hover:bg-orange-600 hover:!text-white hover:shadow-md active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 [&_svg]:text-white"
-        >
-          <PlusIcon className="h-5 w-5 shrink-0" />
-          Add listing
-        </Link>
       </div>
 
-      {/* Two columns: Recent Activity + Quick Start Guide | Quick Actions */}
+      {/* Two columns: Recent Activity + Quick Start Guide | Quick Actions — directly under toolbar */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         {/* Left column */}
         <div className="space-y-6">
@@ -313,6 +244,32 @@ export function DashboardView({
             </Link>
           </div>
         </section>
+      </div>
+
+      {/* Metric cards — below main content for tighter toolbar-to-cards spacing */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {cards.map((card, i) => {
+          const CardIcon = CARD_ICONS[card.label];
+          return (
+            <Link
+              key={card.label}
+              href={card.href}
+              className="animate-fade-in-up block rounded-[14px] border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-md"
+              style={{
+                opacity: 0,
+                animationDelay: `${(i + 1) * STAGGER_DELAY_MS}ms`,
+              }}
+            >
+              {CardIcon && (
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600 [&>svg]:h-5 [&>svg]:w-5">
+                  <CardIcon />
+                </span>
+              )}
+              <p className="mt-2 text-sm text-gray-500">{card.label}</p>
+              <p className="mt-1 text-3xl font-semibold text-gray-900">{card.value}</p>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
