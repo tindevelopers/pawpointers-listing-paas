@@ -117,7 +117,7 @@ export default function PricingPage({
     q.set("plan", planSlug);
     return `/signup/provider?${q.toString()}`;
   }
-  const memberSignupHref = `/signup/member${baseSignupQuery.toString() ? `?${baseSignupQuery.toString()}` : ""}`;
+  const providerSignupHrefNoPlan = `/signup/provider${baseSignupQuery.toString() ? `?${baseSignupQuery.toString()}` : ""}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
@@ -413,7 +413,7 @@ export default function PricingPage({
                 Join {PLATFORM_NAME} today and let pet parents find the care
                 their pets deserve — with you. 🐾
               </p>
-              <Link href={memberSignupHref}>
+              <Link href={providerSignupHrefNoPlan}>
                 <button className="bg-white text-orange-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl">
                   Get Started Today
                 </button>

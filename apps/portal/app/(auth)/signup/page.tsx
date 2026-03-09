@@ -14,7 +14,7 @@ function SignUpContent() {
   const searchParams = useSearchParams();
   const query = searchParams.toString();
   const userSignupHref = `/signup/user${query ? `?${query}` : ""}`;
-  const memberSignupHref = `/signup/member${query ? `?${query}` : ""}`;
+  const pricingHref = `/pricing${query ? `?${query}` : ""}`;
   const signInHref = `/signin${query ? `?${query}` : ""}`;
 
   return (
@@ -57,9 +57,9 @@ function SignUpContent() {
             </div>
           </div>
 
-          {/* Service Provider Signup Card */}
+          {/* Service Provider Signup Card - goes to pricing first to choose plan */}
           <div
-            onClick={() => router.push(memberSignupHref)}
+            onClick={() => router.push(pricingHref)}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 cursor-pointer hover:shadow-2xl transition-shadow border-2 border-transparent hover:border-blue-500"
           >
             <div className="text-center">

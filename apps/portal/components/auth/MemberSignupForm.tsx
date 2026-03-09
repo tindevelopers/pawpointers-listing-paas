@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUpMember } from "@/app/actions/auth";
 
@@ -52,7 +52,11 @@ const BUSINESS_CATEGORIES = [
 ];
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
-const ADMIN_URL = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3031";
+/** Merchant/Service Provider dashboard URL — post-signup redirect target (not Admin). */
+const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:3032";
+
+const SUCCESS_MESSAGE =
+  "Signup successful. We've sent a verification email to your inbox. Please verify your email to continue.";
 
 type FormStep = 1 | 2 | 3;
 
@@ -79,8 +83,10 @@ interface FormData {
 }
 
 export default function MemberSignupForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const [selectedPlan] = useState<string | undefined>(
+    () => searchParams.get("plan") ?? undefined
+  );
   const [currentStep, setCurrentStep] = useState<FormStep>(1);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
@@ -96,8 +102,9 @@ export default function MemberSignupForm() {
     confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const signInHref = `/signin${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+  const signInHref = `${DASHBOARD_URL}/signin${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 
   const selectedCategory = BUSINESS_CATEGORIES.find(
     (cat) => cat.id === formData.businessCategory
@@ -210,27 +217,41 @@ export default function MemberSignupForm() {
     }
 
     startTransition(async () => {
-      try {
-        // Construct the profession from category and subcategory
-        const profession = `${selectedCategory?.name} - ${formData.businessSubcategory}`;
-        const planParam = searchParams.get("plan") ?? undefined;
-
-        await signUpMember({
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.fullName,
-          profession: profession,
-          businessName: formData.businessName || undefined,
-          phoneNumber: formData.phoneNumber || undefined,
-          plan: planParam,
-        });
-        router.push(`${ADMIN_URL}/saas/dashboard`);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to sign up";
-        setError(message);
+      const profession = `${selectedCategory?.name} - ${formData.businessSubcategory}`;
+      const result = await signUpMember({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        profession,
+        businessName: formData.businessName || undefined,
+        phoneNumber: formData.phoneNumber || undefined,
+        plan: selectedPlan,
+      });
+      if (result.success) {
+        setSuccess(true);
+      } else {
+        setError(result.error);
       }
     });
   };
+
+  if (success) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg text-sm">
+          {SUCCESS_MESSAGE}
+        </div>
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <a
+            href={signInHref}
+            className="text-blue-600 hover:text-blue-500 font-medium dark:text-blue-400"
+          >
+            Go to merchant sign in
+          </a>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
