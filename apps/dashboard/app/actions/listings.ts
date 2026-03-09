@@ -3,11 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/core/database/server";
+import { createAdminClient } from "@/core/database/admin-client";
 import { uploadMainImageAsset, uploadSupportingImage } from "@listing-platform/media";
 import {
   canManageListing,
   getScopedListingIds,
 } from "@/lib/listing-access";
+import { ListingCustomFieldsSchema } from "@/lib/listing-profile-schema";
 
 export async function listListings() {
   const supabase = await createClient();
@@ -38,6 +40,52 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
+}
+
+function normalizeText(value: FormDataEntryValue | null): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeNumber(value: FormDataEntryValue | null): number | undefined {
+  if (typeof value !== "string") return undefined;
+  if (!value.trim()) return undefined;
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return undefined;
+  return parsed;
+}
+
+function normalizeCsv(value: FormDataEntryValue | null): string[] | undefined {
+  if (typeof value !== "string") return undefined;
+  const parts = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : undefined;
+}
+
+function coerceNumber(value: unknown): number | undefined {
+  if (typeof value === "number") {
+    return Number.isNaN(value) ? undefined : value;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+}
+
+function isValidUrl(value: string | undefined): boolean {
+  if (!value) return true;
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function upsertListing(formData: FormData) {
@@ -136,7 +184,7 @@ export async function publishListing(formData: FormData) {
   }
 
   const { error } = await (supabase.from("listings") as any)
-    .update({ status: "published" })
+    .update({ status: "published", published_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error) {
@@ -172,25 +220,38 @@ export async function unpublishListing(formData: FormData) {
   revalidatePath("/listings");
 }
 
-export async function deleteListing(formData: FormData) {
+export type DeleteListingResult = { success: true } | { success: false; error: string };
+
+export async function deleteListing(formData: FormData): Promise<DeleteListingResult> {
   const id = formData.get("id")?.toString();
-  if (!id) return;
+  if (!id) return { success: false, error: "Missing listing id" };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return { success: false, error: "Not authenticated" };
 
   const canManage = await canManageListing(user.id, id);
   if (!canManage) {
-    throw new Error("Not authorized to delete this listing");
+    return { success: false, error: "Not authorized to delete this listing" };
   }
 
-  const { error } = await supabase.from("listings").delete().eq("id", id);
+  const { data: deleted, error } = await supabase
+    .from("listings")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
   if (error) {
     console.error("delete listing error", error);
+    return { success: false, error: error.message || "Failed to delete listing" };
+  }
+  if (!deleted) {
+    return { success: false, error: "Listing could not be deleted. You may not have permission." };
   }
 
   revalidatePath("/listings");
+  return { success: true };
 }
 
 export async function addListingImage(formData: FormData) {
@@ -529,15 +590,23 @@ function slugifyInput(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-async function ensureUniqueSlug(supabase: Awaited<ReturnType<typeof createClient>>, tenantId: string | null, base: string) {
+async function ensureUniqueSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tenantId: string | null,
+  base: string,
+  excludeId?: string
+) {
   let candidate = base;
   let attempt = 1;
   while (true) {
-    const { data } = await supabase
+    let query = supabase
       .from("listings")
       .select("id")
-      .eq("slug", candidate)
-      .maybeSingle();
+      .eq("slug", candidate);
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+    const { data } = await query.maybeSingle();
     if (!data) return candidate;
     attempt += 1;
     candidate = `${base}-${attempt}`;
@@ -593,22 +662,52 @@ export async function createListing(formData: FormData) {
     }
   }
 
-  const { data: createdListing, error } = await (supabase
+  const insertPayload = {
+    title,
+    slug,
+    description,
+    status: "draft",
+    owner_id: user!.id,
+    tenant_id: tenantId,
+    ...(address && { address }),
+  };
+
+  let createdListing: { id: string; tenant_id: string | null } | null = null;
+  const { data: createdListingData, error } = await (supabase
     .from("listings") as any)
-    .insert({
-      title,
-      slug,
-      description,
-      status: "draft",
-      owner_id: user!.id,
-      tenant_id: tenantId,
-      ...(address && { address }),
-    })
+    .insert(insertPayload)
     .select("id, tenant_id")
     .single();
 
   if (error) {
-    throw new Error(error.message);
+    const message = error.message || "";
+    if (message.toLowerCase().includes("row-level security")) {
+      try {
+        const admin = createAdminClient();
+        const { data: adminCreated, error: adminError } = await (admin
+          .from("listings") as any)
+          .insert(insertPayload)
+          .select("id, tenant_id")
+          .single();
+        if (adminError) {
+          throw adminError;
+        }
+        createdListing = adminCreated as { id: string; tenant_id: string | null };
+      } catch (adminError: any) {
+        throw new Error(
+          adminError?.message ||
+            "Listing creation failed due to RLS. Ensure SUPABASE_SERVICE_ROLE_KEY is set."
+        );
+      }
+    } else {
+      throw new Error(error.message);
+    }
+  } else {
+    createdListing = createdListingData as { id: string; tenant_id: string | null };
+  }
+
+  if (!createdListing) {
+    throw new Error("Listing creation failed");
   }
 
   let featuredImage = featuredImageUrlInput;
@@ -616,8 +715,8 @@ export async function createListing(formData: FormData) {
     const buffer = Buffer.from(await featuredImageFile.arrayBuffer());
     const uploaded = await uploadMainImageAsset(buffer, {
       type: "featured",
-      entityId: (createdListing as any).id,
-      tenantId: (createdListing as any).tenant_id ?? tenantId,
+      entityId: createdListing.id,
+      tenantId: createdListing.tenant_id ?? tenantId,
       filename: featuredImageFile.name,
       contentType: featuredImageFile.type || "image/webp",
       maxWidth: 1400,
@@ -635,12 +734,365 @@ export async function createListing(formData: FormData) {
       .from("listings")
       // @ts-expect-error Supabase type inference
       .update({ featured_image: featuredImage })
-      .eq("id", (createdListing as any).id);
+      .eq("id", createdListing.id);
     if (featuredError) {
       throw new Error(featuredError.message);
     }
   }
 
   revalidatePath("/listings");
+  redirect(`/listings/${(createdListing as any).id}`);
+}
+
+export type UpdateListingState = {
+  ok: boolean;
+  message?: string;
+  errors?: Record<string, string>;
+};
+
+export async function updateListingDetails(
+  _prevState: UpdateListingState,
+  formData: FormData
+): Promise<UpdateListingState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "Not authenticated." };
+  }
+
+  const listingId = normalizeText(formData.get("id"));
+  if (!listingId) {
+    return { ok: false, message: "Listing is required." };
+  }
+
+  const canManage = await canManageListing(user.id, listingId);
+  if (!canManage) {
+    return { ok: false, message: "Not authorized to update this listing." };
+  }
+
+  const { data: listingRow, error: listingError } = await supabase
+    .from("listings")
+    .select("id, tenant_id")
+    .eq("id", listingId)
+    .single();
+
+  if (listingError || !listingRow) {
+    return { ok: false, message: "Listing not found." };
+  }
+
+  const title = normalizeText(formData.get("title"));
+  const description = normalizeText(formData.get("description")) || "";
+  const tagline = normalizeText(formData.get("tagline"));
+  const excerpt = normalizeText(formData.get("excerpt")) || tagline;
+  const category = normalizeText(formData.get("category"));
+  const featuredImage = normalizeText(formData.get("featuredImageUrl"));
+
+  if (!title) {
+    return { ok: false, message: "Title is required." };
+  }
+
+  const slugInput = normalizeText(formData.get("slug"));
+  const baseSlug = slugifyInput(slugInput || title || "");
+  const slug = await ensureUniqueSlug(
+    supabase,
+    (listingRow as any)?.tenant_id ?? null,
+    baseSlug || crypto.randomUUID(),
+    listingId
+  );
+
+  const price = normalizeNumber(formData.get("price"));
+  const currency = normalizeText(formData.get("currency")) || "USD";
+  const priceType = normalizeText(formData.get("priceType"));
+  const videoUrl = normalizeText(formData.get("videoUrl"));
+
+  if (!isValidUrl(featuredImage)) {
+    return { ok: false, message: "Featured image must be a valid URL." };
+  }
+  if (!isValidUrl(videoUrl)) {
+    return { ok: false, message: "Video URL must be a valid URL." };
+  }
+
+  const addressJson = formData.get("address")?.toString();
+  let address: Record<string, unknown> | null | undefined = undefined;
+  if (addressJson) {
+    try {
+      const parsed = JSON.parse(addressJson) as Record<string, unknown>;
+      if (parsed && (parsed.lat != null || parsed.street)) {
+        address = {
+          street: parsed.street ?? null,
+          city: parsed.city ?? null,
+          region: parsed.region ?? parsed.state ?? null,
+          country: parsed.country ?? null,
+          lat: parsed.lat ?? null,
+          lng: parsed.lng ?? null,
+        };
+      }
+    } catch {
+      /* ignore invalid JSON */
+    }
+  }
+
+  const tags = normalizeCsv(formData.get("tags"));
+
+  const contactPhone = normalizeText(formData.get("contactPhone"));
+  const contactEmail = normalizeText(formData.get("contactEmail"));
+  const contactWebsite = normalizeText(formData.get("contactWebsite"));
+  const contactBookingUrl = normalizeText(formData.get("contactBookingUrl"));
+  const contactWhatsappUrl = normalizeText(formData.get("contactWhatsappUrl"));
+
+  if (!isValidUrl(contactBookingUrl)) {
+    throw new Error("Booking URL must be a valid URL");
+  }
+  if (!isValidUrl(contactWhatsappUrl)) {
+    throw new Error("WhatsApp URL must be a valid URL");
+  }
+
+  const businessName = normalizeText(formData.get("businessName"));
+  const ownerName = normalizeText(formData.get("ownerName"));
+  const yearsExperience = normalizeNumber(formData.get("yearsExperience"));
+  const certifications = normalizeCsv(formData.get("certifications"));
+  const insured = formData.get("insured") === "on";
+  const licenseNumber = normalizeText(formData.get("licenseNumber"));
+  const logoUrl = normalizeText(formData.get("logoUrl"));
+
+  if (!isValidUrl(logoUrl)) {
+    throw new Error("Logo URL must be a valid URL");
+  }
+
+  const serviceMode = normalizeText(formData.get("serviceMode"));
+  const serviceRadius = normalizeNumber(formData.get("serviceRadius"));
+  const radiusUnit = normalizeText(formData.get("radiusUnit"));
+
+  const servicesJson = normalizeText(formData.get("servicesJson")) || "[]";
+  let servicesInput: unknown = [];
+  try {
+    servicesInput = JSON.parse(servicesJson);
+  } catch {
+    servicesInput = [];
+  }
+
+  const services = Array.isArray(servicesInput)
+    ? servicesInput
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const record = item as Record<string, unknown>;
+          const name = typeof record.name === "string" ? record.name.trim() : "";
+          if (!name) return null;
+          return {
+            name,
+            price: coerceNumber(record.price),
+            currency: typeof record.currency === "string" ? record.currency : undefined,
+            priceType: typeof record.priceType === "string" ? record.priceType : undefined,
+            durationMinutes: coerceNumber(record.durationMinutes),
+            description:
+              typeof record.description === "string" ? record.description : undefined,
+            featured: record.featured === true,
+          };
+        })
+        .filter((service) => service && service.name)
+    : [];
+
+  const packagesJson = normalizeText(formData.get("packagesJson")) || "[]";
+  let packagesInput: unknown = [];
+  try {
+    packagesInput = JSON.parse(packagesJson);
+  } catch {
+    packagesInput = [];
+  }
+
+  const packages = Array.isArray(packagesInput)
+    ? packagesInput
+        .map((item) => {
+          if (!item || typeof item !== "object") return null;
+          const record = item as Record<string, unknown>;
+          const name = typeof record.name === "string" ? record.name.trim() : "";
+          if (!name) return null;
+          const included = Array.isArray(record.includedServiceNames)
+            ? record.includedServiceNames.filter((value) => typeof value === "string")
+            : undefined;
+          return {
+            name,
+            price: coerceNumber(record.price),
+            currency: typeof record.currency === "string" ? record.currency : undefined,
+            description:
+              typeof record.description === "string" ? record.description : undefined,
+            includedServiceNames: included,
+          };
+        })
+        .filter((pkg) => pkg && pkg.name)
+    : [];
+
+  const buildHoursDay = (prefix: string) => {
+    const open = formData.get(`${prefix}_open`) === "on";
+    const openTime = normalizeText(formData.get(`${prefix}_openTime`));
+    const closeTime = normalizeText(formData.get(`${prefix}_closeTime`));
+    return {
+      open,
+      ...(openTime ? { openTime } : {}),
+      ...(closeTime ? { closeTime } : {}),
+    };
+  };
+
+  const hours = {
+    mon: buildHoursDay("hours_mon"),
+    tue: buildHoursDay("hours_tue"),
+    wed: buildHoursDay("hours_wed"),
+    thu: buildHoursDay("hours_thu"),
+    fri: buildHoursDay("hours_fri"),
+    sat: buildHoursDay("hours_sat"),
+    sun: buildHoursDay("hours_sun"),
+  };
+
+  const anyHoursOpen = Object.values(hours).some((day) => day.open);
+
+  const features = {
+    parking: formData.get("featureParking") === "on",
+    petFriendly: formData.get("featurePetFriendly") === "on",
+    mobileService: formData.get("featureMobileService") === "on",
+    organicProducts: formData.get("featureOrganicProducts") === "on",
+    certifiedGroomers: formData.get("featureCertifiedGroomers") === "on",
+    pickupDropoff: formData.get("featurePickupDropoff") === "on",
+    spaServices: formData.get("featureSpaServices") === "on",
+    ecoFriendly: formData.get("featureEcoFriendly") === "on",
+    custom: normalizeCsv(formData.get("featureCustom")),
+  };
+
+  const social = {
+    instagram: normalizeText(formData.get("socialInstagram")),
+    facebook: normalizeText(formData.get("socialFacebook")),
+    tiktok: normalizeText(formData.get("socialTiktok")),
+    linkedin: normalizeText(formData.get("socialLinkedin")),
+    youtube: normalizeText(formData.get("socialYoutube")),
+    x: normalizeText(formData.get("socialX")),
+  };
+
+  const customFieldsInput = {
+    schemaVersion: 1,
+    category,
+    tags,
+    tagline,
+    contact: contactPhone || contactEmail || contactWebsite || contactBookingUrl || contactWhatsappUrl
+      ? {
+          phone: contactPhone,
+          email: contactEmail,
+          website: contactWebsite,
+          bookingUrl: contactBookingUrl,
+          whatsappUrl: contactWhatsappUrl,
+        }
+      : undefined,
+    providerProfile: businessName || ownerName || yearsExperience || certifications || insured || licenseNumber || logoUrl
+      ? {
+          businessName,
+          ownerName,
+          yearsExperience,
+          certifications,
+          insured: insured || undefined,
+          licenseNumber,
+          logoUrl,
+        }
+      : undefined,
+    serviceArea: serviceMode || serviceRadius || radiusUnit
+      ? {
+          serviceMode,
+          radius: serviceRadius,
+          radiusUnit,
+        }
+      : undefined,
+    services: services.length > 0 ? services : undefined,
+    packages: packages.length > 0 ? packages : undefined,
+    hours: anyHoursOpen ? hours : undefined,
+    features:
+      features.parking ||
+      features.petFriendly ||
+      features.mobileService ||
+      features.organicProducts ||
+      features.certifiedGroomers ||
+      features.pickupDropoff ||
+      features.spaServices ||
+      features.ecoFriendly ||
+      (features.custom && features.custom.length > 0)
+        ? features
+        : undefined,
+    social:
+      social.instagram ||
+      social.facebook ||
+      social.tiktok ||
+      social.linkedin ||
+      social.youtube ||
+      social.x
+        ? social
+        : undefined,
+  };
+
+  const parsedCustomFields = ListingCustomFieldsSchema.safeParse(customFieldsInput);
+  if (!parsedCustomFields.success) {
+    return { ok: false, message: "Listing profile data is invalid." };
+  }
+
+  const statusInput = normalizeText(formData.get("status"));
+  const status = statusInput === "published" ? "published" : "draft";
+
+  if (status === "published") {
+    const errors: Record<string, string> = {};
+    if (!title) {
+      errors.title = "Title is required to publish.";
+    }
+    if (!description) {
+      errors.description = "Description is required to publish.";
+    }
+    if (!category) {
+      errors.category = "Category is required to publish.";
+    }
+    if (!featuredImage) {
+      errors.featuredImageUrl = "Featured image is required to publish.";
+    }
+    if (!address || (!address.street && !address.city && !address.region && !address.country)) {
+      errors.address = "Business address is required to publish.";
+    }
+    if (Object.keys(errors).length > 0) {
+      return {
+        ok: false,
+        message: "Please complete required fields before publishing.",
+        errors,
+      };
+    }
+  }
+
+  const payload = {
+    title: title || "",
+    slug,
+    description: description || null,
+    excerpt: excerpt ?? null,
+    price: price ?? null,
+    currency,
+    price_type: priceType ?? null,
+    featured_image: featuredImage ?? null,
+    video_url: videoUrl ?? null,
+    status,
+    ...(status === "published" && { published_at: new Date().toISOString() }),
+    custom_fields: parsedCustomFields.data,
+    ...(address !== undefined && { address }),
+  };
+
+  const { error } = await (supabase.from("listings") as any)
+    .update(payload)
+    .eq("id", listingId);
+
+  if (error) {
+    console.error("update listing error", error);
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/listings");
+  revalidatePath(`/listings/${listingId}`);
+
+  const redirectTo = formData.get("redirectTo")?.toString();
+  if (redirectTo === "listings") {
+    redirect("/listings");
+  }
+  return { ok: true };
 }
 
