@@ -385,7 +385,7 @@ export default async function HomePage() {
                 Start Browsing Now
               </Link>
               <Link
-                href="/signup"
+                href="/pricing"
                 className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white font-bold px-8 py-4 rounded-xl transition-all duration-200 border-2 border-white/50 hover:border-white inline-flex items-center gap-2 justify-center"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

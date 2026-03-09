@@ -213,6 +213,7 @@ export default function MemberSignupForm() {
       try {
         // Construct the profession from category and subcategory
         const profession = `${selectedCategory?.name} - ${formData.businessSubcategory}`;
+        const planParam = searchParams.get("plan") ?? undefined;
 
         await signUpMember({
           email: formData.email,
@@ -221,6 +222,7 @@ export default function MemberSignupForm() {
           profession: profession,
           businessName: formData.businessName || undefined,
           phoneNumber: formData.phoneNumber || undefined,
+          plan: planParam,
         });
         router.push(`${ADMIN_URL}/saas/dashboard`);
       } catch (err) {

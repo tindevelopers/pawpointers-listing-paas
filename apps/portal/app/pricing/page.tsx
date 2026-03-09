@@ -13,6 +13,7 @@ type PricingSearchParams = Record<string, string | string[] | undefined>;
 
 interface PricingTier {
   name: string;
+  planSlug: string;
   emoji: string;
   price: number;
   description: string;
@@ -24,6 +25,7 @@ interface PricingTier {
 const pricingTiers: PricingTier[] = [
   {
     name: "Starter Paw",
+    planSlug: "starter",
     emoji: "🐾",
     price: 0,
     description: "Perfect for new or small businesses who want visibility.",
@@ -39,6 +41,7 @@ const pricingTiers: PricingTier[] = [
   },
   {
     name: "Pro Paw",
+    planSlug: "pro",
     emoji: "🐶",
     price: 19,
     description:
@@ -59,6 +62,7 @@ const pricingTiers: PricingTier[] = [
   },
   {
     name: "Premium Paw",
+    planSlug: "premium",
     emoji: "🏆",
     price: 39,
     description:
@@ -101,14 +105,19 @@ export default function PricingPage({
     typeof searchParams?.returnUrl === "string" ? searchParams.returnUrl : undefined;
   const claimToken = typeof searchParams?.claim === "string" ? searchParams.claim : undefined;
 
-  const signupQuery = new URLSearchParams();
-  if (intent === "claim") signupQuery.set("intent", "claim");
-  if (listingId) signupQuery.set("listingId", listingId);
-  if (listingSlug) signupQuery.set("listingSlug", listingSlug);
-  if (listingTitle) signupQuery.set("listingTitle", listingTitle);
-  if (returnUrl) signupQuery.set("returnUrl", returnUrl);
-  if (claimToken) signupQuery.set("claim", claimToken);
-  const signupHref = `/signup/member${signupQuery.toString() ? `?${signupQuery.toString()}` : ""}`;
+  const baseSignupQuery = new URLSearchParams();
+  if (intent === "claim") baseSignupQuery.set("intent", "claim");
+  if (listingId) baseSignupQuery.set("listingId", listingId);
+  if (listingSlug) baseSignupQuery.set("listingSlug", listingSlug);
+  if (listingTitle) baseSignupQuery.set("listingTitle", listingTitle);
+  if (returnUrl) baseSignupQuery.set("returnUrl", returnUrl);
+  if (claimToken) baseSignupQuery.set("claim", claimToken);
+  function providerSignupHref(planSlug: string) {
+    const q = new URLSearchParams(baseSignupQuery);
+    q.set("plan", planSlug);
+    return `/signup/provider?${q.toString()}`;
+  }
+  const memberSignupHref = `/signup/member${baseSignupQuery.toString() ? `?${baseSignupQuery.toString()}` : ""}`;
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-gray-900">
@@ -204,7 +213,7 @@ export default function PricingPage({
                       </div>
 
                       {/* CTA Button */}
-                      <Link href={signupHref}>
+                      <Link href={providerSignupHref(tier.planSlug)}>
                         <button
                           className={`w-full py-3 px-6 rounded-lg font-semibold mb-8 transition-all duration-300 ${
                             tier.highlighted
@@ -404,7 +413,7 @@ export default function PricingPage({
                 Join {PLATFORM_NAME} today and let pet parents find the care
                 their pets deserve — with you. 🐾
               </p>
-              <Link href={signupHref}>
+              <Link href={memberSignupHref}>
                 <button className="bg-white text-orange-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl">
                   Get Started Today
                 </button>

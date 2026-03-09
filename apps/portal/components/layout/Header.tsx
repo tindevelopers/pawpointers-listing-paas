@@ -112,7 +112,7 @@ export function Header({ className = "" }: HeaderProps) {
                   Sign In
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/pricing"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   Get Started

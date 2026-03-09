@@ -155,6 +155,18 @@ export interface SignUpUserData {
   phoneNumber?: string;
 }
 
+/** Valid user plan values (must match DB check_user_plan constraint) */
+const VALID_USER_PLANS = ["starter", "professional", "enterprise", "custom"] as const;
+
+function normalizePlan(plan: string | undefined): (typeof VALID_USER_PLANS)[number] {
+  if (!plan) return "starter";
+  const lower = plan.toLowerCase();
+  if (lower === "pro") return "professional";
+  if (lower === "premium") return "enterprise";
+  if (VALID_USER_PLANS.includes(lower as any)) return lower as (typeof VALID_USER_PLANS)[number];
+  return "starter";
+}
+
 export interface SignUpMemberData {
   email: string;
   password: string;
@@ -162,6 +174,8 @@ export interface SignUpMemberData {
   profession: string;
   businessName?: string;
   phoneNumber?: string;
+  /** Plan from pricing selection (e.g. starter, pro, premium); normalized before DB write */
+  plan?: string;
 }
 
 /**
@@ -260,13 +274,15 @@ export async function signUpMember(data: SignUpMemberData) {
     (await getRoleIdByName("Service Provider", adminClient)) ??
     null;
 
+  const plan = normalizePlan(data.plan);
+
   const userData: UserInsert = {
     id: authData.user.id,
     email: data.email,
     full_name: data.fullName,
     tenant_id: tenantId,
     role_id: roleId,
-    plan: "starter",
+    plan,
     status: "active",
   };
 
