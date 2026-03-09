@@ -32,7 +32,6 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
   const canBook = featureAccess?.canBook ?? !isUnclaimed;
   const canMessageOwner = featureAccess?.canMessageOwner ?? !isUnclaimed;
   const canShowPricing = featureAccess?.canShowPricing ?? !isUnclaimed;
-  const canShowAvailability = featureAccess?.canShowAvailability ?? !isUnclaimed;
   const canShowReviews = featureAccess?.canShowReviews ?? !isUnclaimed;
 
   const cardSizeClass =
@@ -40,11 +39,13 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
       ? "max-w-[360px]"
       : "";
 
-  // Generate consistent mock data based on listing ID (prevents hydration mismatch)
-  const idHash = listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
-  const rating = 3.5 + ((idHash % 20) / 10); // 3.5-5.5 consistently
-  const reviewCount = 10 + ((idHash * 7) % 150); // 10-160 consistently
-  const isAvailable = (idHash % 10) > 2; // 70% available consistently
+  const rating = listing.ratingAverage;
+  const reviewCount = listing.ratingCount;
+  const shouldShowRating =
+    canShowReviews &&
+    typeof rating === "number" &&
+    typeof reviewCount === "number" &&
+    reviewCount > 0;
 
   const renderStars = (rate: number) => {
     return (
@@ -90,17 +91,6 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
         {!isUnclaimed && listing.effectiveTier === "top" && listing.topTierFeatures?.premiumBadge ? (
           <div className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-bold px-2 py-1 rounded-full">
             Premium
-          </div>
-        ) : null}
-
-        {/* Availability Badge */}
-        {canShowAvailability ? (
-          <div
-            className={`absolute top-3 right-3 text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm ${
-              isAvailable ? "bg-green-400/90 text-white" : "bg-red-500/90 text-white"
-            }`}
-          >
-            {isAvailable ? "Available" : "Full"}
           </div>
         ) : null}
 
@@ -172,12 +162,12 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
       {/* Content */}
       <div className="p-4">
         {/* Rating Section */}
-        {canShowReviews ? (
+        {shouldShowRating ? (
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              {renderStars(rating)}
+              {renderStars(rating as number)}
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                {rating.toFixed(1)}
+                {(rating as number).toFixed(1)}
               </span>
             </div>
             <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -226,7 +216,7 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
         {/* Price and Category Row */}
         {!isUnclaimed && (
           <div className="flex items-center justify-between">
-            {canShowPricing ? (
+            {canShowPricing && typeof listing.price === "number" ? (
               <div className="text-lg font-bold text-warm-primary">
                 {formatPrice(listing.price)}
               </div>
@@ -256,27 +246,7 @@ export function ListingCard({ listing, className = "" }: ListingCardProps) {
           >
             Claim Your Business
           </button>
-        ) : (
-          canShowAvailability && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center text-xs text-gray-600 dark:text-gray-400">
-              {isAvailable ? (
-                <>
-                  <svg className="w-3.5 h-3.5 text-green-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
-                  <span className="availability-available">Available</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-3.5 h-3.5 text-red-500 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-                  </svg>
-                  <span className="availability-unavailable">Fully Booked</span>
-                </>
-              )}
-            </div>
-          )
-        )}
+        ) : null}
       </div>
     </Link>
   );
