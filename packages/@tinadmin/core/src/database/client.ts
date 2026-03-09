@@ -18,8 +18,11 @@ export function createClient() {
     );
   }
 
+  const cookieName = process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME;
   try {
-    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+      ...(cookieName ? { cookieOptions: { name: cookieName } } : {}),
+    });
   } catch (error) {
     // If createBrowserClient throws an error, provide more context
     if (error instanceof Error && error.message.includes('URL and API key')) {

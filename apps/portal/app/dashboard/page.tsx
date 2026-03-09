@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@/core/database/server";
 import { Header, Footer } from "@/components/layout";
 import {
   UserCircleIcon,
@@ -17,22 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 async function getUser() {
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set() {},
-        remove() {},
-      },
-    }
-  );
-
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error) {
     console.error("Failed to fetch user", error.message);

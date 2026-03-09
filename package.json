@@ -62,6 +62,7 @@
     "test": "turbo run test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:session-isolation": "playwright test e2e/session-isolation.spec.ts",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "audit": "pnpm audit --audit-level=moderate",

@@ -16,10 +16,12 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
+    const authCookieName = process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME || "sb-dashboard-auth";
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
+        cookieOptions: { name: authCookieName },
         cookies: {
           get(name: string) {
             return request.cookies.get(name)?.value;

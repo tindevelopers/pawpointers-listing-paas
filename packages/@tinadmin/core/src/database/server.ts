@@ -23,10 +23,12 @@ export async function createClient() {
     );
   }
 
+  const cookieName = process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME;
   return createServerClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
     {
+      ...(cookieName ? { cookieOptions: { name: cookieName } } : {}),
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value;

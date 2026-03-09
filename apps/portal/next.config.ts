@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// Isolate auth cookies from merchant dashboard (different port = same host in browser)
+if (!process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME) {
+  process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME = "sb-portal-auth";
+}
+
 const nextConfig: NextConfig = {
   // TypeScript configuration
   typescript: {
