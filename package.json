@@ -60,6 +60,8 @@
     "start:portal": "turbo run start --filter=@tinadmin/portal",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "audit": "pnpm audit --audit-level=moderate",
@@ -125,6 +127,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.58.2",
     "@svgr/webpack": "^8.1.0",
     "@types/node": "^20",
     "@types/prismjs": "^1.26.5",
