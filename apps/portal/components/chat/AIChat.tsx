@@ -323,6 +323,8 @@ export function AIChat({
     recognition.start();
   };
 
+  const visibleMessages = messages.filter((message) => message.content.trim().length > 0);
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
@@ -391,7 +393,7 @@ export function AIChat({
               ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0"
             >
-              {messages.map((message, index) => (
+              {visibleMessages.map((message, index) => (
                 <div
                   key={message.id ?? index}
                   className={`flex ${
