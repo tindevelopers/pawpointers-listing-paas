@@ -74,9 +74,10 @@ async function handler(req: NextRequest) {
 
     // Merge authenticated user's email/name into guestDetails for Cal.com
     const guestDetailsWithUser = {
+      guests: [] as { name: string; age?: number; specialRequirements?: string }[],
       primaryContact: {
-        email: (gd as { primaryContact?: { email?: string } })?.primaryContact?.email || user.email || undefined,
-        name: (gd as { primaryContact?: { name?: string } })?.primaryContact?.name || (user.user_metadata?.full_name as string) || undefined,
+        email: (gd as { primaryContact?: { email?: string } })?.primaryContact?.email || user.email || "",
+        name: (gd as { primaryContact?: { name?: string } })?.primaryContact?.name || (user.user_metadata?.full_name as string) || "",
       },
     };
 
@@ -166,7 +167,8 @@ async function handler(req: NextRequest) {
         );
       }
       // Prefer integration linked via booking_provider_id when set
-      let integration: { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null } | null = null;
+      type IntegrationRow = { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null };
+      let integration: IntegrationRow | null | undefined = null;
       if (bookingProviderId) {
         const { data: direct } = await adminClient
           .from("booking_provider_integrations")
@@ -175,7 +177,7 @@ async function handler(req: NextRequest) {
           .eq("provider", "calcom")
           .eq("active", true)
           .single();
-        integration = direct as typeof integration;
+        integration = direct as IntegrationRow | null;
       }
       if (!integration?.credentials) {
         const { data: integrations } = await adminClient
@@ -192,13 +194,13 @@ async function handler(req: NextRequest) {
             listing_id?: string | null;
           }>);
         integration =
-          integrationsList.find(
+          (integrationsList.find(
             (i: { listing_id?: string | null }) => i.listing_id === lid
           ) ??
           integrationsList.find(
             (i: { listing_id?: string | null }) => i.listing_id == null
           ) ??
-          integrationsList[0];
+          integrationsList[0]) as IntegrationRow | undefined;
       }
 
       if (!integration?.credentials) {
@@ -249,7 +251,7 @@ async function handler(req: NextRequest) {
           .select("title")
           .eq("id", lid)
           .single();
-        const listingTitle = (listingRow as { title?: string })?.title || "Your appointment";
+        const listingTitle = (listingRow as { title?: string } | null)?.title || "Your appointment";
         sendEmail(
           bookingConfirmationEmailParams({
             customerEmail,
@@ -266,10 +268,10 @@ async function handler(req: NextRequest) {
           .select("owner_id")
           .eq("id", lid)
           .single();
-        const ownerId = (listingForOwner as { owner_id?: string })?.owner_id;
+        const ownerId = (listingForOwner as { owner_id?: string } | null)?.owner_id;
         if (ownerId) {
           const { data: ownerUser } = await adminClient.from("users").select("email").eq("id", ownerId).single();
-          const merchantEmail = (ownerUser as { email?: string })?.email;
+          const merchantEmail = (ownerUser as { email?: string } | null)?.email;
           if (merchantEmail && merchantEmail !== customerEmail) {
             sendEmail(
               newBookingAlertEmailParams({
@@ -330,7 +332,7 @@ async function handler(req: NextRequest) {
         .select("title, owner_id")
         .eq("id", lid)
         .single();
-      const listingTitle = (listingRow as { title?: string })?.title || "Your appointment";
+      const listingTitle = (listingRow as { title?: string } | null)?.title || "Your appointment";
       sendEmail(
         bookingConfirmationEmailParams({
           customerEmail,
@@ -341,10 +343,10 @@ async function handler(req: NextRequest) {
           confirmationCode: (b as { confirmation_code?: string }).confirmation_code,
         })
       ).catch((err) => console.error("[booking/create] Email error:", err));
-      const ownerId = (listingRow as { owner_id?: string })?.owner_id;
+      const ownerId = (listingRow as { owner_id?: string } | null)?.owner_id;
       if (ownerId) {
         const { data: ownerRow } = await adminForEmail.from("users").select("email").eq("id", ownerId).single();
-        const merchantEmail = (ownerRow as { email?: string })?.email;
+        const merchantEmail = (ownerRow as { email?: string } | null)?.email;
         if (merchantEmail && merchantEmail !== customerEmail) {
           sendEmail(
             newBookingAlertEmailParams({

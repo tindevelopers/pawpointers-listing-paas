@@ -116,7 +116,8 @@ async function handler(request: NextRequest) {
         );
       }
       // Prefer integration linked via booking_provider_id when set
-      let integration: { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null } | null = null;
+      type IntegrationRow = { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null };
+      let integration: IntegrationRow | null | undefined = null;
       if (bookingProviderId) {
         const { data: direct } = await adminClient
           .from("booking_provider_integrations")
@@ -125,7 +126,7 @@ async function handler(request: NextRequest) {
           .eq("provider", "calcom")
           .eq("active", true)
           .single();
-        integration = direct as typeof integration;
+        integration = direct as IntegrationRow | null;
       }
       if (!integration?.credentials) {
         const { data: integrations } = await adminClient
@@ -142,13 +143,13 @@ async function handler(request: NextRequest) {
             listing_id?: string | null;
           }>);
         integration =
-          integrationsList.find(
+          (integrationsList.find(
             (i: { listing_id?: string | null }) => i.listing_id === listingId
           ) ??
           integrationsList.find(
             (i: { listing_id?: string | null }) => i.listing_id == null
           ) ??
-          integrationsList[0];
+          integrationsList[0]) as IntegrationRow | undefined;
       }
 
       if (integration?.credentials) {
