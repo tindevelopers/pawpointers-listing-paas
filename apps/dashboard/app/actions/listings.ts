@@ -1061,6 +1061,9 @@ export async function updateListingDetails(
     }
   }
 
+  const bookingProviderIdRaw = normalizeText(formData.get("bookingProviderId"));
+  const booking_provider_id = bookingProviderIdRaw && bookingProviderIdRaw.length > 0 ? bookingProviderIdRaw : null;
+
   const payload = {
     title: title || "",
     slug,
@@ -1075,6 +1078,7 @@ export async function updateListingDetails(
     ...(status === "published" && { published_at: new Date().toISOString() }),
     custom_fields: parsedCustomFields.data,
     ...(address !== undefined && { address }),
+    booking_provider_id,
   };
 
   const { error } = await (supabase.from("listings") as any)

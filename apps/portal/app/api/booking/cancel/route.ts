@@ -3,6 +3,8 @@ import { createClient } from "@/core/database/server";
 import { createAdminClient } from "@/core/database/admin-client";
 import { createBookingProvider } from "@listing-platform/booking/providers";
 import { withRateLimit } from "@/middleware/api-rate-limit";
+import { sendEmail } from "@tinadmin/core/email";
+import { bookingCancellationEmailParams } from "@listing-platform/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -74,13 +76,14 @@ async function handler(request: NextRequest) {
     const listingId = (booking as { listing_id?: string }).listing_id;
 
     let providerType: "builtin" | "gohighlevel" | "calcom" = "builtin";
+    let bookingProviderId: string | undefined;
     if (listingId) {
       const { data: listing } = await supabase
         .from("listings")
         .select("booking_provider_id")
         .eq("id", listingId)
         .single();
-      const bookingProviderId = (listing as { booking_provider_id?: string } | null)?.booking_provider_id;
+      bookingProviderId = (listing as { booking_provider_id?: string } | null)?.booking_provider_id;
       if (bookingProviderId) {
         const adminClient = getAdminClientOrNull();
         if (adminClient) {
@@ -112,27 +115,41 @@ async function handler(request: NextRequest) {
           { status: 503 }
         );
       }
-      const { data: integrations } = await adminClient
-        .from("booking_provider_integrations")
-        .select("id, credentials, settings, listing_id")
-        .eq("tenant_id", tenantId)
-        .eq("provider", "calcom")
-        .eq("active", true);
-      const integrationsList =
-        ((integrations || []) as Array<{
-          id: string;
-          credentials?: Record<string, unknown> | null;
-          settings?: Record<string, unknown> | null;
-          listing_id?: string | null;
-        }>);
-      const integration =
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id === listingId
-        ) ??
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id == null
-        ) ??
-        integrationsList[0];
+      // Prefer integration linked via booking_provider_id when set
+      let integration: { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null } | null = null;
+      if (bookingProviderId) {
+        const { data: direct } = await adminClient
+          .from("booking_provider_integrations")
+          .select("credentials, settings")
+          .eq("id", bookingProviderId)
+          .eq("provider", "calcom")
+          .eq("active", true)
+          .single();
+        integration = direct as typeof integration;
+      }
+      if (!integration?.credentials) {
+        const { data: integrations } = await adminClient
+          .from("booking_provider_integrations")
+          .select("id, credentials, settings, listing_id")
+          .eq("tenant_id", tenantId)
+          .eq("provider", "calcom")
+          .eq("active", true);
+        const integrationsList =
+          ((integrations || []) as Array<{
+            id: string;
+            credentials?: Record<string, unknown> | null;
+            settings?: Record<string, unknown> | null;
+            listing_id?: string | null;
+          }>);
+        integration =
+          integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id === listingId
+          ) ??
+          integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id == null
+          ) ??
+          integrationsList[0];
+      }
 
       if (integration?.credentials) {
         context.providerCredentials = integration.credentials as Record<string, unknown>;
@@ -143,6 +160,33 @@ async function handler(request: NextRequest) {
 
     const provider = createBookingProvider(providerType, (context.supabase as any) as any);
     await provider.cancelBooking(context as any, bookingId, reason);
+
+    // Send cancellation email to customer (fire-and-forget)
+    const customerEmail = (user as { email?: string }).email;
+    if (customerEmail) {
+      const { data: fullBooking } = await (context.supabase as any)
+        .from("bookings")
+        .select("start_date, start_time, guest_details")
+        .eq("id", bookingId)
+        .single();
+      const { data: listingRow } = await (context.supabase as any)
+        .from("listings")
+        .select("title")
+        .eq("id", (booking as { listing_id?: string }).listing_id)
+        .single();
+      if (fullBooking && listingRow) {
+        const gd = (fullBooking as { guest_details?: { primaryContact?: { name?: string } } }).guest_details;
+        sendEmail(
+          bookingCancellationEmailParams({
+            customerEmail,
+            customerName: gd?.primaryContact?.name,
+            listingTitle: (listingRow as { title?: string })?.title || "Your appointment",
+            startDate: (fullBooking as { start_date: string }).start_date,
+            startTime: (fullBooking as { start_time?: string }).start_time,
+          })
+        ).catch((err) => console.error("[booking/cancel] Email error:", err));
+      }
+    }
 
     try {
       await ((context.supabase as any).from("bookings") as any)

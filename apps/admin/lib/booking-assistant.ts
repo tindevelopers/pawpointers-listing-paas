@@ -15,7 +15,8 @@ export type BookingAssistantTrigger =
   | "BOOKING_CREATED"
   | "BOOKING_CANCELLED"
   | "BOOKING_RESCHEDULED"
-  | "BOOKING_REJECTED";
+  | "BOOKING_REJECTED"
+  | "BOOKING_CONFIRMED";
 
 export interface BookingContext {
   id: string;

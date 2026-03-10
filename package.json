@@ -89,6 +89,7 @@
     "update:rollback": "tsx scripts/rollback-update.ts",
     "update:history": "tsx scripts/rollback-update.ts list",
     "book:portal": "tsx scripts/book-appointment-browser.ts",
+    "test:e2e:calcom": "tsx scripts/e2e-test-calcom-booking.ts",
     "seed:unclaimed": "tsx scripts/seed-unclaimed-listings.ts",
     "seed:unclaimed:remote": "bash scripts/seed-unclaimed-remote.sh"
   },

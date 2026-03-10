@@ -1,0 +1,23 @@
+---
+description: Authentication separation between customer portal and merchant dashboard
+globs: apps/dashboard/**/*.ts,apps/dashboard/**/*.tsx,apps/portal/**/*.ts
+alwaysApply: false
+---
+
+# Portal vs Dashboard Auth Separation
+
+The customer portal (apps/portal) and merchant dashboard (apps/dashboard) share the same Supabase project and identity provider. To prevent customer sessions from granting dashboard access:
+
+## Merchant Authorization Gate
+
+The dashboard middleware enforces merchant access before allowing any non-public route:
+
+- **Merchant access** = user has `tenant_id` OR owns listings OR is in `listing_members` (active)
+- Users without merchant access are signed out and redirected to `/signin?error=merchant_required`
+- The signin page shows a dedicated message for `merchant_required` (not a generic error)
+
+## Implementation Notes
+
+- Do not remove the `hasMerchantAccess` check from dashboard middleware
+- When adding new dashboard routes, ensure they are protected (not in `PUBLIC_PATHS`) so the gate applies
+- For cookie isolation (separate sessions per app), use `cookieOptions.name` in `createServerClient` with a dashboard-specific storage key—but then the dashboard must use that same cookie name in all auth flows (sign-in, createClient), which requires a dashboard-specific Supabase client

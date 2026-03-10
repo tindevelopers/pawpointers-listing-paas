@@ -24,7 +24,7 @@ Migration: `supabase/migrations/20260121000000_add_booking_provider_integrations
   - `GET /api/booking-providers/:id/health`
 - Webhooks:
   - `/api/webhooks/gohighlevel` (placeholder)
-  - `/api/webhooks/calcom` (implemented: BOOKING_CREATED, CANCELLED, RESCHEDULED, REJECTED)
+  - `/api/webhooks/calcom` (implemented: BOOKING_CREATED, BOOKING_CONFIRMED, CANCELLED, RESCHEDULED, REJECTED)
 
 ## UI
 - Integrations list includes Booking providers

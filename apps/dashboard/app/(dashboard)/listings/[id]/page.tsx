@@ -17,6 +17,7 @@ type ListingRow = {
   video_url: string | null;
   address: Record<string, unknown> | null;
   custom_fields: Record<string, unknown> | null;
+  booking_provider_id: string | null;
 };
 
 export default async function ListingEditorPage({
@@ -42,7 +43,7 @@ export default async function ListingEditorPage({
   const { data: listing, error } = await supabase
     .from("listings")
     .select(
-      "id, title, slug, description, excerpt, status, price, currency, price_type, featured_image, video_url, address, custom_fields"
+      "id, title, slug, description, excerpt, status, price, currency, price_type, featured_image, video_url, address, custom_fields, booking_provider_id, tenant_id"
     )
     .eq("id", id)
     .single();
@@ -51,9 +52,30 @@ export default async function ListingEditorPage({
     notFound();
   }
 
+  const tenantId = (listing as { tenant_id?: string }).tenant_id;
+  let bookingProviders: Array<{ id: string; provider: string }> = [];
+  if (tenantId) {
+    try {
+      const { createAdminClient } = await import("@/core/database/admin-client");
+      const adminClient = createAdminClient();
+      const { data: integrations } = await adminClient
+        .from("booking_provider_integrations")
+        .select("id, provider")
+        .eq("tenant_id", tenantId)
+        .eq("active", true)
+        .order("provider", { ascending: true });
+      bookingProviders = (integrations || []) as Array<{ id: string; provider: string }>;
+    } catch {
+      // Admin client not available (e.g. no SUPABASE_SERVICE_ROLE_KEY)
+    }
+  }
+
   return (
     <div className="bg-[#f8fafc]">
-      <ListingEditorForm listing={listing as ListingRow} />
+      <ListingEditorForm
+        listing={listing as ListingRow}
+        bookingProviders={bookingProviders}
+      />
     </div>
   );
 }

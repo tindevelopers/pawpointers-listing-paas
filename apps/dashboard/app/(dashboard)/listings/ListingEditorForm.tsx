@@ -24,7 +24,10 @@ type ListingEditorData = {
   video_url: string | null;
   address: Record<string, unknown> | null;
   custom_fields: Record<string, unknown> | null;
+  booking_provider_id?: string | null;
 };
+
+type BookingProviderOption = { id: string; provider: string };
 
 type ServiceInput = {
   name: string;
@@ -54,7 +57,13 @@ const dayLabels: Array<{ key: string; label: string }> = [
   { key: "sun", label: "Sunday" },
 ];
 
-export function ListingEditorForm({ listing }: { listing: ListingEditorData }) {
+export function ListingEditorForm({
+  listing,
+  bookingProviders = [],
+}: {
+  listing: ListingEditorData;
+  bookingProviders?: BookingProviderOption[];
+}) {
   const customFields = (listing.custom_fields ?? {}) as Record<string, any>;
   const contact = customFields.contact || {};
   const provider = customFields.providerProfile || {};
@@ -411,6 +420,36 @@ export function ListingEditorForm({ listing }: { listing: ListingEditorData }) {
           </div>
         </div>
       </section>
+
+      {/* Booking Provider */}
+      {bookingProviders.length > 0 && (
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Booking Provider</h2>
+            <p className="text-sm text-gray-600">
+              Choose how bookings for this listing are handled. Cal.com syncs with your calendar.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700" htmlFor="bookingProviderId">
+              Provider
+            </label>
+            <select
+              id="bookingProviderId"
+              name="bookingProviderId"
+              defaultValue={listing.booking_provider_id ?? ""}
+              className={inputBase}
+            >
+              <option value="">Built-in (local only)</option>
+              {bookingProviders.map((bp) => (
+                <option key={bp.id} value={bp.id}>
+                  {bp.provider === "calcom" ? "Cal.com" : bp.provider === "gohighlevel" ? "GoHighLevel" : bp.provider}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+      )}
 
       {/* Contact */}
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">

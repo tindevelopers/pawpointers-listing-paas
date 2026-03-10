@@ -5,6 +5,8 @@ import { createClient } from "@/core/database/server";
 import { createAdminClient } from "@/core/database/admin-client";
 import { createBookingProvider } from "../../../../packages/@listing-platform/booking/src/providers/provider-factory";
 import { canManageBookingForListing } from "@/lib/listing-access";
+import { sendEmail } from "@tinadmin/core/email";
+import { bookingConfirmationEmailParams } from "@listing-platform/booking";
 
 type ProviderType = "builtin" | "gohighlevel" | "calcom";
 
@@ -90,6 +92,41 @@ export async function confirmBookingAction(formData: FormData) {
   }
 
   await provider.updateBooking(context as any, bookingId, { status: "confirmed" } as any);
+
+  // Send confirmation email to customer
+  const adminClient = createAdminClient();
+  const { data: fullBooking } = await adminClient
+    .from("bookings")
+    .select("user_id, start_date, start_time, confirmation_code, guest_details, listing_id")
+    .eq("id", bookingId)
+    .single();
+  if (fullBooking) {
+    const userId = (fullBooking as { user_id?: string }).user_id;
+    let customerEmail: string | undefined;
+    if (userId) {
+      const { data: userRow } = await adminClient.from("users").select("email").eq("id", userId).single();
+      customerEmail = (userRow as { email?: string })?.email;
+    }
+    const gd = (fullBooking as { guest_details?: { primaryContact?: { email?: string; name?: string } } }).guest_details;
+    customerEmail = customerEmail || gd?.primaryContact?.email;
+    if (customerEmail) {
+      const { data: listingRow } = await adminClient
+        .from("listings")
+        .select("title")
+        .eq("id", (fullBooking as { listing_id?: string }).listing_id)
+        .single();
+      sendEmail(
+        bookingConfirmationEmailParams({
+          customerEmail,
+          customerName: gd?.primaryContact?.name,
+          listingTitle: (listingRow as { title?: string })?.title || "Your appointment",
+          startDate: (fullBooking as { start_date: string }).start_date,
+          startTime: (fullBooking as { start_time?: string }).start_time,
+          confirmationCode: (fullBooking as { confirmation_code?: string }).confirmation_code,
+        })
+      ).catch((err) => console.error("[confirmBooking] Email error:", err));
+    }
+  }
   revalidatePath("/bookings");
 }
 

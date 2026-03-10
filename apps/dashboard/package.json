@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@listing-platform/booking": "workspace:*",
     "@listing-platform/maps": "workspace:*",
     "@listing-platform/media": "workspace:^",
     "@supabase/ssr": "^0.8.0",
