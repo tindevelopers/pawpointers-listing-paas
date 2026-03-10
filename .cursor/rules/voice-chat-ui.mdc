@@ -1,0 +1,20 @@
+---
+description: Voice chat UI conventions for portal chat
+globs: apps/portal/components/chat/**/*.tsx
+alwaysApply: false
+---
+
+# Voice Chat UI
+
+- Keep voice input client-side with the Web Speech API unless a server route is introduced.
+- Route all chat text through `POST /api/chat`; do not call providers directly from the client.
+- Track `isListening`/`isSpeaking` to prevent overlapping audio and UI actions.
+- Provide graceful fallback when SpeechRecognition isn't supported.
+
+**TTS (spoken responses):** Implemented in `AIChat.tsx` and `ChatWidget.tsx` using the **browser Web Speech API** (`window.speechSynthesis` + `SpeechSynthesisUtterance`). No `utterance.voice`, `utterance.lang`, `utterance.rate`, or `utterance.pitch` are set — the **browser/OS default voice** is used. No third-party TTS or custom AI voice is used. See `docs/VOICE_TTS_CONFIGURATION.md` for full trace.
+
+```tsx
+const SpeechRecognition =
+  (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+if (!SpeechRecognition) return;
+```

@@ -44,28 +44,35 @@ export function BookingModal({ isOpen, onClose, listingId, listingTitle, isLogge
   const [error, setError] = useState<string | null>(null);
   const [timeSlots, setTimeSlots] = useState<string[]>(DEFAULT_TIME_SLOTS);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const userTimezone = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC";
+
   const fetchAvailability = useCallback(async (date: string) => {
     setIsLoadingSlots(true);
     setSelectedTime("");
     try {
-      const res = await fetch(
-        `/api/booking/availability?listingId=${encodeURIComponent(listingId)}&dateFrom=${date}&dateTo=${date}`
-      );
+      const params = new URLSearchParams({
+        listingId,
+        dateFrom: date,
+        dateTo: date,
+        timezone: userTimezone,
+      });
+      const res = await fetch(`/api/booking/availability?${params.toString()}`);
       const json = await res.json();
       if (res.ok && json.success && json.data?.slots?.length > 0) {
         const available = (json.data.slots as AvailabilitySlot[])
           .filter((s) => s.available && s.startTime)
           .map((s) => to12Hour(s.startTime!));
-        setTimeSlots(available.length > 0 ? available : DEFAULT_TIME_SLOTS);
+        setTimeSlots(available.length > 0 ? available : []);
       } else {
-        setTimeSlots(DEFAULT_TIME_SLOTS);
+        // When Cal.com or provider returns no slots, show empty (no availability) instead of default slots
+        setTimeSlots([]);
       }
     } catch {
       setTimeSlots(DEFAULT_TIME_SLOTS);
     } finally {
       setIsLoadingSlots(false);
     }
-  }, [listingId]);
+  }, [listingId, userTimezone]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -105,6 +112,7 @@ export function BookingModal({ isOpen, onClose, listingId, listingTitle, isLogge
           guestCount: 1,
           guestDetails: petName ? { primaryContact: { name: petName } } : undefined,
           specialRequests: specialRequests || undefined,
+          timezone: userTimezone,
         }),
       });
       const data = await res.json();
@@ -206,6 +214,10 @@ export function BookingModal({ isOpen, onClose, listingId, listingTitle, isLogge
                         <div className="flex items-center justify-center py-8">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500" />
                           <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading available times...</span>
+                        </div>
+                      ) : timeSlots.length === 0 ? (
+                        <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                          No availability for this date.
                         </div>
                       ) : (
                       <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">

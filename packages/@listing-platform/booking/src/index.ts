@@ -24,5 +24,13 @@ export * from './headless';
 // Export utilities
 export { cn } from './utils/cn';
 
+// Booking email helpers (server-side; caller uses sendEmail from @tinadmin/core)
+export {
+  bookingConfirmationEmailParams,
+  bookingCancellationEmailParams,
+  newBookingAlertEmailParams,
+  type BookingEmailContext,
+} from './send-booking-emails';
+
 // DO NOT export services here - they contain 'server-only' and will break client components
 // Services should be imported directly from './services' in server components only

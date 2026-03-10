@@ -67,3 +67,15 @@ Provider API keys (OpenAI, Twilio, SendGrid, etc.) should live in **Vercel env o
 - Keep tenant isolation via Customer Supabase RLS.
 - Never expose service-role keys or provider secrets to the browser.
 
+## Cal.com webhook (admin domain)
+
+When using Cal.com as a booking provider, configure Cal.com webhooks to point at the **admin app**:
+
+```
+https://{admin-domain}/api/webhooks/calcom
+```
+
+Example: `https://admin.yourcompany.com/api/webhooks/calcom`
+
+Set `CALCOM_WEBHOOK_SECRET` in the admin app's environment variables.
+

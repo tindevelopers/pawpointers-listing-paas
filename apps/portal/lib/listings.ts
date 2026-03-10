@@ -16,9 +16,16 @@ export interface Listing {
   slug: string;
   title: string;
   description: string;
+  excerpt?: string;
+  tagline?: string;
   price?: number;
+  currency?: string;
+  priceType?: string;
   images: string[];
+  featuredImage?: string;
+  videoUrl?: string;
   category?: string;
+  tags?: string[];
   location?: {
     address?: string;
     city?: string;
@@ -30,7 +37,17 @@ export interface Listing {
   phone?: string;
   email?: string;
   website?: string;
+  contact?: ListingContact;
+  providerProfile?: ListingProviderProfile;
   services?: string[];
+  serviceItems?: ListingService[];
+  packages?: ListingPackage[];
+  hours?: ListingHours;
+  features?: ListingFeatures;
+  social?: ListingSocial;
+  serviceArea?: ListingServiceArea;
+  ratingAverage?: number;
+  ratingCount?: number;
   status: 'active' | 'pending' | 'sold' | 'archived';
   isUnclaimed?: boolean;
   effectiveTier?: import("@listing-platform/config").ListingTier;
@@ -47,6 +64,100 @@ export interface Listing {
   // For directory: businessHours, phone, website
   customFields?: Record<string, unknown>;
 }
+
+export type ListingContact = {
+  phone?: string;
+  email?: string;
+  website?: string;
+  bookingUrl?: string;
+  whatsappUrl?: string;
+};
+
+export type ListingProviderProfile = {
+  businessName?: string;
+  ownerName?: string;
+  yearsExperience?: number;
+  certifications?: string[];
+  insured?: boolean;
+  licenseNumber?: string;
+  logoUrl?: string;
+};
+
+export type ListingService = {
+  name: string;
+  price?: number;
+  currency?: string;
+  priceType?: string;
+  durationMinutes?: number;
+  description?: string;
+  featured?: boolean;
+};
+
+export type ListingPackage = {
+  name: string;
+  price?: number;
+  currency?: string;
+  description?: string;
+  includedServiceNames?: string[];
+};
+
+export type ListingHoursDay = {
+  open: boolean;
+  openTime?: string;
+  closeTime?: string;
+};
+
+export type ListingHours = {
+  mon?: ListingHoursDay;
+  tue?: ListingHoursDay;
+  wed?: ListingHoursDay;
+  thu?: ListingHoursDay;
+  fri?: ListingHoursDay;
+  sat?: ListingHoursDay;
+  sun?: ListingHoursDay;
+};
+
+export type ListingFeatures = {
+  parking?: boolean;
+  petFriendly?: boolean;
+  mobileService?: boolean;
+  organicProducts?: boolean;
+  certifiedGroomers?: boolean;
+  pickupDropoff?: boolean;
+  spaServices?: boolean;
+  ecoFriendly?: boolean;
+  custom?: string[];
+};
+
+export type ListingSocial = {
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  linkedin?: string;
+  youtube?: string;
+  x?: string;
+};
+
+export type ListingServiceArea = {
+  serviceMode?: "mobile" | "in_store" | "both";
+  radius?: number;
+  radiusUnit?: "mi" | "km";
+};
+
+export type ListingCustomFields = {
+  schemaVersion?: number;
+  category?: string;
+  tags?: string[];
+  tagline?: string;
+  contact?: ListingContact;
+  providerProfile?: ListingProviderProfile;
+  serviceArea?: ListingServiceArea;
+  services?: ListingService[];
+  packages?: ListingPackage[];
+  hours?: ListingHours;
+  social?: ListingSocial;
+  features?: ListingFeatures;
+};
 
 export interface ListingSearchParams {
   query?: string;
@@ -130,12 +241,171 @@ function normalizeImageUrls(images: string[] | null | undefined): string[] {
     .filter((u): u is string => !!u && /^https?:\/\//.test(u));
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function asString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value !== "number" || Number.isNaN(value)) return undefined;
+  return value;
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  if (typeof value !== "boolean") return undefined;
+  return value;
+}
+
+function asStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
+  return items.length > 0 ? items : undefined;
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => isRecord(item)) as Record<string, unknown>[];
+}
+
+function parseListingCustomFields(value: unknown): ListingCustomFields | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const contactRaw = isRecord(value.contact) ? value.contact : undefined;
+  const providerRaw = isRecord(value.providerProfile) ? value.providerProfile : undefined;
+  const serviceAreaRaw = isRecord(value.serviceArea) ? value.serviceArea : undefined;
+  const socialRaw = isRecord(value.social) ? value.social : undefined;
+  const featuresRaw = isRecord(value.features) ? value.features : undefined;
+  const hoursRaw = isRecord(value.hours) ? value.hours : undefined;
+
+  const parseHoursDay = (day: unknown): ListingHoursDay | undefined => {
+    if (!isRecord(day)) return undefined;
+    const open = asBoolean(day.open);
+    if (open === undefined) return undefined;
+    const openTime = asString(day.openTime);
+    const closeTime = asString(day.closeTime);
+    return { open, openTime, closeTime };
+  };
+
+  const services = asRecordArray(value.services).map((service) => {
+    const name = asString(service.name);
+    if (!name) return null;
+    return {
+      name,
+      price: asNumber(service.price),
+      currency: asString(service.currency),
+      priceType: asString(service.priceType),
+      durationMinutes: asNumber(service.durationMinutes),
+      description: asString(service.description),
+      featured: asBoolean(service.featured),
+    } as ListingService;
+  }).filter((item): item is ListingService => !!item);
+
+  const packages = asRecordArray(value.packages).map((pkg) => {
+    const name = asString(pkg.name);
+    if (!name) return null;
+    return {
+      name,
+      price: asNumber(pkg.price),
+      currency: asString(pkg.currency),
+      description: asString(pkg.description),
+      includedServiceNames: asStringArray(pkg.includedServiceNames),
+    } as ListingPackage;
+  }).filter((item): item is ListingPackage => !!item);
+
+  const hours: ListingHours | undefined = hoursRaw
+    ? {
+        mon: parseHoursDay(hoursRaw.mon),
+        tue: parseHoursDay(hoursRaw.tue),
+        wed: parseHoursDay(hoursRaw.wed),
+        thu: parseHoursDay(hoursRaw.thu),
+        fri: parseHoursDay(hoursRaw.fri),
+        sat: parseHoursDay(hoursRaw.sat),
+        sun: parseHoursDay(hoursRaw.sun),
+      }
+    : undefined;
+
+  return {
+    schemaVersion: asNumber(value.schemaVersion),
+    category: asString(value.category),
+    tags: asStringArray(value.tags),
+    tagline: asString(value.tagline),
+    contact: contactRaw
+      ? {
+          phone: asString(contactRaw.phone),
+          email: asString(contactRaw.email),
+          website: asString(contactRaw.website),
+          bookingUrl: asString(contactRaw.bookingUrl),
+          whatsappUrl: asString(contactRaw.whatsappUrl),
+        }
+      : undefined,
+    providerProfile: providerRaw
+      ? {
+          businessName: asString(providerRaw.businessName),
+          ownerName: asString(providerRaw.ownerName),
+          yearsExperience: asNumber(providerRaw.yearsExperience),
+          certifications: asStringArray(providerRaw.certifications),
+          insured: asBoolean(providerRaw.insured),
+          licenseNumber: asString(providerRaw.licenseNumber),
+          logoUrl: asString(providerRaw.logoUrl),
+        }
+      : undefined,
+    serviceArea: serviceAreaRaw
+      ? {
+          serviceMode: asString(serviceAreaRaw.serviceMode) as ListingServiceArea["serviceMode"],
+          radius: asNumber(serviceAreaRaw.radius),
+          radiusUnit: asString(serviceAreaRaw.radiusUnit) as ListingServiceArea["radiusUnit"],
+        }
+      : undefined,
+    services: services.length > 0 ? services : undefined,
+    packages: packages.length > 0 ? packages : undefined,
+    hours,
+    social: socialRaw
+      ? {
+          instagram: asString(socialRaw.instagram),
+          facebook: asString(socialRaw.facebook),
+          tiktok: asString(socialRaw.tiktok),
+          linkedin: asString(socialRaw.linkedin),
+          youtube: asString(socialRaw.youtube),
+          x: asString(socialRaw.x),
+        }
+      : undefined,
+    features: featuresRaw
+      ? {
+          parking: asBoolean(featuresRaw.parking),
+          petFriendly: asBoolean(featuresRaw.petFriendly),
+          mobileService: asBoolean(featuresRaw.mobileService),
+          organicProducts: asBoolean(featuresRaw.organicProducts),
+          certifiedGroomers: asBoolean(featuresRaw.certifiedGroomers),
+          pickupDropoff: asBoolean(featuresRaw.pickupDropoff),
+          spaServices: asBoolean(featuresRaw.spaServices),
+          ecoFriendly: asBoolean(featuresRaw.ecoFriendly),
+          custom: asStringArray(featuresRaw.custom),
+        }
+      : undefined,
+  };
+}
+
 type PublicListingRow = {
   id: string;
   slug: string;
   title: string;
   description: string;
+  excerpt: string | null;
   price: number | null;
+  currency: string | null;
+  price_type: string | null;
+  featured_image: string | null;
+  video_url: string | null;
+  rating_average: number | null;
+  rating_count: number | null;
+  custom_fields: Record<string, unknown> | null;
   images: string[] | null;
   category: string | null;
   location: Record<string, unknown> | null;
@@ -157,6 +427,11 @@ function normalizeTier(value: string | null | undefined): ListingTier | undefine
 
 function mapPublicListingRow(row: PublicListingRow): Listing {
   const isUnclaimed = row.is_unclaimed ?? false;
+  const customFields = parseListingCustomFields(row.custom_fields);
+  const contact = customFields?.contact;
+  const providerProfile = customFields?.providerProfile;
+  const serviceItems = customFields?.services;
+  const services = serviceItems?.map((service) => service.name).filter(Boolean);
   const effectiveTier = resolveEffectiveTier({
     isUnclaimed,
     effectiveTier: normalizeTier(row.effective_subscription_tier),
@@ -194,10 +469,31 @@ function mapPublicListingRow(row: PublicListingRow): Listing {
     slug: row.slug,
     title: row.title,
     description: row.description,
+    excerpt: row.excerpt ?? undefined,
+    tagline: customFields?.tagline ?? row.excerpt ?? undefined,
     price: row.price ?? undefined,
+    currency: row.currency ?? undefined,
+    priceType: row.price_type ?? undefined,
     images: normalizeImageUrls(row.images),
+    featuredImage: row.featured_image ?? undefined,
+    videoUrl: row.video_url ?? undefined,
     category: row.category ?? undefined,
+    tags: customFields?.tags,
     location: row.location ?? undefined,
+    phone: contact?.phone,
+    email: contact?.email,
+    website: contact?.website,
+    contact,
+    providerProfile,
+    services,
+    serviceItems,
+    packages: customFields?.packages,
+    hours: customFields?.hours,
+    features: customFields?.features,
+    social: customFields?.social,
+    serviceArea: customFields?.serviceArea,
+    ratingAverage: row.rating_average ?? undefined,
+    ratingCount: row.rating_count ?? undefined,
     status: row.status as 'active' | 'pending' | 'sold' | 'archived',
     isUnclaimed,
     effectiveTier,
@@ -208,6 +504,7 @@ function mapPublicListingRow(row: PublicListingRow): Listing {
     featureAccess,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    customFields: row.custom_fields ?? undefined,
   };
 }
 
@@ -221,7 +518,7 @@ export async function getListingBySlug(slug: string): Promise<Listing | null> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, excerpt, price, currency, price_type, featured_image, video_url, rating_average, rating_count, custom_fields, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('slug', slug)
       .eq('status', 'active')
@@ -254,7 +551,7 @@ export async function getListingById(id: string): Promise<Listing | null> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, excerpt, price, currency, price_type, featured_image, video_url, rating_average, rating_count, custom_fields, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('id', id)
       .eq('status', 'active')
@@ -295,7 +592,7 @@ export async function searchListings(
     const query = getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at",
+        "id, slug, title, description, excerpt, price, currency, price_type, featured_image, video_url, rating_average, rating_count, custom_fields, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at",
         { count: "exact" }
       )
       .eq('status', 'active')
@@ -358,7 +655,7 @@ export async function getFeaturedListings(limit = 6): Promise<Listing[]> {
     const { data, error } = await getSupabase()
       .from('public_listings_view')
       .select(
-        "id, slug, title, description, price, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
+        "id, slug, title, description, excerpt, price, currency, price_type, featured_image, video_url, rating_average, rating_count, custom_fields, images, category, location, status, is_unclaimed, effective_subscription_tier, card_size_variant, account_plan, subscription_tier_override, top_tier_features, created_at, updated_at"
       )
       .eq('status', 'active')
       .order('created_at', { ascending: false })

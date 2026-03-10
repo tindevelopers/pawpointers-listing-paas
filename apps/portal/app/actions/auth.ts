@@ -148,11 +148,31 @@ async function getPlatformTenantOrThrow(): Promise<string> {
   return tenantId;
 }
 
+/** Result from signup actions; never throw user-facing errors so production doesn't show digest. */
+export type SignUpResult = { success: true } | { success: false; error: string };
+
+const EMAIL_ALREADY_REGISTERED =
+  "This email is already registered. Please sign in or use a different email address.";
+const REGISTRATION_FAILED_TRY_AGAIN =
+  "We couldn't complete your registration. Please try again or contact support.";
+
 export interface SignUpUserData {
   email: string;
   password: string;
   fullName: string;
   phoneNumber?: string;
+}
+
+/** Valid user plan values (must match DB check_user_plan constraint) */
+const VALID_USER_PLANS = ["starter", "professional", "enterprise", "custom"] as const;
+
+function normalizePlan(plan: string | undefined): (typeof VALID_USER_PLANS)[number] {
+  if (!plan) return "starter";
+  const lower = plan.toLowerCase();
+  if (lower === "pro") return "professional";
+  if (lower === "premium") return "enterprise";
+  if (VALID_USER_PLANS.includes(lower as any)) return lower as (typeof VALID_USER_PLANS)[number];
+  return "starter";
 }
 
 export interface SignUpMemberData {
@@ -162,124 +182,138 @@ export interface SignUpMemberData {
   profession: string;
   businessName?: string;
   phoneNumber?: string;
+  /** Plan from pricing selection (e.g. starter, pro, premium); normalized before DB write */
+  plan?: string;
 }
 
 /**
  * Sign up a consumer user (portal customer) into the platform tenant.
+ * Returns a result object so we never throw and expose framework/server errors in production.
  */
-export async function signUpUser(data: SignUpUserData) {
-  const adminClient = createAdminClient();
-  const tenantId = await getPlatformTenantOrThrow();
+export async function signUpUser(data: SignUpUserData): Promise<SignUpResult> {
+  try {
+    const adminClient = createAdminClient();
+    const tenantId = await getPlatformTenantOrThrow();
 
-  const { data: authData, error: authError } = await adminClient.auth.signUp({
-    email: data.email,
-    password: data.password,
-    options: {
-      data: {
-        full_name: data.fullName,
-        tenant_id: tenantId,
-        phone_number: data.phoneNumber,
-        user_type: "consumer",
+    const { data: authData, error: authError } = await adminClient.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.fullName,
+          tenant_id: tenantId,
+          phone_number: data.phoneNumber,
+          user_type: "consumer",
+        },
       },
-    },
-  });
+    });
 
-  if (authError || !authData.user) {
-    if (
-      authError?.message?.includes("already registered") ||
-      authError?.message?.includes("already exists") ||
-      authError?.status === 422
-    ) {
-      throw new Error(`An account with email "${data.email}" already exists. Please sign in instead.`);
+    if (authError || !authData.user) {
+      if (
+        authError?.message?.includes("already registered") ||
+        authError?.message?.includes("already exists") ||
+        authError?.status === 422
+      ) {
+        return { success: false, error: EMAIL_ALREADY_REGISTERED };
+      }
+      return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
     }
-    throw authError || new Error("Failed to create user");
+
+    const roleId =
+      (await getRoleIdByName("Viewer", adminClient)) ??
+      (await getRoleIdByName("Consumer", adminClient)) ??
+      null;
+
+    const userData: UserInsert = {
+      id: authData.user.id,
+      email: data.email,
+      full_name: data.fullName,
+      tenant_id: tenantId,
+      role_id: roleId,
+      plan: "starter",
+      status: "active",
+    };
+
+    const { error: userError } = await (adminClient.from("users") as any)
+      .upsert(userData as any, { onConflict: "id" })
+      .select()
+      .single();
+
+    if (userError) {
+      return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
   }
-
-  const roleId =
-    (await getRoleIdByName("Viewer", adminClient)) ??
-    (await getRoleIdByName("Consumer", adminClient)) ??
-    null;
-
-  const userData: UserInsert = {
-    id: authData.user.id,
-    email: data.email,
-    full_name: data.fullName,
-    tenant_id: tenantId,
-    role_id: roleId,
-    plan: "starter",
-    status: "active",
-  };
-
-  const { error: userError } = await (adminClient.from("users") as any)
-    .insert(userData as any)
-    .select()
-    .single();
-
-  if (userError) {
-    throw new Error(userError.message || "Failed to save user record");
-  }
-
-  return { success: true, userId: authData.user.id, tenantId };
 }
 
 /**
  * Sign up a service provider (member) into the platform tenant.
+ * Returns a result object so we never throw and expose framework/server errors in production.
  */
-export async function signUpMember(data: SignUpMemberData) {
-  const adminClient = createAdminClient();
-  const tenantId = await getPlatformTenantOrThrow();
+export async function signUpMember(data: SignUpMemberData): Promise<SignUpResult> {
+  try {
+    const adminClient = createAdminClient();
+    const tenantId = await getPlatformTenantOrThrow();
 
-  const { data: authData, error: authError } = await adminClient.auth.signUp({
-    email: data.email,
-    password: data.password,
-    options: {
-      data: {
-        full_name: data.fullName,
-        tenant_id: tenantId,
-        phone_number: data.phoneNumber,
-        profession: data.profession,
-        business_name: data.businessName,
-        user_type: "service_provider",
+    const { data: authData, error: authError } = await adminClient.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          full_name: data.fullName,
+          tenant_id: tenantId,
+          phone_number: data.phoneNumber,
+          profession: data.profession,
+          business_name: data.businessName,
+          user_type: "service_provider",
+        },
       },
-    },
-  });
+    });
 
-  if (authError || !authData.user) {
-    if (
-      authError?.message?.includes("already registered") ||
-      authError?.message?.includes("already exists") ||
-      authError?.status === 422
-    ) {
-      throw new Error(`An account with email "${data.email}" already exists. Please sign in instead.`);
+    if (authError || !authData.user) {
+      if (
+        authError?.message?.includes("already registered") ||
+        authError?.message?.includes("already exists") ||
+        authError?.status === 422
+      ) {
+        return { success: false, error: EMAIL_ALREADY_REGISTERED };
+      }
+      return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
     }
-    throw authError || new Error("Failed to create member");
+
+    const roleId =
+      (await getRoleIdByName("Developer", adminClient)) ??
+      (await getRoleIdByName("Service Provider", adminClient)) ??
+      null;
+
+    const plan = normalizePlan(data.plan);
+
+    const userData: UserInsert = {
+      id: authData.user.id,
+      email: data.email,
+      full_name: data.fullName,
+      tenant_id: tenantId,
+      role_id: roleId,
+      plan,
+      status: "active",
+    };
+
+    const { error: userError } = await (adminClient.from("users") as any)
+      .upsert(userData as any, { onConflict: "id" })
+      .select()
+      .single();
+
+    if (userError) {
+      return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: REGISTRATION_FAILED_TRY_AGAIN };
   }
-
-  const roleId =
-    (await getRoleIdByName("Developer", adminClient)) ??
-    (await getRoleIdByName("Service Provider", adminClient)) ??
-    null;
-
-  const userData: UserInsert = {
-    id: authData.user.id,
-    email: data.email,
-    full_name: data.fullName,
-    tenant_id: tenantId,
-    role_id: roleId,
-    plan: "starter",
-    status: "active",
-  };
-
-  const { error: userError } = await (adminClient.from("users") as any)
-    .insert(userData as any)
-    .select()
-    .single();
-
-  if (userError) {
-    throw new Error(userError.message || "Failed to save member record");
-  }
-
-  return { success: true, userId: authData.user.id, tenantId };
 }
 
 /**

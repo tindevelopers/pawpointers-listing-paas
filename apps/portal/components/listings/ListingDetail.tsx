@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { type Listing, formatPrice } from "@/lib/listings";
 import { ListingGallery } from "./ListingGallery";
 import { LocationTabContent } from "./LocationTabContent";
@@ -16,7 +15,7 @@ interface ListingDetailProps {
   listing: Listing;
 }
 
-type TabType = "overview" | "reviews" | "location" | "pricing" | "news";
+type TabType = "overview" | "reviews" | "location" | "pricing";
 type ReviewsViewTab = "aggregated" | "verified" | "google" | "yelp";
 
 type ClaimStatus = {
@@ -113,52 +112,117 @@ export function ListingDetail({ listing }: ListingDetailProps) {
   // Review stats (first-party + external + weighted headline)
   const { stats: reviewStats } = useReviewStats(listing.id);
 
-  // Generate stable fallback mock data based on listing ID (used only while stats load)
-  const idHash =
-    listing.id.charCodeAt(0) + listing.id.charCodeAt(listing.id.length - 1);
-  const fallbackRating = 3.5 + ((idHash % 20) / 10);
-  const fallbackReviewCount = 10 + ((idHash * 7) % 150);
-
   const rating =
-    reviewStats?.headline?.score ??
-    reviewStats?.averageRating ??
-    fallbackRating;
+    reviewStats?.headline?.score ?? reviewStats?.averageRating ?? listing.ratingAverage;
   const reviewCount =
-    reviewStats?.total ??
-    fallbackReviewCount;
+    reviewStats?.total ?? listing.ratingCount;
+  const safeReviewCount = typeof reviewCount === "number" ? reviewCount : 0;
+  const safeRating = typeof rating === "number" ? rating : 0;
 
-  // Fallback mock data for contact info and services if not provided
-  const mockPhoneNumbers = ["(555) 123-4567", "(555) 234-5678", "(555) 345-6789", "(555) 456-7890", "(555) 567-8901"];
-  const mockEmails = ["contact@pawpointers.local", "info@pawpointers.local", "hello@pawpointers.local", "support@pawpointers.local"];
-  const mockWebsites = ["pawpointers.local", "services.pawpointers.local", "bookings.pawpointers.local"];
+  const shouldShowRating =
+    canShowReviews &&
+    typeof rating === "number" &&
+    typeof reviewCount === "number" &&
+    reviewCount > 0;
 
-  const mockServicesByCategory: Record<string, string[]> = {
-    "pet-care-services": ["Dog Walking", "Pet Sitting", "Daycare"],
-    "health-wellness": ["Veterinary Care", "Vaccinations", "Wellness Exams"],
-    "training-behavior": ["Dog Training", "Behavior Consulting", "Obedience Classes"],
-    "pet-grooming": ["Full Grooming", "Bath & Wash", "Nail Trimming"],
-    "pet-retail": ["Pet Supplies", "Toys & Accessories", "Pet Food"],
-    "specialist-services": ["Pet Photography", "Pet Transportation", "Training Facility"],
-    "rescue-community": ["Rescue Services", "Adoption Services", "Foster Network"],
-    "events-experiences": ["Pet Classes", "Workshops", "Social Events"],
-  };
-
+  const contact = listing.contact || {};
   const phone =
-    canShowPhone && !isUnclaimed
-      ? listing.phone || mockPhoneNumbers[idHash % mockPhoneNumbers.length]
-      : undefined;
+    canShowPhone && !isUnclaimed ? contact.phone || listing.phone : undefined;
   const email =
-    canShowEmail && !isUnclaimed
-      ? listing.email || mockEmails[idHash % mockEmails.length]
-      : undefined;
+    canShowEmail && !isUnclaimed ? contact.email || listing.email : undefined;
   const website =
-    canShowWebsite && !isUnclaimed
-      ? listing.website || mockWebsites[idHash % mockWebsites.length]
-      : undefined;
+    canShowWebsite && !isUnclaimed ? contact.website || listing.website : undefined;
+  const bookingUrl = !isUnclaimed ? contact.bookingUrl : undefined;
+  const whatsappUrl = !isUnclaimed ? contact.whatsappUrl : undefined;
+  const websiteHref =
+    website && (website.startsWith("http://") || website.startsWith("https://"))
+      ? website
+      : website
+        ? `https://${website}`
+        : undefined;
+
+  const serviceItems = !isUnclaimed ? listing.serviceItems ?? [] : [];
   const services =
     !isUnclaimed && featureAccess?.canShowFullDescription !== false
-      ? listing.services || mockServicesByCategory[listing.category || ""] || ["Pet Services", "Professional Care"]
+      ? (listing.services?.length ? listing.services : serviceItems.map((service) => service.name))
+          .filter(Boolean)
       : [];
+  const packages = !isUnclaimed ? listing.packages ?? [] : [];
+  const providerProfile = !isUnclaimed ? listing.providerProfile : undefined;
+  const hasProviderProfile =
+    !!providerProfile &&
+    !!(
+      providerProfile.businessName ||
+      providerProfile.ownerName ||
+      providerProfile.yearsExperience ||
+      providerProfile.licenseNumber ||
+      providerProfile.insured ||
+      (providerProfile.certifications && providerProfile.certifications.length > 0)
+    );
+  const providerCertifications = providerProfile?.certifications ?? [];
+  const features = !isUnclaimed ? listing.features : undefined;
+  const social = !isUnclaimed ? listing.social : undefined;
+  const hours = !isUnclaimed ? listing.hours : undefined;
+
+  const dayLabels = [
+    { key: "mon", label: "Monday" },
+    { key: "tue", label: "Tuesday" },
+    { key: "wed", label: "Wednesday" },
+    { key: "thu", label: "Thursday" },
+    { key: "fri", label: "Friday" },
+    { key: "sat", label: "Saturday" },
+    { key: "sun", label: "Sunday" },
+  ] as const;
+
+  type HoursEntry = { day: string; open: boolean; hours: string };
+  const hoursEntries: HoursEntry[] = hours
+    ? dayLabels
+        .map((day): HoursEntry | null => {
+          const dayHours = (hours as any)?.[day.key];
+          if (!dayHours || typeof dayHours.open !== "boolean") return null;
+          const openTime = dayHours.openTime || "";
+          const closeTime = dayHours.closeTime || "";
+          return {
+            day: day.label,
+            open: dayHours.open,
+            hours: dayHours.open ? [openTime, closeTime].filter(Boolean).join(" - ") : "Closed",
+          };
+        })
+        .filter((s): s is HoursEntry => s != null)
+    : [];
+
+  const hasHours = hoursEntries.length > 0;
+
+  const featureLabels = [
+    { key: "parking", label: "Parking available" },
+    { key: "petFriendly", label: "Pet-friendly" },
+    { key: "mobileService", label: "Mobile service" },
+    { key: "organicProducts", label: "Organic products" },
+    { key: "certifiedGroomers", label: "Certified groomers" },
+    { key: "pickupDropoff", label: "Pickup/dropoff" },
+    { key: "spaServices", label: "Spa services" },
+    { key: "ecoFriendly", label: "Eco-friendly" },
+  ];
+  const featureList = [
+    ...featureLabels
+      .filter((item) => (features as any)?.[item.key])
+      .map((item) => item.label),
+    ...(((features as any)?.custom as string[]) || []),
+  ].filter(Boolean);
+  const hasFeatures = featureList.length > 0;
+
+  const socialLinks = [
+    { label: "Instagram", url: social?.instagram },
+    { label: "Facebook", url: social?.facebook },
+    { label: "TikTok", url: social?.tiktok },
+    { label: "LinkedIn", url: social?.linkedin },
+    { label: "YouTube", url: social?.youtube },
+    { label: "X", url: social?.x },
+  ].filter((link) => !!link.url);
+
+  const hasSocialLinks = socialLinks.length > 0;
+  const hasPricingData =
+    !!listing.price || serviceItems.length > 0 || packages.length > 0;
 
   const hasGoogle = (reviewStats?.bySourceType?.google_maps?.total || 0) > 0;
   const hasYelp = (reviewStats?.bySourceType?.yelp?.total || 0) > 0;
@@ -209,10 +273,9 @@ export function ListingDetail({ listing }: ListingDetailProps) {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "reviews" as TabType, label: "Reviews" },
+    ...(canShowReviews ? [{ id: "reviews" as TabType, label: "Reviews" }] : []),
     { id: "location", label: "Location" },
-    ...(canShowPricing ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
-    ...(!isUnclaimed ? [{ id: "news" as TabType, label: "News" }] : []),
+    ...(canShowPricing && hasPricingData ? [{ id: "pricing" as TabType, label: "Pricing" }] : []),
   ];
 
   return (
@@ -221,29 +284,41 @@ export function ListingDetail({ listing }: ListingDetailProps) {
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
           <div className="flex items-start gap-4">
-            {/* Logo Placeholder - For Claimed Listings Only */}
-            {!isUnclaimed && (
+            {!isUnclaimed ? (
               <div className="flex-shrink-0">
-                <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
+                {providerProfile?.logoUrl ? (
+                  <img
+                    src={providerProfile.logoUrl}
+                    alt={`${listing.title} logo`}
+                    className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
               </div>
-            )}
+            ) : null}
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
                 {listing.title}
               </h1>
+              {listing.tagline && (
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                  {listing.tagline}
+                </p>
+              )}
 
             <div className="flex items-center gap-4">
-              {canShowReviews ? (
+              {shouldShowRating ? (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
-                    {renderStars(rating)}
+                    {renderStars(rating as number)}
                   </div>
                   <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {rating.toFixed(1)}
+                    {(rating as number).toFixed(1)}
                   </span>
                   <span className="text-gray-500 dark:text-gray-400">
                     ({reviewCount} reviews)
@@ -359,13 +434,33 @@ export function ListingDetail({ listing }: ListingDetailProps) {
               </a>
             </div>
           )}
-          {website && (
+          {website && websiteHref && (
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
-              <a href={`https://${website}`} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">
+              <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">
                 {website}
+              </a>
+            </div>
+          )}
+          {!isUnclaimed && bookingUrl && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-13 9h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <a href={bookingUrl} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">
+                Booking
+              </a>
+            </div>
+          )}
+          {!isUnclaimed && whatsappUrl && (
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">
+                WhatsApp
               </a>
             </div>
           )}
@@ -428,37 +523,70 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   </div>
                 ) : null}
 
-                {!isUnclaimed ? (
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center justify-center w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg mx-auto mb-2">
-                        <svg className="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                {hasProviderProfile ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {providerProfile?.businessName && (
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <p className="text-xs text-gray-500">Business Name</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {providerProfile.businessName}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Response Time</p>
-                      <p className="font-bold text-gray-900 dark:text-white">Usually 1h</p>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center justify-center w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg mx-auto mb-2">
-                        <svg className="w-5 h-5 text-cyan-600 dark:text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                    )}
+                    {providerProfile?.ownerName && (
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <p className="text-xs text-gray-500">Owner / Provider</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {providerProfile.ownerName}
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Services</p>
-                      <p className="font-bold text-gray-900 dark:text-white">{services.length} types</p>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg mx-auto mb-2">
-                        <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                    )}
+                    {typeof providerProfile?.yearsExperience === "number" && (
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <p className="text-xs text-gray-500">Experience</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {providerProfile.yearsExperience} years
+                        </p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Since</p>
-                      <p className="font-bold text-gray-900 dark:text-white">Jan 2023</p>
+                    )}
+                    {providerProfile?.licenseNumber && (
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <p className="text-xs text-gray-500">License</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {providerProfile.licenseNumber}
+                        </p>
+                      </div>
+                    )}
+                    {providerProfile?.insured !== undefined && (
+                      <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                        <p className="text-xs text-gray-500">Insurance</p>
+                        <p className="font-semibold text-gray-900 dark:text-white">
+                          {providerProfile.insured ? "Insured" : "Not insured"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {providerCertifications.length > 0 ? (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                      Certifications
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {providerCertifications.map((cert) => (
+                        <span
+                          key={cert}
+                          className="inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-medium px-3 py-1.5 rounded-full"
+                        >
+                          {cert}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                ) : (
+                ) : null}
+
+                {isUnclaimed ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -470,39 +598,31 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   >
                     Claim this business
                   </button>
-                )}
+                ) : null}
               </div>
 
-              {!isUnclaimed && canShowAvailability ? (
+              {!isUnclaimed && canShowAvailability && hasHours ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Hours of Operation</h2>
                   <div className="space-y-2">
-                    {[
-                      { day: "Monday", hours: "9:00 AM - 6:00 PM", isOpen: true },
-                      { day: "Tuesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
-                      { day: "Wednesday", hours: "9:00 AM - 6:00 PM", isOpen: true },
-                      { day: "Thursday", hours: "9:00 AM - 6:00 PM", isOpen: true },
-                      { day: "Friday", hours: "9:00 AM - 6:00 PM", isOpen: true },
-                      { day: "Saturday", hours: "10:00 AM - 4:00 PM", isOpen: true },
-                      { day: "Sunday", hours: "Closed", isOpen: false },
-                    ].map((schedule) => (
+                    {hoursEntries.map((schedule) => (
                       <div
                         key={schedule.day}
                         className={`flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
-                          schedule.isOpen
+                          schedule.open
                             ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                             : "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                         }`}
                       >
                         <span className={`font-semibold ${
-                          schedule.isOpen
+                          schedule.open
                             ? "text-green-700 dark:text-green-400"
                             : "text-gray-600 dark:text-gray-400"
                         }`}>
                           {schedule.day}
                         </span>
                         <span className={`text-sm font-medium ${
-                          schedule.isOpen
+                          schedule.open
                             ? "text-green-700 dark:text-green-400"
                             : "text-gray-600 dark:text-gray-400"
                         }`}>
@@ -513,11 +633,46 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                   </div>
                 </div>
               ) : null}
+
+              {!isUnclaimed && hasFeatures ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Features</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {featureList.map((feature) => (
+                      <span
+                        key={feature}
+                        className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium px-3 py-1.5 rounded-full"
+                      >
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {!isUnclaimed && hasSocialLinks ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Social Links</h2>
+                  <div className="flex flex-wrap gap-3">
+                    {socialLinks.map((link) => (
+                      <a
+                        key={link.label}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:border-orange-400 hover:text-orange-600"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
 
           {/* Reviews Tab */}
-          {activeTab === "reviews" && (
+          {activeTab === "reviews" && canShowReviews && (
             <div className="space-y-6">
               {/* Reviews Summary */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
@@ -526,20 +681,28 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                 {/* Rating Summary (trust-weighted headline) */}
                 <div className="flex flex-col md:flex-row gap-8 pb-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col items-center justify-center">
-                    <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
-                      {rating.toFixed(1)}
-                    </div>
-                    <div className="flex items-center gap-1 mb-2">
-                      {renderStars(rating)}
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Based on {reviewCount} reviews
-                    </p>
-                    {reviewStats?.headline ? (
-                      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        PawPointers weight: {(reviewStats.headline.pawpointersWeight * 100).toFixed(0)}%
+                    {shouldShowRating ? (
+                      <>
+                        <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
+                          {safeRating.toFixed(1)}
+                        </div>
+                        <div className="flex items-center gap-1 mb-2">
+                          {renderStars(safeRating)}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Based on {safeReviewCount} reviews
+                        </p>
+                        {reviewStats?.headline ? (
+                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            PawPointers weight: {(reviewStats.headline.pawpointersWeight * 100).toFixed(0)}%
+                          </p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No reviews yet.
                       </p>
-                    ) : null}
+                    )}
                   </div>
 
                   {/* Rating Breakdown (simple; full distribution is available via /api/reviews/stats) */}
@@ -548,7 +711,7 @@ export function ListingDetail({ listing }: ListingDetailProps) {
                       const dist = reviewStats?.ratingDistribution as any;
                       const countForStars = dist?.[stars] || 0;
                       const percentage =
-                        reviewCount > 0 ? Math.round((countForStars / reviewCount) * 100) : 0;
+                        safeReviewCount > 0 ? Math.round((countForStars / safeReviewCount) * 100) : 0;
                       return (
                         <div key={stars} className="flex items-center gap-3 mb-3">
                           <div className="flex items-center gap-1 min-w-max">
@@ -641,124 +804,83 @@ export function ListingDetail({ listing }: ListingDetailProps) {
           {activeTab === "pricing" && canShowPricing && (
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Pricing</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Basic Tier */}
-                <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-orange-400 dark:hover:border-orange-600 transition-colors cursor-pointer">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Basic</h3>
-                  <div className="text-2xl font-bold text-orange-500 mb-4">
-                    {formatPrice(listing.price ?? 0)}
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      Standard service
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      30-minute session
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Professional Tier */}
-                <div className="border-2 border-orange-400 dark:border-orange-600 rounded-xl p-4 relative bg-gradient-to-br from-orange-50/50 to-transparent dark:from-orange-900/10 dark:to-transparent">
-                  <div className="absolute -top-3 left-4 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    POPULAR
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2 mt-2">Professional</h3>
-                  <div className="text-2xl font-bold text-orange-500 mb-4">
-                    {formatPrice(Math.round((listing.price ?? 0) * 1.5))}
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      Enhanced service
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      60-minute session
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      Priority support
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Premium Tier */}
-                <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-cyan-400 dark:hover:border-cyan-600 transition-colors cursor-pointer">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Premium</h3>
-                  <div className="text-2xl font-bold text-accent-secondary mb-4">
-                    {formatPrice(Math.round((listing.price ?? 0) * 2.5))}
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      Full service
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      120-minute session
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                      </svg>
-                      24/7 support
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* News Tab */}
-          {activeTab === "news" && !isUnclaimed && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Latest News</h2>
-                <div className="space-y-6">
-                  {mockNews.map((newsItem) => (
-                    <div
-                      key={newsItem.id}
-                      className="pb-6 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:pb-0"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="inline-block bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                              {newsItem.category}
-                            </span>
-                            <span className="text-sm text-gray-500 dark:text-gray-400">{newsItem.date}</span>
+              <div className="space-y-6">
+                {packages.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Packages</h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {packages.map((pkg) => (
+                        <div key={pkg.name} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">{pkg.name}</h4>
+                            {typeof pkg.price === "number" ? (
+                              <span className="text-sm font-semibold text-orange-500">
+                                {formatPrice(pkg.price)}
+                              </span>
+                            ) : null}
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            {newsItem.title}
-                          </h3>
+                          {pkg.description && (
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                              {pkg.description}
+                            </p>
+                          )}
+                          {pkg.includedServiceNames && pkg.includedServiceNames.length > 0 && (
+                            <ul className="text-xs text-gray-500 dark:text-gray-400 list-disc list-inside">
+                              {pkg.includedServiceNames.map((service) => (
+                                <li key={service}>{service}</li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
-                      </div>
-                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {newsItem.content}
-                      </p>
-                      <button className="mt-3 text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-semibold text-sm transition-colors">
-                        Read More →
-                      </button>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {serviceItems.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Service Pricing</h3>
+                    <div className="space-y-3">
+                      {serviceItems.map((service) => (
+                        <div key={service.name} className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-white">{service.name}</p>
+                              {service.description && (
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                            {typeof service.price === "number" ? (
+                              <span className="text-sm font-semibold text-orange-500">
+                                {formatPrice(service.price)}
+                              </span>
+                            ) : null}
+                          </div>
+                          {typeof service.durationMinutes === "number" && (
+                            <p className="mt-2 text-xs text-gray-500">
+                              Duration: {service.durationMinutes} minutes
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {!packages.length && !serviceItems.length && typeof listing.price === "number" && (
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <p className="text-sm text-gray-500">Starting price</p>
+                    <p className="text-2xl font-semibold text-orange-500">
+                      {formatPrice(listing.price)}
+                    </p>
+                  </div>
+                )}
+
+                {!packages.length && !serviceItems.length && typeof listing.price !== "number" && (
+                  <p className="text-sm text-gray-500">No pricing details available.</p>
+                )}
               </div>
             </div>
           )}

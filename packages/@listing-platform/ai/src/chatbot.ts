@@ -30,6 +30,8 @@ export interface ChatOptions {
   similarityThreshold?: number;
   /** Session ID for tracking */
   sessionId?: string;
+  /** Provider conversation ID for streaming continuity (e.g. Abacus) */
+  conversationId?: string;
 }
 
 export interface ChatResponse {
@@ -161,6 +163,8 @@ export async function* streamChat(
     systemPrompt = SYSTEM_PROMPT,
     maxContextDocs = 5,
     similarityThreshold = 0.75,
+    sessionId,
+    conversationId,
   } = options;
 
   const embeddingProvider = createOpenAIEmbeddingProvider();
@@ -203,7 +207,13 @@ export async function* streamChat(
     },
   ];
 
-  const { resolvedConfig } = getAIClient();
+  let resolvedConfig;
+  try {
+    const client = getAIClient();
+    resolvedConfig = client.resolvedConfig;
+  } catch {
+    resolvedConfig = { maxTokens: DEFAULT_OPENAI_CONFIG.maxTokens, temperature: DEFAULT_OPENAI_CONFIG.temperature };
+  }
   const chatProvider = getChatProvider();
 
   const request = {
@@ -211,6 +221,7 @@ export async function* streamChat(
     systemPrompt,
     maxTokens: resolvedConfig.maxTokens,
     temperature: resolvedConfig.temperature,
+    conversationId,
   };
 
   if (chatProvider.stream) {
@@ -219,12 +230,33 @@ export async function* streamChat(
       fullResponse += textPart;
       yield { type: 'token', data: textPart };
     }
-    yield { type: 'done', data: { message: fullResponse, contextDocuments } };
+    if (sessionId) {
+      try {
+        await supabase.from('chat_messages').insert([
+          { session_id: sessionId, role: 'user', content: userMessage, context_document_ids: contextDocuments.map((d) => d.id) },
+          { session_id: sessionId, role: 'assistant', content: fullResponse, context_document_ids: [] },
+        ]);
+        await supabase.from('chat_sessions').update({ last_message_at: new Date().toISOString() }).eq('id', sessionId);
+      } catch (err) {
+        console.error('Error storing streamed chat messages:', err);
+      }
+    }
+    yield { type: 'done', data: { message: fullResponse, contextDocuments, conversationId: request.conversationId } };
   } else {
     const completion = await chatProvider.complete(request);
     const responseText = completion.text || '';
-    yield { type: 'token', data: responseText };
-    yield { type: 'done', data: { message: responseText, contextDocuments } };
+    if (sessionId) {
+      try {
+        await supabase.from('chat_messages').insert([
+          { session_id: sessionId, role: 'user', content: userMessage, context_document_ids: contextDocuments.map((d) => d.id) },
+          { session_id: sessionId, role: 'assistant', content: responseText, context_document_ids: [] },
+        ]);
+        await supabase.from('chat_sessions').update({ last_message_at: new Date().toISOString() }).eq('id', sessionId);
+      } catch (err) {
+        console.error('Error storing streamed chat messages:', err);
+      }
+    }
+    yield { type: 'done', data: { message: responseText, contextDocuments, conversationId: request.conversationId } };
   }
 }
 

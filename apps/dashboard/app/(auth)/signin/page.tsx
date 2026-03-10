@@ -44,14 +44,19 @@ export default async function SignInPage({
             {error}
           </div>
         ) : null}
-        <form action={handleSignIn} className="mt-6 space-y-4">
-          <div className="space-y-2">
+        {/* suppressHydrationWarning: password-manager extensions (e.g. Keeper) inject attributes into inputs, causing server/client HTML mismatch */}
+        <form
+          action={handleSignIn}
+          className="mt-6 space-y-4"
+          suppressHydrationWarning
+        >
+          <div className="space-y-2" suppressHydrationWarning>
             <label className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <input name="email" type="email" required placeholder="you@example.com" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2" suppressHydrationWarning>
             <label className="block text-sm font-medium text-gray-700">
               Password
             </label>

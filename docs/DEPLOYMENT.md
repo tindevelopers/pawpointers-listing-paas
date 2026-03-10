@@ -79,6 +79,18 @@ From **Developers → API Keys**:
 
 ---
 
+## Step 2.5: Cal.com Webhook (Optional)
+
+If you use Cal.com as a booking provider:
+
+1. In Cal.com dashboard, go to **Settings → Webhooks**
+2. Add a webhook endpoint with URL: `https://{admin-domain}/api/webhooks/calcom`
+   - Replace `{admin-domain}` with your admin app domain (e.g. `admin.yourcompany.com`)
+3. Set `CALCOM_WEBHOOK_SECRET` in your admin app environment variables (same value as in Cal.com)
+4. Enable events: `BOOKING_CREATED`, `BOOKING_CONFIRMED`, `BOOKING_RESCHEDULED`, `BOOKING_CANCELLED`, `BOOKING_REJECTED`
+
+---
+
 ## Step 3: Vercel Configuration
 
 ### 3.1 Connect Repository

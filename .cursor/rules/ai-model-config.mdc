@@ -1,0 +1,11 @@
+---
+description: AI chat model and provider configuration
+globs: packages/@listing-platform/ai/**/*.ts, apps/**/api/chat/**/*.ts, apps/**/api/ai/**/*.ts
+alwaysApply: false
+---
+
+# AI Model Configuration
+
+- Chat model is resolved in `packages/@listing-platform/ai/src/gateway.ts` from env: `AI_MODEL`, `OPENAI_MODEL`, or `ABACUS_AI_MODEL` (when `AI_PROVIDER=abacus`). Default fallback is `gpt-4o-mini` (see `DEFAULT_OPENAI_CONFIG` in `packages/@listing-platform/ai/src/types.ts`).
+- The app does not validate model names; any model string your provider (OpenAI, Abacus, or AI gateway) supports will work when set via the above env vars.
+- There is no multi-agent or per-agent config in code yet. A single provider and model apply per environment. For future per-agent/STT/TTS config, see `.cursor/plans/multi-agent_chat_platform_adapter_f8269a43.plan.md`.

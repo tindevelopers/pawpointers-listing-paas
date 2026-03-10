@@ -1,8 +1,8 @@
 import { createClient } from "@/core/database/server";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDashboardEntitlementsForUser, getScopedListingIds } from "@/lib/listing-access";
 import { canAccessDashboardFeature, type DashboardFeatureKey } from "@/lib/subscription-entitlements";
+import { DashboardView } from "./DashboardView";
 
 type DashboardStats = {
   listingCount: number;
@@ -81,73 +81,23 @@ export default async function DashboardPage() {
 
   const entitlements = await getDashboardEntitlementsForUser(user.id);
 
-  const cards = [
+  const cardConfig = [
     { label: "Listings", value: stats.listingCount, href: "/listings", feature: "listings" as DashboardFeatureKey },
     { label: "Bookings", value: stats.bookingCount, href: "/bookings", feature: "bookings" as DashboardFeatureKey },
     { label: "Reviews", value: stats.reviewCount, href: "/reviews", feature: "reviews" as DashboardFeatureKey },
     { label: "Inbox", value: stats.conversationCount, href: "/inbox", feature: "inbox" as DashboardFeatureKey },
   ];
 
+  const cards = cardConfig.map((card) => {
+    const allowed = canAccessDashboardFeature(entitlements, card.feature);
+    const href = allowed ? card.href : `/billing/upgrade?feature=${encodeURIComponent(card.feature)}`;
+    return { label: card.label, value: card.value, href };
+  });
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-gray-500">Tenant</p>
-        <h1 className="text-3xl font-semibold text-gray-900">Merchant Dashboard</h1>
-        <p className="text-sm text-gray-600">
-          Tenant ID: {tenantId ?? "Not linked"} — manage your listings, respond to reviews, and stay on top of customer
-          messages.
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {cards.map((card) => {
-          const allowed = canAccessDashboardFeature(entitlements, card.feature);
-          const href = allowed ? card.href : `/billing/upgrade?feature=${encodeURIComponent(card.feature)}`;
-
-          return (
-            <Link
-              key={card.label}
-              href={href}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-orange-200"
-            >
-              <p className="text-sm text-gray-500">{card.label}</p>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{card.value}</p>
-              {!allowed ? (
-                <p className="mt-1 text-xs font-semibold text-orange-600">View plan options</p>
-              ) : null}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Quick start</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Create a listing, add photos, and reply to customer feedback from one place.
-            </p>
-          </div>
-          <Link href="/listings" className="rounded-lg bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">
-            Add listing
-          </Link>
-        </div>
-        <ol className="mt-4 list-decimal space-y-2 pl-5 text-gray-700">
-          <li>
-            Publish your <Link href="/listings" className="text-orange-600 underline hover:text-orange-700">listings</Link>.
-          </li>
-          <li>
-            Add photos in <Link href="/media" className="text-orange-600 underline hover:text-orange-700">media</Link> once your draft is
-            saved.
-          </li>
-          <li>
-            Respond to <Link href="/reviews" className="text-orange-600 underline hover:text-orange-700">reviews</Link> to build trust.
-          </li>
-          <li>
-            Keep up with leads in the <Link href="/inbox" className="text-orange-600 underline hover:text-orange-700">inbox</Link>.
-          </li>
-        </ol>
-      </div>
-    </div>
+    <DashboardView
+      tenantId={tenantId != null ? String(tenantId) : null}
+      cards={cards}
+    />
   );
 }

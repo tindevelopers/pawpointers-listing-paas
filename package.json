@@ -60,6 +60,9 @@
     "start:portal": "turbo run start --filter=@tinadmin/portal",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:session-isolation": "playwright test e2e/session-isolation.spec.ts",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "audit": "pnpm audit --audit-level=moderate",
@@ -86,6 +89,7 @@
     "update:rollback": "tsx scripts/rollback-update.ts",
     "update:history": "tsx scripts/rollback-update.ts list",
     "book:portal": "tsx scripts/book-appointment-browser.ts",
+    "test:e2e:calcom": "tsx scripts/e2e-test-calcom-booking.ts",
     "seed:unclaimed": "tsx scripts/seed-unclaimed-listings.ts",
     "seed:unclaimed:remote": "bash scripts/seed-unclaimed-remote.sh"
   },
@@ -125,6 +129,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.58.2",
     "@svgr/webpack": "^8.1.0",
     "@types/node": "^20",
     "@types/prismjs": "^1.26.5",

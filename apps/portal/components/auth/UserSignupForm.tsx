@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUpUser } from "@/app/actions/auth";
 
 const PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME || "Your Platform";
 
+const SUCCESS_MESSAGE =
+  "Signup successful. We've sent a verification email to your inbox. Please verify your email to continue.";
+
 export default function UserSignupForm() {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +17,7 @@ export default function UserSignupForm() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,20 +40,34 @@ export default function UserSignupForm() {
     }
 
     startTransition(async () => {
-      try {
-        await signUpUser({
-          email,
-          password,
-          fullName,
-          phoneNumber: phoneNumber || undefined,
-        });
-        router.push("/dashboard");
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to sign up";
-        setError(message);
+      const result = await signUpUser({
+        email,
+        password,
+        fullName,
+        phoneNumber: phoneNumber || undefined,
+      });
+      if (result.success) {
+        setSuccess(true);
+      } else {
+        setError(result.error);
       }
     });
   };
+
+  if (success) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded-lg text-sm">
+          {SUCCESS_MESSAGE}
+        </div>
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <Link href="/signin" className="text-blue-600 hover:text-blue-500 font-medium dark:text-blue-400">
+            Go to sign in
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning>

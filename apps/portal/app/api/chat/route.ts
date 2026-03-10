@@ -9,6 +9,8 @@ interface ChatRequest {
   sessionId?: string;
   history?: { role: 'user' | 'assistant'; content: string }[];
   tenantId?: string;
+  stream?: boolean;
+  conversationId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -42,7 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, sessionId, history = [], tenantId } = body;
+    const { message, sessionId, history = [], tenantId, stream: bodyStream, conversationId } = body;
+    const stream =
+      bodyStream === true ||
+      request.nextUrl?.searchParams?.get('stream') === '1';
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -52,10 +57,12 @@ export async function POST(request: NextRequest) {
     }
 
     const cookieStore = await cookies();
+    const authCookieName = process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME || 'sb-portal-auth';
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: { name: authCookieName },
         cookies: {
           get(name: string) { return cookieStore.get(name)?.value; },
           set() {},
@@ -66,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     const tenantSlug = tenantId || request.headers.get('x-tenant-slug');
 
-    const { chat, createSession } = await import('@listing-platform/ai');
+    const { chat, createSession, streamChat } = await import('@listing-platform/ai');
 
     let currentSessionId = sessionId;
     if (!currentSessionId) {
@@ -75,6 +82,57 @@ export async function POST(request: NextRequest) {
       } catch {
         console.warn('Could not create chat session');
       }
+    }
+
+    if (stream) {
+      const encoder = new TextEncoder();
+      const streamOpts = {
+        supabase,
+        tenantId: tenantSlug || undefined,
+        history: history.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+        sessionId: currentSessionId || undefined,
+        conversationId,
+      };
+      const readable = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const event of streamChat(message, streamOpts)) {
+              if (event.type === 'token') {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: event.data })}\n\n`));
+              } else if (event.type === 'done') {
+                const d = event.data as { message?: string; contextDocuments?: unknown[]; conversationId?: string };
+                controller.enqueue(
+                  encoder.encode(
+                    `event: done\ndata: ${JSON.stringify({
+                      message: d.message,
+                      sessionId: currentSessionId,
+                      conversationId: d.conversationId,
+                      requestId,
+                    })}\n\n`
+                  )
+                );
+              }
+              // event.type === 'context' is not forwarded to client; errors are sent via catch below
+            }
+          } catch (err) {
+            controller.enqueue(
+              encoder.encode(
+                `event: error\ndata: ${JSON.stringify({ error: err instanceof Error ? err.message : 'Stream failed' })}\n\n`
+              )
+            );
+          } finally {
+            controller.close();
+          }
+        },
+      });
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
+        },
+      });
     }
 
     const chatResponse = await chat(message, {

@@ -164,10 +164,26 @@ export class CalComProvider implements BookingProvider {
   }
 
   async updateBooking(
-    _context: BookingProviderContext,
+    context: BookingProviderContext,
     bookingId: string,
     updates: Partial<Booking>
   ): Promise<Booking> {
+    // Sync confirm to Cal.com when status changes to confirmed
+    if (updates.status === "confirmed") {
+      const { data: row } = await (this.supabase as any)
+        .from("bookings")
+        .select("external_booking_id, external_provider")
+        .eq("id", bookingId)
+        .single();
+      const externalId = (row as { external_booking_id?: string } | null)?.external_booking_id;
+      const isCalcom = (row as { external_provider?: string } | null)?.external_provider === "calcom";
+      if (externalId && isCalcom) {
+        const creds = getCredentials(context);
+        const client = new CalComApiClient(creds);
+        await client.confirmBooking(externalId);
+      }
+    }
+
     const dbUpdates: Partial<BookingRow> = {};
     if (updates.status) dbUpdates.status = updates.status;
     if (updates.paymentStatus) dbUpdates.payment_status = updates.paymentStatus;
@@ -204,8 +220,9 @@ export class CalComProvider implements BookingProvider {
     const client = new CalComApiClient(creds);
     const startIso = startDate.toISOString();
     const endIso = endDate.toISOString();
+    const timeZone = (context as { metadata?: { timezone?: string } }).metadata?.timezone || "UTC";
 
-    const slots = await client.getSlots(calEventTypeId, startIso, endIso);
+    const slots = await client.getSlots(calEventTypeId, startIso, endIso, timeZone);
 
     const listingId = context.listingId || "";
     const tenantId = context.tenantId;

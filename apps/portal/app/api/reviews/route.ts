@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: { name: process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME || 'sb-portal-auth' },
         cookies: {
           get(name: string) {
             return cookieStore.get(name)?.value;
@@ -292,6 +293,7 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookieOptions: { name: process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME || 'sb-portal-auth' },
         cookies: {
           get(name: string) {
             return cookieStore.get(name)?.value;
