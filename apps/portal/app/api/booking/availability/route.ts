@@ -22,6 +22,7 @@ async function handler(request: NextRequest) {
   const listingId = searchParams.get("listingId");
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
+  const timezone = searchParams.get("timezone") || "UTC";
 
   if (!listingId || !dateFrom || !dateTo) {
     return NextResponse.json(
@@ -84,27 +85,42 @@ async function handler(request: NextRequest) {
           { status: 503 }
         );
       }
-      const { data: integrations } = await adminClient
-        .from("booking_provider_integrations")
-        .select("id, credentials, settings, listing_id")
-        .eq("tenant_id", tenantId)
-        .eq("provider", "calcom")
-        .eq("active", true);
-      const integrationsList =
-        ((integrations || []) as Array<{
-          id: string;
-          credentials?: Record<string, unknown> | null;
-          settings?: Record<string, unknown> | null;
-          listing_id?: string | null;
-        }>);
-      const integration =
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id === listingId
-        ) ??
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id == null
-        ) ??
-        integrationsList[0];
+      // Prefer integration linked via booking_provider_id when set
+      type IntegrationRow = { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null };
+      let integration: IntegrationRow | null | undefined = null;
+      if (bookingProviderId) {
+        const { data: direct } = await adminClient
+          .from("booking_provider_integrations")
+          .select("credentials, settings")
+          .eq("id", bookingProviderId)
+          .eq("provider", "calcom")
+          .eq("active", true)
+          .single();
+        integration = direct as IntegrationRow | null;
+      }
+      if (!integration?.credentials) {
+        const { data: integrations } = await adminClient
+          .from("booking_provider_integrations")
+          .select("id, credentials, settings, listing_id")
+          .eq("tenant_id", tenantId)
+          .eq("provider", "calcom")
+          .eq("active", true);
+        const integrationsList =
+          ((integrations || []) as Array<{
+            id: string;
+            credentials?: Record<string, unknown> | null;
+            settings?: Record<string, unknown> | null;
+            listing_id?: string | null;
+          }>);
+        integration =
+          (integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id === listingId
+          ) ??
+          integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id == null
+          ) ??
+          integrationsList[0]) as IntegrationRow | undefined;
+      }
 
       if (integration?.credentials) {
         context.providerCredentials = integration.credentials as Record<string, unknown>;
@@ -114,6 +130,7 @@ async function handler(request: NextRequest) {
     }
 
     const provider = createBookingProvider(providerType, (context.supabase as any) as any);
+    (context as any).metadata = { timezone };
     const slots = await provider.getAvailability(
       context as any,
       new Date(dateFrom),

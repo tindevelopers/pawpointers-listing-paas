@@ -161,6 +161,17 @@ export async function POST(req: NextRequest) {
           .eq("external_booking_id", uid);
         break;
 
+      case "BOOKING_CONFIRMED":
+        await (adminClient as any)
+          .from("bookings")
+          .update({
+            status: "confirmed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("external_provider", "calcom")
+          .eq("external_booking_id", uid);
+        break;
+
       default:
         break;
     }
@@ -182,6 +193,7 @@ export async function POST(req: NextRequest) {
           "BOOKING_CANCELLED",
           "BOOKING_RESCHEDULED",
           "BOOKING_REJECTED",
+          "BOOKING_CONFIRMED",
         ];
         if (validTriggers.includes(triggerEvent as BookingAssistantTrigger)) {
           processBookingAssistant(

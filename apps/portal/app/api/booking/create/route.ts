@@ -3,6 +3,11 @@ import { createClient } from "@/core/database/server";
 import { createAdminClient } from "@/core/database/admin-client";
 import { createBookingProvider } from "@listing-platform/booking/providers";
 import { withRateLimit } from "@/middleware/api-rate-limit";
+import { sendEmail } from "@tinadmin/core/email";
+import {
+  bookingConfirmationEmailParams,
+  newBookingAlertEmailParams,
+} from "@listing-platform/booking";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +71,15 @@ async function handler(req: NextRequest) {
     const gc = guestCount ?? guest_count ?? 1;
     const gd = guestDetails || guest_details;
     const sr = specialRequests || special_requests;
+
+    // Merge authenticated user's email/name into guestDetails for Cal.com
+    const guestDetailsWithUser = {
+      guests: [] as { name: string; age?: number; specialRequirements?: string }[],
+      primaryContact: {
+        email: (gd as { primaryContact?: { email?: string } })?.primaryContact?.email || user.email || "",
+        name: (gd as { primaryContact?: { name?: string } })?.primaryContact?.name || (user.user_metadata?.full_name as string) || "",
+      },
+    };
 
     if (!lid || !start || !end) {
       return NextResponse.json(
@@ -152,27 +166,42 @@ async function handler(req: NextRequest) {
           { status: 503 }
         );
       }
-      const { data: integrations } = await adminClient
-        .from("booking_provider_integrations")
-        .select("id, credentials, settings, listing_id")
-        .eq("tenant_id", tenantId)
-        .eq("provider", "calcom")
-        .eq("active", true);
-      const integrationsList =
-        ((integrations || []) as Array<{
-          id: string;
-          credentials?: Record<string, unknown> | null;
-          settings?: Record<string, unknown> | null;
-          listing_id?: string | null;
-        }>);
-      const integration =
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id === lid
-        ) ??
-        integrationsList.find(
-          (i: { listing_id?: string | null }) => i.listing_id == null
-        ) ??
-        integrationsList[0];
+      // Prefer integration linked via booking_provider_id when set
+      type IntegrationRow = { credentials?: Record<string, unknown> | null; settings?: Record<string, unknown> | null };
+      let integration: IntegrationRow | null | undefined = null;
+      if (bookingProviderId) {
+        const { data: direct } = await adminClient
+          .from("booking_provider_integrations")
+          .select("credentials, settings")
+          .eq("id", bookingProviderId)
+          .eq("provider", "calcom")
+          .eq("active", true)
+          .single();
+        integration = direct as IntegrationRow | null;
+      }
+      if (!integration?.credentials) {
+        const { data: integrations } = await adminClient
+          .from("booking_provider_integrations")
+          .select("id, credentials, settings, listing_id")
+          .eq("tenant_id", tenantId)
+          .eq("provider", "calcom")
+          .eq("active", true);
+        const integrationsList =
+          ((integrations || []) as Array<{
+            id: string;
+            credentials?: Record<string, unknown> | null;
+            settings?: Record<string, unknown> | null;
+            listing_id?: string | null;
+          }>);
+        integration =
+          (integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id === lid
+          ) ??
+          integrationsList.find(
+            (i: { listing_id?: string | null }) => i.listing_id == null
+          ) ??
+          integrationsList[0]) as IntegrationRow | undefined;
+      }
 
       if (!integration?.credentials) {
         return NextResponse.json(
@@ -203,16 +232,61 @@ async function handler(req: NextRequest) {
         startTime: st,
         endTime: et,
         guestCount: gc,
-        guestDetails: gd,
+        guestDetails: guestDetailsWithUser,
         specialRequests: sr,
         basePrice,
         serviceFee,
         taxAmount,
         totalAmount,
         currency,
+        metadata: { timezone: (body as { timezone?: string }).timezone || "UTC" },
       });
 
       const b = result.booking;
+      // Send confirmation email (fire-and-forget)
+      const customerEmail = (user as { email?: string }).email;
+      if (customerEmail) {
+        const { data: listingRow } = await adminClient
+          .from("listings")
+          .select("title")
+          .eq("id", lid)
+          .single();
+        const listingTitle = (listingRow as { title?: string } | null)?.title || "Your appointment";
+        sendEmail(
+          bookingConfirmationEmailParams({
+            customerEmail,
+            customerName: (user as { user_metadata?: { full_name?: string } }).user_metadata?.full_name,
+            listingTitle,
+            startDate: start,
+            startTime: st || undefined,
+            confirmationCode: (b as { confirmation_code?: string }).confirmation_code,
+          })
+        ).catch((err) => console.error("[booking/create] Email error:", err));
+        // New booking alert to merchant (if we have owner email)
+        const { data: listingForOwner } = await adminClient
+          .from("listings")
+          .select("owner_id")
+          .eq("id", lid)
+          .single();
+        const ownerId = (listingForOwner as { owner_id?: string } | null)?.owner_id;
+        if (ownerId) {
+          const { data: ownerUser } = await adminClient.from("users").select("email").eq("id", ownerId).single();
+          const merchantEmail = (ownerUser as { email?: string } | null)?.email;
+          if (merchantEmail && merchantEmail !== customerEmail) {
+            sendEmail(
+              newBookingAlertEmailParams({
+                customerEmail,
+                customerName: (gd as { primaryContact?: { name?: string } })?.primaryContact?.name,
+                listingTitle,
+                startDate: start,
+                startTime: st || undefined,
+                confirmationCode: (b as { confirmation_code?: string }).confirmation_code,
+                merchantEmail,
+              })
+            ).catch((err) => console.error("[booking/create] Merchant email error:", err));
+          }
+        }
+      }
       return NextResponse.json({
         success: true,
         data: { bookingId: b.id, booking: b },
@@ -238,7 +312,7 @@ async function handler(req: NextRequest) {
         startTime: st,
         endTime: et,
         guestCount: gc,
-        guestDetails: gd,
+        guestDetails: guestDetailsWithUser,
         specialRequests: sr,
         basePrice,
         serviceFee,
@@ -249,6 +323,45 @@ async function handler(req: NextRequest) {
     );
 
     const b = result.booking;
+    // Send confirmation email for builtin (fire-and-forget)
+    const adminForEmail = getAdminClientOrNull();
+    const customerEmail = (user as { email?: string }).email;
+    if (customerEmail && adminForEmail) {
+      const { data: listingRow } = await supabase
+        .from("listings")
+        .select("title, owner_id")
+        .eq("id", lid)
+        .single();
+      const listingTitle = (listingRow as { title?: string } | null)?.title || "Your appointment";
+      sendEmail(
+        bookingConfirmationEmailParams({
+          customerEmail,
+          customerName: (user as { user_metadata?: { full_name?: string } }).user_metadata?.full_name,
+          listingTitle,
+          startDate: start,
+          startTime: st || undefined,
+          confirmationCode: (b as { confirmation_code?: string }).confirmation_code,
+        })
+      ).catch((err) => console.error("[booking/create] Email error:", err));
+      const ownerId = (listingRow as { owner_id?: string } | null)?.owner_id;
+      if (ownerId) {
+        const { data: ownerRow } = await adminForEmail.from("users").select("email").eq("id", ownerId).single();
+        const merchantEmail = (ownerRow as { email?: string } | null)?.email;
+        if (merchantEmail && merchantEmail !== customerEmail) {
+          sendEmail(
+            newBookingAlertEmailParams({
+              customerEmail,
+              customerName: (gd as { primaryContact?: { name?: string } })?.primaryContact?.name,
+              listingTitle,
+              startDate: start,
+              startTime: st || undefined,
+              confirmationCode: (b as { confirmation_code?: string }).confirmation_code,
+              merchantEmail,
+            })
+          ).catch((err) => console.error("[booking/create] Merchant email error:", err));
+        }
+      }
+    }
     return NextResponse.json({
       success: true,
       data: { bookingId: b.id, booking: b },

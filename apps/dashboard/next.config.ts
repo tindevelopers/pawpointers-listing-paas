@@ -1,4 +1,19 @@
 import type { NextConfig } from "next";
+import path from "path";
+
+// In a monorepo, Next.js only loads .env from apps/dashboard. Load root .env.local
+// so the dashboard gets NEXT_PUBLIC_SUPABASE_* and other shared vars.
+try {
+  const rootEnv = path.resolve(__dirname, "../../.env.local");
+  require("dotenv").config({ path: rootEnv });
+} catch {
+  // dotenv or .env.local may be missing; dashboard may have its own .env.local
+}
+
+// Isolate auth cookies from customer portal (different port = same host in browser)
+if (!process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME) {
+  process.env.NEXT_PUBLIC_SUPABASE_AUTH_COOKIE_NAME = "sb-dashboard-auth";
+}
 
 const nextConfig: NextConfig = {
   turbopack: {

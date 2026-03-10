@@ -138,6 +138,11 @@ export class CalComApiClient {
     await this.request("POST", `/bookings/${bookingId}/cancel`, {});
   }
 
+  /** Confirm a pending booking. Cal.com API: POST /v2/bookings/{uid}/confirm */
+  async confirmBooking(bookingId: string | number): Promise<CalComBooking> {
+    return this.request<CalComBooking>("POST", `/bookings/${bookingId}/confirm`, {});
+  }
+
   async getMe(): Promise<{ id?: number; email?: string }> {
     return this.request("GET", "/me");
   }
