@@ -18,6 +18,8 @@ export interface CalComSettings {
   calOrganizationId?: string;
   /** Cal.com team ID (for team event types) */
   calTeamId?: string;
+  /** Cal.com team slug (optional, useful for diagnostics/routing) */
+  calTeamSlug?: string;
 }
 
 export const DEFAULT_CALCOM_BASE_URL = "https://api.cal.com";

@@ -4,6 +4,11 @@ import { getStripeLazy } from "./config";
 import { createAdminClient } from "@/core/database/admin-client";
 import { getCurrentTenant } from "@/core/multi-tenancy/server";
 import { requirePermission } from "@/core/permissions/middleware";
+import {
+  ensureCalComIntegrationForTenant,
+  planGrantsBookingsFeature,
+  syncTenantPlanFromBillingPlan,
+} from "./calcom-provisioning";
 import type Stripe from "stripe";
 
 // Lazy getter for Stripe instance to prevent build-time errors
@@ -358,8 +363,11 @@ export async function upgradeSubscription(
       .eq("stripe_price_id", newPriceId)
       .single();
 
+    let updatedPlanName: string | null = null;
+
     // Update in database
     if (newPriceResult.data) {
+      updatedPlanName = (newPriceResult.data as any).stripe_products.name || null;
       await (adminClient
         .from("stripe_subscriptions") as any)
         .update({
@@ -377,6 +385,24 @@ export async function upgradeSubscription(
           ).toISOString(),
         })
         .eq("id", dbSubscription.id);
+    }
+
+    // Keep tenant plan in sync with Stripe product naming so dashboard entitlements stay accurate.
+    await syncTenantPlanFromBillingPlan(tenantId, updatedPlanName);
+
+    // Provision Cal.com only after upgrades that grant bookings entitlement.
+    if (planGrantsBookingsFeature(updatedPlanName)) {
+      try {
+        const { data: tenantRow } = await adminClient
+          .from("tenants")
+          .select("name")
+          .eq("id", tenantId)
+          .maybeSingle();
+        const tenantName = (tenantRow as { name?: string } | null)?.name;
+        await ensureCalComIntegrationForTenant(tenantId, tenantName);
+      } catch (provisionError) {
+        console.error("[upgradeSubscription] Cal.com provisioning failed:", provisionError);
+      }
     }
 
     // Get latest invoice if created
