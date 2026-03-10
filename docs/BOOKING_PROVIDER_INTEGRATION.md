@@ -14,6 +14,13 @@ Migration: `supabase/migrations/20260121000000_add_booking_provider_integrations
 - GoHighLevel: placeholder routing (extend with Appointments API)
 - Cal.com: full integration (availability, create, cancel, webhooks, AI assistant)
 
+## Cal.com provisioning on upgrade (bookings entitlement)
+- Cal.com tenant provisioning is **upgrade-driven**: create a Cal.com team and default event type only when a tenant upgrades to a bookings-enabled plan (middle/top tier; e.g. Pro/Premium).
+- Provisioning runs from subscription upgrade/webhook flows (and optional lazy Bookings access fallback), **not** from tenant signup, listing creation, or seed/unclaimed listing flows.
+- One Cal.com team is created per entitled tenant, and the integration row is tenant-level (`listing_id: null`).
+- The tenant team can later include many members (service providers) and many event types (services).
+- Required env var for auto-provisioning: `CALCOM_PLATFORM_API_KEY` (optional self-hosted override: `CALCOM_PLATFORM_API_BASE_URL`).
+
 ## API
 - `POST /api/booking` supports `provider` override (`builtin|gohighlevel|calcom`)
 - Provider CRUD: `/api/booking-providers`
@@ -60,4 +67,5 @@ POST /api/booking-providers
 - Rate limit external API calls; add retries/backoff.
 - Validate API keys before saving when possible.
 - Keep service role keys out of client code; booking provider CRUD is server-side.
+- Unclaimed/platform-created listings must never trigger Cal.com team provisioning.
 

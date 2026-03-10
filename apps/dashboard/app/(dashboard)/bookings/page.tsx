@@ -1,4 +1,6 @@
 import { createClient } from "@/core/database/server";
+import { createAdminClient } from "@/core/database/admin-client";
+import { ensureCalComIntegrationForTenant } from "@/core/billing/calcom-provisioning";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getScopedListingIds } from "@/lib/listing-access";
@@ -28,6 +30,58 @@ export default async function BookingsPage() {
     return (
       <EntitlementGate allowed={false} featureName="Bookings" requiredTier="middle" />
     );
+  }
+
+  let calendarReady = false;
+  let calendarNotice: string | null = null;
+  let calendarJustProvisioned = false;
+
+  const adminClient = createAdminClient();
+  const { data: userRow } = await adminClient
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  const tenantId = (userRow as { tenant_id?: string | null } | null)?.tenant_id ?? null;
+
+  if (tenantId) {
+    const { data: integrations } = await adminClient
+      .from("booking_provider_integrations")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("provider", "calcom")
+      .eq("active", true)
+      .is("listing_id", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if ((integrations || []).length > 0) {
+      calendarReady = true;
+    } else {
+      const { data: tenantRow } = await adminClient
+        .from("tenants")
+        .select("name")
+        .eq("id", tenantId)
+        .maybeSingle();
+      const tenantName = (tenantRow as { name?: string } | null)?.name;
+
+      try {
+        const provisionResult = await ensureCalComIntegrationForTenant(tenantId, tenantName);
+        calendarReady = !!provisionResult.integrationId;
+        calendarJustProvisioned = !!provisionResult.provisioned;
+        if (!calendarReady) {
+          calendarNotice =
+            "Your plan includes bookings. We're setting up your calendar and this should complete shortly.";
+        }
+      } catch {
+        calendarReady = false;
+        calendarNotice =
+          "Your plan includes bookings, but we couldn't finish calendar setup yet. Please refresh in a moment or contact support.";
+      }
+    }
+  } else {
+    calendarNotice =
+      "Bookings are enabled for your plan, but no tenant context was found for calendar provisioning.";
   }
 
   const listingIds = await getScopedListingIds(user.id);
@@ -90,6 +144,19 @@ export default async function BookingsPage() {
           View and manage appointments for your listings.
         </p>
       </header>
+
+      {calendarJustProvisioned ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Your plan now includes bookings. Your calendar has been set up.
+        </div>
+      ) : null}
+
+      {!calendarReady ? (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          {calendarNotice ||
+            "Your plan includes bookings. We're setting up your calendar and this should complete shortly."}
+        </div>
+      ) : null}
 
       {bookings.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-600">

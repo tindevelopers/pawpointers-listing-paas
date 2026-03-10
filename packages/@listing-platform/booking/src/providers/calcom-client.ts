@@ -7,6 +7,8 @@ import type { CalComCredentials, CalComSettings } from "./calcom-types";
 import { DEFAULT_CALCOM_BASE_URL, getCalComApiBase } from "./calcom-types";
 
 const API_VERSION = "v2";
+const DEFAULT_CAL_API_VERSION = "2024-08-13";
+const TEAM_EVENTTYPE_CAL_API_VERSION = "2024-06-14";
 
 export interface CalComSlot {
   time: string;
@@ -50,6 +52,25 @@ export interface CalComCreateBookingResponse {
   booking?: CalComBooking;
 }
 
+export interface CalComTeam {
+  id: number;
+  slug?: string;
+  name?: string;
+}
+
+export interface CalComCreateTeamOptions {
+  name: string;
+  slug?: string;
+  timeZone?: string;
+}
+
+export interface CalComCreateEventTypeOptions {
+  title: string;
+  slug?: string;
+  lengthInMinutes?: number;
+  teamId?: number;
+}
+
 export class CalComApiClient {
   private baseUrl: string;
   private apiKey: string;
@@ -71,13 +92,14 @@ export class CalComApiClient {
   private async request<T>(
     method: string,
     path: string,
-    body?: object
+    body?: object,
+    calApiVersion: string = DEFAULT_CAL_API_VERSION
   ): Promise<T> {
     const url = `${this.baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.apiKey}`,
       "Content-Type": "application/json",
-      "cal-api-version": "2024-08-13",
+      "cal-api-version": calApiVersion,
     };
 
     const res = await fetch(url, {
@@ -145,5 +167,70 @@ export class CalComApiClient {
 
   async getMe(): Promise<{ id?: number; email?: string }> {
     return this.request("GET", "/me");
+  }
+
+  async createTeam(options: CalComCreateTeamOptions): Promise<CalComTeam> {
+    const payload = {
+      name: options.name,
+      ...(options.slug ? { slug: options.slug } : {}),
+      ...(options.timeZone ? { timeZone: options.timeZone } : {}),
+    };
+    const response = await this.request<Record<string, unknown>>(
+      "POST",
+      "/teams",
+      payload,
+      TEAM_EVENTTYPE_CAL_API_VERSION
+    );
+    const candidates = [
+      response,
+      (response as { data?: unknown }).data,
+      (response as { team?: unknown }).team,
+      (response as { data?: { team?: unknown } }).data?.team,
+    ];
+
+    for (const candidate of candidates) {
+      const row = candidate as { id?: number | string; slug?: string; name?: string } | undefined;
+      if (!row?.id) continue;
+      const id = typeof row.id === "string" ? parseInt(row.id, 10) : row.id;
+      if (!Number.isFinite(id)) continue;
+      return {
+        id,
+        slug: row.slug,
+        name: row.name,
+      };
+    }
+
+    throw new Error("Cal.com create team response missing team id");
+  }
+
+  async createEventType(options: CalComCreateEventTypeOptions): Promise<{ id: number }> {
+    const payload: Record<string, unknown> = {
+      title: options.title,
+      lengthInMinutes: options.lengthInMinutes ?? 30,
+      ...(options.slug ? { slug: options.slug } : {}),
+      ...(options.teamId ? { teamId: options.teamId } : {}),
+    };
+    const response = await this.request<Record<string, unknown>>(
+      "POST",
+      "/event-types",
+      payload,
+      TEAM_EVENTTYPE_CAL_API_VERSION
+    );
+    const candidates = [
+      response,
+      (response as { data?: unknown }).data,
+      (response as { eventType?: unknown }).eventType,
+      (response as { data?: { eventType?: unknown } }).data?.eventType,
+    ];
+
+    for (const candidate of candidates) {
+      const row = candidate as { id?: number | string } | undefined;
+      if (!row?.id) continue;
+      const id = typeof row.id === "string" ? parseInt(row.id, 10) : row.id;
+      if (!Number.isFinite(id)) continue;
+      return { id };
+    }
+
+    throw new Error("Cal.com create event type response missing event type id");
   }
 }

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe, stripeConfig, isStripeConfigured } from "@/core/billing/config";
 import { createAdminClient } from "@/core/database/admin-client";
+import {
+  ensureCalComIntegrationForTenant,
+  planGrantsBookingsFeature,
+  syncTenantPlanFromBillingPlan,
+} from "@/core/billing/calcom-provisioning";
 import Stripe from "stripe";
 
 /**
@@ -180,6 +185,26 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
 
   const price = subscription.items.data[0]?.price;
   const product = typeof price?.product === "string" ? price.product : price?.product?.id;
+  const stripePriceId = price?.id || null;
+
+  let resolvedPlanName =
+    price?.nickname ||
+    (typeof price?.product === "object" ? (price.product as { name?: string }).name : null) ||
+    null;
+
+  if (!resolvedPlanName && stripePriceId) {
+    const { data: priceRow } = await adminClient
+      .from("stripe_prices")
+      .select("stripe_products(name)")
+      .eq("stripe_price_id", stripePriceId)
+      .maybeSingle();
+    resolvedPlanName =
+      ((priceRow as { stripe_products?: { name?: string } } | null)?.stripe_products?.name as
+        | string
+        | undefined) || null;
+  }
+
+  const planNameForDb = resolvedPlanName || product || "Unknown Plan";
 
   await ((adminClient
     .from("stripe_subscriptions") as any)
@@ -206,7 +231,7 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
         trial_end: subscription.trial_end
           ? new Date(subscription.trial_end * 1000).toISOString()
           : null,
-        plan_name: price?.nickname || product || "Unknown Plan",
+        plan_name: planNameForDb,
         plan_price: price?.unit_amount || null,
         billing_cycle: price?.recurring?.interval || null,
         currency: price?.currency || "usd",
@@ -216,6 +241,23 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
         onConflict: "stripe_subscription_id",
       }
     ));
+
+  await syncTenantPlanFromBillingPlan(tenantId, planNameForDb);
+
+  const isProvisionableStatus = ["active", "trialing"].includes(subscription.status);
+  if (isProvisionableStatus && planGrantsBookingsFeature(planNameForDb)) {
+    try {
+      const { data: tenantRow } = await adminClient
+        .from("tenants")
+        .select("name")
+        .eq("id", tenantId)
+        .maybeSingle();
+      const tenantName = (tenantRow as { name?: string } | null)?.name;
+      await ensureCalComIntegrationForTenant(tenantId, tenantName);
+    } catch (error) {
+      console.error("[stripe webhook] Cal.com provisioning failed:", error);
+    }
+  }
 }
 
 async function handleInvoiceEvent(invoice: Stripe.Invoice) {

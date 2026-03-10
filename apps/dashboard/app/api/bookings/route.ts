@@ -29,8 +29,7 @@ export async function GET() {
     const listingIds = await getScopedListingIds(user.id);
     const entitlements = await getDashboardEntitlementsForUser(user.id);
     const canAccessBookings = canAccessDashboardFeature(entitlements, "bookings");
-    // Allow access if user has bookings entitlement OR has listing access (merchants who own listings)
-    if (!canAccessBookings && listingIds.length === 0) {
+    if (!canAccessBookings) {
       return NextResponse.json(
         { success: false, error: { code: "FORBIDDEN", message: "Bookings feature not available" } },
         { status: 403 }
